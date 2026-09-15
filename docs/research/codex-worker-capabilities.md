@@ -1,6 +1,6 @@
 # Codex broker-fed Worker 실행 가능성 조사
 
-- 대상: [Issue #3](https://github.com/dwchoo/herdr-broker/issues/3)
+- 대상: [Codex broker-fed Worker의 실행·권한·결과 수집 가능성 조사](https://github.com/dwchoo/herdr-broker/issues/3)
 - 확인일: 2026-09-15, macOS, 설치 CLI `codex-cli 0.154.0`.
 - 질문: Broker가 전달한 context를 one-shot Worker Agent가 분석하고 Output Contract로 돌려줄 수 있는가?
 - 범위: 로컬 metadata와 OpenAI 공식 문서. 모델 호출, Target Pane 접근, 인증·config 변경은 수행하지 않았다.
