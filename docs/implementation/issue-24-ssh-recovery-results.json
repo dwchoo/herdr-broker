@@ -1,0 +1,73 @@
+{
+  "at": "2026-09-15T13:36:00.183Z",
+  "environment": "actual localhost SSH and native Herdr, candidate profile, 1200 ms observation test seam",
+  "records": [
+    {
+      "fault": "lost_ack_and_marker",
+      "submission": "unknown",
+      "observation": "outcome_unknown",
+      "hold_reason": "observation_deadline",
+      "truncated": false,
+      "wire_attempts": 1,
+      "prefix_deliveries_without_enter": 0,
+      "automatic_resends": 0,
+      "recovery": "user_verified_ready_shell",
+      "provenance": "proxy modified/dropped native Herdr responses; real remote command executed"
+    },
+    {
+      "fault": "duplicate_marker",
+      "submission": "accepted",
+      "observation": "outcome_unknown",
+      "hold_reason": "ambiguous_marker",
+      "truncated": false,
+      "wire_attempts": 1,
+      "prefix_deliveries_without_enter": 0,
+      "automatic_resends": 0,
+      "recovery": "user_verified_ready_shell",
+      "provenance": "proxy modified/dropped native Herdr responses; real remote command executed"
+    },
+    {
+      "fault": "truncated_missing_marker",
+      "submission": "accepted",
+      "observation": "outcome_unknown",
+      "hold_reason": "observation_deadline",
+      "truncated": true,
+      "wire_attempts": 1,
+      "prefix_deliveries_without_enter": 0,
+      "automatic_resends": 0,
+      "recovery": "user_verified_ready_shell",
+      "provenance": "proxy modified/dropped native Herdr responses; real remote command executed"
+    },
+    {
+      "fault": "partial_input",
+      "submission": "accepted",
+      "observation": "outcome_unknown",
+      "hold_reason": "observation_deadline",
+      "truncated": false,
+      "wire_attempts": 2,
+      "prefix_deliveries_without_enter": 1,
+      "automatic_resends": 0,
+      "recovery": "user_verified_ready_shell",
+      "provenance": "proxy delivered first 10 payload characters without Enter to actual SSH, then an authorized interrupt cleared that input"
+    },
+    {
+      "fault": "none: real sleep/cancel/Ctrl+c",
+      "input_after_cancel": 1,
+      "total_inputs": 2,
+      "interrupt_keys": [
+        "Ctrl+c"
+      ],
+      "original_observation": "outcome_unknown",
+      "exit": null,
+      "recovery": "user_verified_ready_shell"
+    },
+    {
+      "fault": "actual move/recreate; actual proxy IPC disconnect (Herdr app not restarted)",
+      "moved_mode": 2,
+      "continuity_mode": 2,
+      "recreated_mode": 2,
+      "stale_inputs": 0,
+      "old_job": "cae33af5-35f3-4d49-a7a5-6da4b5beea96"
+    }
+  ]
+}

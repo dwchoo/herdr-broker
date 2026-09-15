@@ -9,7 +9,7 @@ import { Jobs } from './jobs.js';
 import { Sessions, targetSchema, targetOf, sameTarget, type Target } from './sessions.js';
 
 const text = z.string().min(1).max(1024);
-const riskSchema = z.strictObject({ classification: z.enum(['read', 'bounded_change', 'high', 'unknown']), inspected: z.boolean(), impact: text, recovery: text, uncertainties: z.array(text).max(5), categories: z.array(z.enum(['destructive', 'privilege', 'system_package', 'driver', 'kernel', 'disk', 'network', 'account', 'permissions', 'reboot', 'shutdown'])).max(12) });
+const riskSchema = z.strictObject({ classification: z.enum(['read', 'bounded_change', 'high', 'unknown']), inspected: z.boolean(), impact: text, recovery: text, uncertainties: z.array(text).max(5).describe('Unresolved safety, affected-scope or recovery risks. Command success is observed later and is not by itself a safety uncertainty. Never omit actual safety uncertainty to obtain automatic execution.'), categories: z.array(z.enum(['destructive', 'privilege', 'system_package', 'driver', 'kernel', 'disk', 'network', 'account', 'permissions', 'reboot', 'shutdown'])).max(12) });
 const declaredRisk = z.union([riskSchema, z.unknown()]).describe('Use the structured Parent assessment: classification, inspected, impact, recovery, uncertainties, categories. Invalid or missing assessments require user approval in mode 2.');
 export const proposalSchema = z.strictObject({ job_id: z.string().uuid(), target: targetSchema, objective: z.string().min(1).max(4096), operation: z.enum(['execute', 'interrupt']), command: z.string().min(1).max(4096).refine(value => !value.includes('\0')).optional(), original_proposal_id: z.string().uuid().optional(), cwd: z.string().min(1).max(4096), env: z.record(z.string().regex(/^[A-Za-z_][A-Za-z0-9_]{0,63}$/), z.string().max(1024).refine(value => !value.includes('\0'))).refine(value => Object.keys(value).length <= 16), affected_paths: z.array(z.string().min(1).max(4096)).min(1).max(16), risk: declaredRisk.optional() });
 type ProposalInput = z.infer<typeof proposalSchema>;
@@ -36,6 +36,7 @@ export class Actions {
     const session = await this.sessions.observe(pane, job.signal, true);
     if (session.id !== job.session || !sameTarget(targetOf(pane), input.target)) throw new BrokerError('target_changed');
     if (input.operation === 'execute' && !this.sessions.ready(session)) throw new BrokerError('shell_not_ready');
+    this.sessions.checkScope(session, job.scope);
     if (!within(input.cwd, [job.scope.cwd]) || !input.affected_paths.every(path => within(path, job.scope!.paths))) throw new BrokerError('outside_scope');
     if (input.operation === 'execute' ? !input.command || input.original_proposal_id : input.command !== undefined || Object.keys(input.env).length) throw new BrokerError('invalid_operation');
     if (input.operation === 'interrupt') this.options.ledger.requireInterruptTarget(input.original_proposal_id, session.target.terminal_id, session.id);
@@ -129,6 +130,7 @@ export class Actions {
     const intent = this.options.ledger.intent(receipt);
     proposal.receipt = intent.control;
     if (!intent.fresh) return this.view(proposal);
+    if (proposal.operation === 'execute') this.sessions.consumeReady(session);
     this.jobs.actionBudget(proposal.owner, proposal.job, bytes, true);
     delete proposal.approval;
     this.options.fault?.('after_intent');
@@ -159,7 +161,7 @@ export class Actions {
     } catch (error) {
       const rejected = error instanceof BrokerError && ['pane_not_found', 'invalid_key', 'pane_send_failed'].includes(error.code);
       receipt.submission_state = rejected ? 'rejected' : 'unknown';
-      if (rejected) { receipt.observation_state = proposal.operation === 'execute' ? 'not_started' : 'not_applicable'; receipt.hold_reason = null; }
+      if (rejected) { if (proposal.operation === 'execute') this.sessions.restoreReady(proposal.session); receipt.observation_state = proposal.operation === 'execute' ? 'not_started' : 'not_applicable'; receipt.hold_reason = null; }
       else receipt.hold_reason = 'submission_unknown';
     }
     this.options.fault?.('before_ack_record');
@@ -203,6 +205,7 @@ export class Actions {
           receipt.observation_state = 'completion_observed'; receipt.exit_code = matches[0]!.exit; receipt.hold_reason = trusted ? null : 'untrusted_completion';
           receipt.updated_at = this.now();
           this.options.ledger.update(receipt, trusted);
+          if (trusted && receipt.hold_reason === null) this.sessions.restoreReady(proposal.session);
           return;
         }
         await delay(100, undefined, { signal });
@@ -257,6 +260,11 @@ export class Actions {
     const pane = await this.herdr.describe(paneId, this.stop.signal);
     const session = await this.sessions.observe(pane, this.stop.signal, true);
     return { target: session.target, pane_session_id: session.id, mode_revision: session.revision, action_mode: session.mode, observed_connection: session.connection, shell_ready: this.sessions.ready(session), shell_pid: session.process.shell_pid, foreground_process_group_id: session.process.foreground_process_group_id, held_proposal_id: this.options.ledger.held(pane.terminal_id) ?? null };
+  }
+  async confirmSSH(inspected: Awaited<ReturnType<Actions['inspect']>>, id: string, cwd: string) {
+    const fresh = await this.inspect(inspected.target.pane_id);
+    if (id !== inspected.pane_session_id || fresh.pane_session_id !== id || fresh.mode_revision !== inspected.mode_revision || !sameTarget(fresh.target, inspected.target)) throw new BrokerError('target_changed');
+    return this.sessions.confirmSSH(id, cwd);
   }
   async recover(inspected: Awaited<ReturnType<Actions['inspect']>>, id: string, objective: string) {
     if (!objective.trim() || objective.length > 512 || /[\u0000-\u001f\u007f-\u009f]/.test(objective)) throw new BrokerError('invalid_objective');

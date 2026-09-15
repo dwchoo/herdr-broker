@@ -10,7 +10,7 @@ try {
     process.stdout.write(JSON.stringify(report) + '\n');
     process.exitCode = report.ok ? 0 : 1;
   } else if (mode === 'serve') {
-    const core = await startCore({ endpoint, stateRoot, ...(clockPath && { now: () => Number(readFileSync(clockPath, 'utf8')) }), ...(process.env.HB_TEST_REDACTION && { redactionPatterns: JSON.parse(process.env.HB_TEST_REDACTION) }), ...(process.env.HB_TEST_OBSERVATION_MS && { observationMs: Number(process.env.HB_TEST_OBSERVATION_MS) }), fault: point => {
+    const core = await startCore({ endpoint, stateRoot, ...(process.env.HB_TEST_SSH !== undefined && { sshEnabled: process.env.HB_TEST_SSH === 'true' }), ...(clockPath && { now: () => Number(readFileSync(clockPath, 'utf8')) }), ...(process.env.HB_TEST_REDACTION && { redactionPatterns: JSON.parse(process.env.HB_TEST_REDACTION) }), ...(process.env.HB_TEST_OBSERVATION_MS && { observationMs: Number(process.env.HB_TEST_OBSERVATION_MS) }), fault: point => {
       if (process.env.HB_TEST_FAULT === point) process.kill(process.pid, 'SIGKILL');
       if (point === 'before_wire' && process.env.HB_TEST_BEFORE_WIRE_CONSOLE) {
         const command = readFileSync(process.env.HB_TEST_BEFORE_WIRE_CONSOLE);

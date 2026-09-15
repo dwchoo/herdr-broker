@@ -1,4 +1,4 @@
-import { mkdtemp, mkdir, cp, readFile, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, cp, readFile, writeFile, rm } from 'node:fs/promises';
 import { join, dirname, resolve } from 'node:path';
 import { exec } from './live-harness.mjs';
 
@@ -11,7 +11,9 @@ for (const path of ['package.json', ...manifest.files]) {
   await cp(resolve(path), join(stage, path), { recursive: true });
 }
 // Only owned product documentation enters this artifact; preserve the working README.
-await cp('docs/operations.md', join(stage, 'README.md'));
+await writeFile(join(stage, 'README.md'), (await readFile('docs/operations.md', 'utf8')).replaceAll('](implementation/', '](docs/implementation/'));
+// The integrity receipt accompanies the tarball; it cannot contain its own hash.
+await rm(join(stage, 'docs/implementation/final-artifact.json'), { force: true });
 const env = { ...process.env, PATH: `${dirname(process.execPath)}:${process.env.PATH}` };
 const npm = '/opt/homebrew/Cellar/node/26.5.0/libexec/lib/node_modules/npm/bin/npm-cli.js';
 const packed = JSON.parse((await exec(process.execPath, [npm, 'pack', '--ignore-scripts', '--json'], { cwd: stage, env })).stdout)[0];

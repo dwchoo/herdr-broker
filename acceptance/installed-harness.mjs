@@ -46,5 +46,10 @@ export async function installedHarness(t) {
   } else await writeFile(config, temporary, { mode: 0o600, flag: 'wx' });
   applied = true;
   terminal = await consoleProcess(t, h, { executable: installation.executable });
-  return { ...h, installation, terminal };
+  return { ...h, installation, terminal, async restart() {
+    const ended = new Promise(resolve => terminal.child.once('close', resolve));
+    terminal.child.stdin.end('quit\n'); await ended;
+    terminal = await consoleProcess(t, h, { executable: installation.executable });
+    return terminal;
+  } };
 }

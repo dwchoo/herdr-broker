@@ -1,0 +1,12 @@
+{
+  "name": "actual-ssh-missing-config",
+  "source": "Captured from the disposable localhost SSH build, not a synthetic replacement of the observed error",
+  "truncated": false,
+  "lines": [
+    "HB_DIAG_BEGIN",
+    "Build requires build.config containing exactly configured.",
+    "cat: build.config: No such file or directory",
+    "BUILD_FAILED: required configuration could not be read; exit",
+    " 2"
+  ]
+}

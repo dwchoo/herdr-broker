@@ -7882,6 +7882,782 @@
           }
         }
       ]
+    },
+    {
+      "started_at": "2026-09-15T13:36:22.503Z",
+      "revision": "b0aa3bb6ba627fec6e8a50b4c8f3df9aee86286b",
+      "node": "24.19.0",
+      "cli": "0.154.0",
+      "order": [
+        "raw",
+        "prepared",
+        "worker"
+      ],
+      "repetitions": 1,
+      "evaluator": "same implementation agent; rubric fixed before calls; content review recorded separately",
+      "cases": [
+        {
+          "name": "actual-ssh-missing-config",
+          "original_rows": 5,
+          "snapshot": {
+            "snapshot_id": "37a43f0c-2dbb-45e2-a4fa-5b68ab1de005",
+            "pane_session_id": "4242345b-745d-4c2d-b1a5-addfe631a50d",
+            "capture_sequence": 1,
+            "captured_at": "2026-09-15T13:36:22.527Z",
+            "source": "recent",
+            "format": "ansi",
+            "physical_rows": 5,
+            "utf8_bytes": 181,
+            "truncated": false,
+            "gaps": [
+              "history_unobserved"
+            ],
+            "history_complete": false,
+            "row_mapping": {
+              "normalized_to_physical": "one_to_one",
+              "first_physical_row": 1,
+              "last_physical_row": 5,
+              "first_row_partial": false
+            },
+            "redaction": {
+              "version": "basic-v1",
+              "pattern_digest": "4f53cda18c2baa0c",
+              "count": 0,
+              "rules": []
+            }
+          },
+          "prepared_bytes": 396,
+          "paths": [
+            {
+              "route": "raw",
+              "parent": {
+                "code": 0,
+                "timed_out_or_overflow": false,
+                "elapsed_ms": 17743,
+                "data_bytes": 2311,
+                "prompt_bytes": 2824,
+                "report": {
+                  "summary": "빌드는 필수 설정 파일 `build.config`를 읽지 못해 실패했다. `build.config`가 없거나 현재 작업 경로에서 접근되지 않는 것이 핵심 원인 후보다.",
+                  "findings": [
+                    {
+                      "claim": "빌드가 `build.config`에 정확히 `configured`가 포함되기를 요구했다.",
+                      "confidence": "observed",
+                      "evidence_ids": [
+                        "37a43f0c-2dbb-45e2-a4fa-5b68ab1de005:L0002"
+                      ]
+                    },
+                    {
+                      "claim": "`cat`이 `build.config`를 찾지 못했고, 그 결과 필수 설정을 읽을 수 없어 빌드가 종료됐다.",
+                      "confidence": "observed",
+                      "evidence_ids": [
+                        "37a43f0c-2dbb-45e2-a4fa-5b68ab1de005:L0003",
+                        "37a43f0c-2dbb-45e2-a4fa-5b68ab1de005:L0004"
+                      ]
+                    },
+                    {
+                      "claim": "파일 누락, 잘못된 작업 경로, 또는 접근 문제를 구분할 수 없다. 현재 증거에는 상충 근거가 없지만 관찰 이력은 완전하지 않다.",
+                      "confidence": "uncertain",
+                      "evidence_ids": [
+                        "37a43f0c-2dbb-45e2-a4fa-5b68ab1de005:L0003"
+                      ]
+                    }
+                  ],
+                  "next_checks": [
+                    "빌드가 실행된 작업 경로와 해당 경로의 `build.config` 존재 여부를 확인한다.",
+                    "파일이 있다면 권한과 파일 내용이 정확히 `configured` 요구를 충족하는지 확인한다.",
+                    "최근 관찰되지 않은 이전 출력에서 파일 생성·경로 변경·권한 오류가 있었는지 확인한다."
+                  ],
+                  "uncertainties": [
+                    "현재 증거만으로는 파일이 실제로 누락됐는지, 경로가 잘못됐는지, 접근 권한 문제인지 확정할 수 없다.",
+                    "관찰 이력이 완전하지 않아 이전 단계의 원인은 확인되지 않았다."
+                  ]
+                },
+                "report_bytes": 1522,
+                "schema_pass": true,
+                "evidence_ids_pass": true,
+                "byte_pass": true,
+                "tool_calls": 0,
+                "usage_events": [
+                  {
+                    "input_tokens": 8514,
+                    "cached_input_tokens": 0,
+                    "cache_write_input_tokens": 0,
+                    "output_tokens": 482,
+                    "reasoning_output_tokens": 40
+                  }
+                ],
+                "stderr_bytes": 0,
+                "model_requested": "gpt-5.6-luna",
+                "effort": "low",
+                "model_observed": null
+              },
+              "cumulative_parent_data_bytes": 2311,
+              "worker": null
+            },
+            {
+              "route": "prepared",
+              "parent": {
+                "code": 0,
+                "timed_out_or_overflow": false,
+                "elapsed_ms": 20389,
+                "data_bytes": 2192,
+                "prompt_bytes": 2705,
+                "report": {
+                  "summary": "빌드는 필수 파일 build.config를 읽지 못해 실패했다. 로그상 파일이 존재하지 않아 설정 검증 단계에 도달하지 못했다.",
+                  "findings": [
+                    {
+                      "claim": "build.config가 없어서 required configuration을 읽을 수 없었고 프로세스가 종료됐다.",
+                      "confidence": "observed",
+                      "evidence_ids": [
+                        "37a43f0c-2dbb-45e2-a4fa-5b68ab1de005:L0002",
+                        "37a43f0c-2dbb-45e2-a4fa-5b68ab1de005:L0003",
+                        "37a43f0c-2dbb-45e2-a4fa-5b68ab1de005:L0004"
+                      ]
+                    },
+                    {
+                      "claim": "후보 원인은 파일 누락, 잘못된 작업 디렉터리, 또는 준비·마운트 단계의 실패다.",
+                      "confidence": "likely",
+                      "evidence_ids": [
+                        "37a43f0c-2dbb-45e2-a4fa-5b68ab1de005:L0003"
+                      ]
+                    },
+                    {
+                      "claim": "관찰된 내용만으로는 build.config가 실제로 생성되지 않았는지, 경로가 잘못됐는지 구분할 수 없다.",
+                      "confidence": "uncertain",
+                      "evidence_ids": [
+                        "37a43f0c-2dbb-45e2-a4fa-5b68ab1de005:L0003"
+                      ]
+                    }
+                  ],
+                  "next_checks": [
+                    "빌드가 실행된 작업 디렉터리와 기대 경로에 build.config가 있는지 확인한다.",
+                    "파일 생성·복사·마운트 단계와 해당 단계의 오류를 확인한다.",
+                    "build.config의 요구 형식이 정확히 configured인지 검증한다.",
+                    "이전 출력과 전체 이력을 추가 관찰해 선행 오류가 있었는지 확인한다."
+                  ],
+                  "uncertainties": [
+                    "스냅샷은 최근 5행만 포함하며 history_unobserved 상태이므로 선행 원인과 전체 실행 이력은 확인되지 않았다.",
+                    "파일 경로 해석이나 권한 문제 여부는 제공된 로그에 나타나지 않는다."
+                  ]
+                },
+                "report_bytes": 1542,
+                "schema_pass": true,
+                "evidence_ids_pass": true,
+                "byte_pass": true,
+                "tool_calls": 0,
+                "usage_events": [
+                  {
+                    "input_tokens": 8480,
+                    "cached_input_tokens": 4864,
+                    "cache_write_input_tokens": 0,
+                    "output_tokens": 517,
+                    "reasoning_output_tokens": 61
+                  }
+                ],
+                "stderr_bytes": 0,
+                "model_requested": "gpt-5.6-luna",
+                "effort": "low",
+                "model_observed": null
+              },
+              "cumulative_parent_data_bytes": 2192,
+              "worker": null
+            },
+            {
+              "route": "worker",
+              "parent": {
+                "code": 0,
+                "timed_out_or_overflow": false,
+                "elapsed_ms": 18893,
+                "data_bytes": 10838,
+                "prompt_bytes": 11351,
+                "report": {
+                  "summary": "가장 직접적인 관찰 원인은 현재 실행 위치에서 필수 설정 파일 `build.config`를 읽지 못해 빌드가 중단된 것입니다.",
+                  "findings": [
+                    {
+                      "claim": "`build.config`를 찾지 못했고 필수 설정을 읽지 못해 빌드가 실패했습니다.",
+                      "confidence": "observed",
+                      "evidence_ids": [
+                        "55bf6f17-3ec3-4afe-8bc2-aed58ca2a97a:L0003",
+                        "55bf6f17-3ec3-4afe-8bc2-aed58ca2a97a:L0004"
+                      ]
+                    },
+                    {
+                      "claim": "후보 원인은 파일 자체의 누락 또는 잘못된 작업 디렉터리·경로 설정입니다.",
+                      "confidence": "uncertain",
+                      "evidence_ids": [
+                        "55bf6f17-3ec3-4afe-8bc2-aed58ca2a97a:L0003"
+                      ]
+                    },
+                    {
+                      "claim": "`build.config`에 `configured`가 정확히 필요하다는 요구는 관찰되지만, 문자 그대로의 내용인지 설정 상태인지는 불명확합니다.",
+                      "confidence": "uncertain",
+                      "evidence_ids": [
+                        "55bf6f17-3ec3-4afe-8bc2-aed58ca2a97a:L0002"
+                      ]
+                    }
+                  ],
+                  "next_checks": [
+                    "빌드 실행 위치와 기대 경로를 확인한다.",
+                    "해당 경로에 파일이 존재하는지와 파일명이 정확한지 확인한다.",
+                    "파일이 존재하면 권한과 요구 형식·내용을 검증한다.",
+                    "관찰되지 않은 선행 이력에서 경로 설정 또는 파일 탐색 오류를 확인한다."
+                  ],
+                  "uncertainties": [
+                    "파일 누락과 경로 문제 중 어느 쪽인지는 확인되지 않았습니다.",
+                    "스냅샷의 과거 이력이 없어 누락 경위와 종료 코드 `2`의 구체적 의미를 판단할 수 없습니다.",
+                    "관찰된 증거 사이에 직접적인 모순은 없지만, `exactly configured`의 의미는 불확실합니다."
+                  ]
+                },
+                "report_bytes": 1563,
+                "schema_pass": true,
+                "evidence_ids_pass": true,
+                "byte_pass": true,
+                "tool_calls": 0,
+                "usage_events": [
+                  {
+                    "input_tokens": 11066,
+                    "cached_input_tokens": 0,
+                    "cache_write_input_tokens": 0,
+                    "output_tokens": 492,
+                    "reasoning_output_tokens": 50
+                  }
+                ],
+                "stderr_bytes": 0,
+                "model_requested": "gpt-5.6-luna",
+                "effort": "low",
+                "model_observed": null
+              },
+              "worker": {
+                "cli_version": "0.154.0",
+                "model_requested": "gpt-5.6-luna",
+                "effort": "low",
+                "model_observed": null,
+                "calls": 1,
+                "usage": {
+                  "input_tokens": 8347,
+                  "output_tokens": 505,
+                  "cached_input_tokens": 4864
+                },
+                "elapsed_ms": 19885
+              },
+              "cumulative_parent_data_bytes": 9586,
+              "parent_model_data_bytes": 10838,
+              "broker_elapsed_ms": 19898,
+              "deliveries": [
+                {
+                  "job_id": "ca519872-38bb-4468-9326-7ed041a28635",
+                  "pane_session_id": "fcb61230-e36c-47ec-acbb-cd829c032af2",
+                  "pane_id": "ws:pane",
+                  "phase": "observing",
+                  "data_state": "retained",
+                  "result_ready": false,
+                  "job_ended": false,
+                  "action_mode": null,
+                  "mode_revision": null,
+                  "action_state": "scope_required",
+                  "wait_timed_out": false,
+                  "budget": {
+                    "deadline_ms": 300000,
+                    "deadline_remaining_ms": 300000,
+                    "parent_payload_bytes_limit": 16384,
+                    "parent_payload_bytes_used": 473,
+                    "parent_payload_bytes_remaining": 15911
+                  }
+                },
+                {
+                  "job_id": "ca519872-38bb-4468-9326-7ed041a28635",
+                  "pane_session_id": "3465ec60-96cd-444c-9ab8-9da15cc1e1a6",
+                  "pane_id": "ws:pane",
+                  "phase": "result_ready",
+                  "data_state": "retained",
+                  "result_ready": true,
+                  "job_ended": false,
+                  "action_mode": 2,
+                  "mode_revision": 1,
+                  "action_state": "scope_required",
+                  "wait_timed_out": false,
+                  "worker": {
+                    "cli_version": "0.154.0",
+                    "model_requested": "gpt-5.6-luna",
+                    "effort": "low",
+                    "model_observed": null,
+                    "calls": 1,
+                    "usage": {
+                      "input_tokens": 8347,
+                      "output_tokens": 505,
+                      "cached_input_tokens": 4864
+                    },
+                    "elapsed_ms": 19885
+                  },
+                  "cursor": "5b5b29e9-ea3e-466a-aa9a-6abc03c95200",
+                  "cursor_expires_at": "2026-09-15T13:38:00.784Z",
+                  "observation": {
+                    "sequence": 1,
+                    "observed_at": "2026-09-15T13:37:00.784Z"
+                  },
+                  "delta": {
+                    "kind": "replace",
+                    "history_complete": false
+                  },
+                  "snapshot": {
+                    "snapshot_id": "55bf6f17-3ec3-4afe-8bc2-aed58ca2a97a",
+                    "pane_session_id": "3465ec60-96cd-444c-9ab8-9da15cc1e1a6",
+                    "capture_sequence": 1,
+                    "captured_at": "2026-09-15T13:37:00.784Z",
+                    "source": "recent",
+                    "format": "ansi",
+                    "physical_rows": 5,
+                    "utf8_bytes": 181,
+                    "truncated": false,
+                    "gaps": [
+                      "history_unobserved"
+                    ],
+                    "history_complete": false,
+                    "row_mapping": {
+                      "normalized_to_physical": "one_to_one",
+                      "first_physical_row": 1,
+                      "last_physical_row": 5,
+                      "first_row_partial": false
+                    },
+                    "redaction": {
+                      "version": "basic-v1",
+                      "pattern_digest": "4f53cda18c2baa0c",
+                      "count": 0,
+                      "rules": []
+                    }
+                  },
+                  "result": {
+                    "kind": "worker_report",
+                    "contract": "diagnosis.v1",
+                    "report": {
+                      "summary": "빌드 실패의 가장 직접적인 원인 후보는 필수 파일 `build.config`가 현재 실행 위치에서 존재하지 않아 읽지 못한 것입니다. 다만 파일 누락이 실제 원인인지, 경로·작업 디렉터리 문제인지는 확인되지 않았습니다.",
+                      "findings": [
+                        {
+                          "claim": "`build.config`를 찾지 못해 필수 설정을 읽는 단계에서 빌드가 중단되었습니다.",
+                          "confidence": "observed",
+                          "evidence_ids": [
+                            "55bf6f17-3ec3-4afe-8bc2-aed58ca2a97a:L0003",
+                            "55bf6f17-3ec3-4afe-8bc2-aed58ca2a97a:L0004"
+                          ]
+                        },
+                        {
+                          "claim": "빌드는 `build.config`에 특정 내용이 정확히 있어야 한다고 요구합니다.",
+                          "confidence": "observed",
+                          "evidence_ids": [
+                            "55bf6f17-3ec3-4afe-8bc2-aed58ca2a97a:L0002"
+                          ]
+                        },
+                        {
+                          "claim": "문제는 파일 자체의 부재일 수도 있고, 잘못된 작업 디렉터리 또는 경로 설정일 수도 있습니다.",
+                          "confidence": "uncertain",
+                          "evidence_ids": [
+                            "55bf6f17-3ec3-4afe-8bc2-aed58ca2a97a:L0003"
+                          ]
+                        }
+                      ],
+                      "next_checks": [
+                        "빌드 실행 위치와 기대되는 `build.config` 경로를 확인한다.",
+                        "해당 경로에 파일이 실제로 존재하는지와 파일명이 정확한지 확인한다.",
+                        "파일이 있다면 권한 및 요구되는 정확한 내용(`configured`)을 검증한다.",
+                        "전체 실행 이력이 관찰되지 않았으므로 파일 탐색 또는 경로 설정 관련 선행 오류를 확인한다."
+                      ],
+                      "uncertainties": [
+                        "스냅샷에 과거 이력이 없어 `build.config`가 누락된 경위는 알 수 없습니다.",
+                        "L0002의 `exactly configured`가 문자 그대로의 요구인지, 설정 상태를 뜻하는 표현인지 불명확합니다.",
+                        "표시된 종료 코드 `2`의 세부 의미는 스냅샷만으로 판단할 수 없습니다."
+                      ]
+                    }
+                  },
+                  "evidence": {
+                    "items": [
+                      {
+                        "evidence_id": "55bf6f17-3ec3-4afe-8bc2-aed58ca2a97a:L0003",
+                        "text": "cat: build.config: No such file or directory",
+                        "offset_bytes": 0
+                      },
+                      {
+                        "evidence_id": "55bf6f17-3ec3-4afe-8bc2-aed58ca2a97a:L0004",
+                        "text": "BUILD_FAILED: required configuration could not be read; exit",
+                        "offset_bytes": 0
+                      },
+                      {
+                        "evidence_id": "55bf6f17-3ec3-4afe-8bc2-aed58ca2a97a:L0002",
+                        "text": "Build requires build.config containing exactly configured.",
+                        "offset_bytes": 0
+                      }
+                    ],
+                    "truncation_scope": "excerpt",
+                    "truncated": false,
+                    "next": null
+                  },
+                  "budget": {
+                    "deadline_ms": 300000,
+                    "deadline_remaining_ms": 280108,
+                    "parent_payload_bytes_limit": 16384,
+                    "parent_payload_bytes_used": 4217,
+                    "parent_payload_bytes_remaining": 12167
+                  }
+                },
+                {
+                  "job_id": "ca519872-38bb-4468-9326-7ed041a28635",
+                  "evidence": {
+                    "items": [
+                      {
+                        "evidence_id": "55bf6f17-3ec3-4afe-8bc2-aed58ca2a97a:L0003",
+                        "text": "cat: build.config: No such file or directory",
+                        "offset_bytes": 0
+                      },
+                      {
+                        "evidence_id": "55bf6f17-3ec3-4afe-8bc2-aed58ca2a97a:L0004",
+                        "text": "BUILD_FAILED: required configuration could not be read; exit",
+                        "offset_bytes": 0
+                      },
+                      {
+                        "evidence_id": "55bf6f17-3ec3-4afe-8bc2-aed58ca2a97a:L0005",
+                        "text": " 2",
+                        "offset_bytes": 0
+                      }
+                    ],
+                    "truncation_scope": "excerpt",
+                    "truncated": false,
+                    "next": null
+                  },
+                  "budget": {
+                    "deadline_ms": 300000,
+                    "deadline_remaining_ms": 280104,
+                    "parent_payload_bytes_limit": 16384,
+                    "parent_payload_bytes_used": 4888,
+                    "parent_payload_bytes_remaining": 11496
+                  }
+                },
+                {
+                  "job_id": "ca519872-38bb-4468-9326-7ed041a28635",
+                  "pane_session_id": "3465ec60-96cd-444c-9ab8-9da15cc1e1a6",
+                  "pane_id": "ws:pane",
+                  "phase": "result_ready",
+                  "data_state": "retained",
+                  "result_ready": true,
+                  "job_ended": false,
+                  "action_mode": 2,
+                  "mode_revision": 1,
+                  "action_state": "scope_required",
+                  "wait_timed_out": false,
+                  "worker": {
+                    "cli_version": "0.154.0",
+                    "model_requested": "gpt-5.6-luna",
+                    "effort": "low",
+                    "model_observed": null,
+                    "calls": 1,
+                    "usage": {
+                      "input_tokens": 8347,
+                      "output_tokens": 505,
+                      "cached_input_tokens": 4864
+                    },
+                    "elapsed_ms": 19885
+                  },
+                  "cursor": "5b5b29e9-ea3e-466a-aa9a-6abc03c95200",
+                  "cursor_expires_at": "2026-09-15T13:38:00.784Z",
+                  "observation": {
+                    "sequence": 1,
+                    "observed_at": "2026-09-15T13:37:00.784Z"
+                  },
+                  "delta": {
+                    "kind": "unchanged_view",
+                    "snapshot_id": "55bf6f17-3ec3-4afe-8bc2-aed58ca2a97a",
+                    "history_complete": false
+                  },
+                  "budget": {
+                    "deadline_ms": 300000,
+                    "deadline_remaining_ms": 280103,
+                    "parent_payload_bytes_limit": 16384,
+                    "parent_payload_bytes_used": 5846,
+                    "parent_payload_bytes_remaining": 10538
+                  }
+                },
+                {
+                  "job_id": "ca519872-38bb-4468-9326-7ed041a28635",
+                  "pane_session_id": "3465ec60-96cd-444c-9ab8-9da15cc1e1a6",
+                  "pane_id": "ws:pane",
+                  "phase": "cancelled",
+                  "data_state": "retained",
+                  "result_ready": true,
+                  "job_ended": true,
+                  "action_mode": 2,
+                  "mode_revision": 1,
+                  "action_state": "scope_required",
+                  "wait_timed_out": false,
+                  "worker": {
+                    "cli_version": "0.154.0",
+                    "model_requested": "gpt-5.6-luna",
+                    "effort": "low",
+                    "model_observed": null,
+                    "calls": 1,
+                    "usage": {
+                      "input_tokens": 8347,
+                      "output_tokens": 505,
+                      "cached_input_tokens": 4864
+                    },
+                    "elapsed_ms": 19885
+                  },
+                  "cursor": "5b5b29e9-ea3e-466a-aa9a-6abc03c95200",
+                  "cursor_expires_at": "2026-09-15T13:38:00.784Z",
+                  "observation": {
+                    "sequence": 1,
+                    "observed_at": "2026-09-15T13:37:00.784Z"
+                  },
+                  "delta": {
+                    "kind": "replace",
+                    "history_complete": false
+                  },
+                  "snapshot": {
+                    "snapshot_id": "55bf6f17-3ec3-4afe-8bc2-aed58ca2a97a",
+                    "pane_session_id": "3465ec60-96cd-444c-9ab8-9da15cc1e1a6",
+                    "capture_sequence": 1,
+                    "captured_at": "2026-09-15T13:37:00.784Z",
+                    "source": "recent",
+                    "format": "ansi",
+                    "physical_rows": 5,
+                    "utf8_bytes": 181,
+                    "truncated": false,
+                    "gaps": [
+                      "history_unobserved"
+                    ],
+                    "history_complete": false,
+                    "row_mapping": {
+                      "normalized_to_physical": "one_to_one",
+                      "first_physical_row": 1,
+                      "last_physical_row": 5,
+                      "first_row_partial": false
+                    },
+                    "redaction": {
+                      "version": "basic-v1",
+                      "pattern_digest": "4f53cda18c2baa0c",
+                      "count": 0,
+                      "rules": []
+                    }
+                  },
+                  "result": {
+                    "kind": "worker_report",
+                    "contract": "diagnosis.v1",
+                    "report": {
+                      "summary": "빌드 실패의 가장 직접적인 원인 후보는 필수 파일 `build.config`가 현재 실행 위치에서 존재하지 않아 읽지 못한 것입니다. 다만 파일 누락이 실제 원인인지, 경로·작업 디렉터리 문제인지는 확인되지 않았습니다.",
+                      "findings": [
+                        {
+                          "claim": "`build.config`를 찾지 못해 필수 설정을 읽는 단계에서 빌드가 중단되었습니다.",
+                          "confidence": "observed",
+                          "evidence_ids": [
+                            "55bf6f17-3ec3-4afe-8bc2-aed58ca2a97a:L0003",
+                            "55bf6f17-3ec3-4afe-8bc2-aed58ca2a97a:L0004"
+                          ]
+                        },
+                        {
+                          "claim": "빌드는 `build.config`에 특정 내용이 정확히 있어야 한다고 요구합니다.",
+                          "confidence": "observed",
+                          "evidence_ids": [
+                            "55bf6f17-3ec3-4afe-8bc2-aed58ca2a97a:L0002"
+                          ]
+                        },
+                        {
+                          "claim": "문제는 파일 자체의 부재일 수도 있고, 잘못된 작업 디렉터리 또는 경로 설정일 수도 있습니다.",
+                          "confidence": "uncertain",
+                          "evidence_ids": [
+                            "55bf6f17-3ec3-4afe-8bc2-aed58ca2a97a:L0003"
+                          ]
+                        }
+                      ],
+                      "next_checks": [
+                        "빌드 실행 위치와 기대되는 `build.config` 경로를 확인한다.",
+                        "해당 경로에 파일이 실제로 존재하는지와 파일명이 정확한지 확인한다.",
+                        "파일이 있다면 권한 및 요구되는 정확한 내용(`configured`)을 검증한다.",
+                        "전체 실행 이력이 관찰되지 않았으므로 파일 탐색 또는 경로 설정 관련 선행 오류를 확인한다."
+                      ],
+                      "uncertainties": [
+                        "스냅샷에 과거 이력이 없어 `build.config`가 누락된 경위는 알 수 없습니다.",
+                        "L0002의 `exactly configured`가 문자 그대로의 요구인지, 설정 상태를 뜻하는 표현인지 불명확합니다.",
+                        "표시된 종료 코드 `2`의 세부 의미는 스냅샷만으로 판단할 수 없습니다."
+                      ]
+                    }
+                  },
+                  "evidence": {
+                    "items": [
+                      {
+                        "evidence_id": "55bf6f17-3ec3-4afe-8bc2-aed58ca2a97a:L0003",
+                        "text": "cat: build.config: No such file or directory",
+                        "offset_bytes": 0
+                      },
+                      {
+                        "evidence_id": "55bf6f17-3ec3-4afe-8bc2-aed58ca2a97a:L0004",
+                        "text": "BUILD_FAILED: required configuration could not be read; exit",
+                        "offset_bytes": 0
+                      },
+                      {
+                        "evidence_id": "55bf6f17-3ec3-4afe-8bc2-aed58ca2a97a:L0002",
+                        "text": "Build requires build.config containing exactly configured.",
+                        "offset_bytes": 0
+                      }
+                    ],
+                    "truncation_scope": "excerpt",
+                    "truncated": false,
+                    "next": null
+                  },
+                  "budget": {
+                    "deadline_ms": 300000,
+                    "deadline_remaining_ms": 280103,
+                    "parent_payload_bytes_limit": 16384,
+                    "parent_payload_bytes_used": 9586,
+                    "parent_payload_bytes_remaining": 6798
+                  }
+                }
+              ]
+            }
+          ],
+          "routing_probe": {
+            "route": "prepared_context",
+            "worker_calls": 0,
+            "budget": {
+              "deadline_ms": 300000,
+              "deadline_remaining_ms": 299987,
+              "parent_payload_bytes_limit": 16384,
+              "parent_payload_bytes_used": 2850,
+              "parent_payload_bytes_remaining": 13534
+            }
+          },
+          "worker_result": {
+            "job_id": "ca519872-38bb-4468-9326-7ed041a28635",
+            "pane_session_id": "3465ec60-96cd-444c-9ab8-9da15cc1e1a6",
+            "pane_id": "ws:pane",
+            "phase": "result_ready",
+            "data_state": "retained",
+            "result_ready": true,
+            "job_ended": false,
+            "action_mode": 2,
+            "mode_revision": 1,
+            "action_state": "scope_required",
+            "wait_timed_out": false,
+            "worker": {
+              "cli_version": "0.154.0",
+              "model_requested": "gpt-5.6-luna",
+              "effort": "low",
+              "model_observed": null,
+              "calls": 1,
+              "usage": {
+                "input_tokens": 8347,
+                "output_tokens": 505,
+                "cached_input_tokens": 4864
+              },
+              "elapsed_ms": 19885
+            },
+            "cursor": "5b5b29e9-ea3e-466a-aa9a-6abc03c95200",
+            "cursor_expires_at": "2026-09-15T13:38:00.784Z",
+            "observation": {
+              "sequence": 1,
+              "observed_at": "2026-09-15T13:37:00.784Z"
+            },
+            "delta": {
+              "kind": "replace",
+              "history_complete": false
+            },
+            "snapshot": {
+              "snapshot_id": "55bf6f17-3ec3-4afe-8bc2-aed58ca2a97a",
+              "pane_session_id": "3465ec60-96cd-444c-9ab8-9da15cc1e1a6",
+              "capture_sequence": 1,
+              "captured_at": "2026-09-15T13:37:00.784Z",
+              "source": "recent",
+              "format": "ansi",
+              "physical_rows": 5,
+              "utf8_bytes": 181,
+              "truncated": false,
+              "gaps": [
+                "history_unobserved"
+              ],
+              "history_complete": false,
+              "row_mapping": {
+                "normalized_to_physical": "one_to_one",
+                "first_physical_row": 1,
+                "last_physical_row": 5,
+                "first_row_partial": false
+              },
+              "redaction": {
+                "version": "basic-v1",
+                "pattern_digest": "4f53cda18c2baa0c",
+                "count": 0,
+                "rules": []
+              }
+            },
+            "result": {
+              "kind": "worker_report",
+              "contract": "diagnosis.v1",
+              "report": {
+                "summary": "빌드 실패의 가장 직접적인 원인 후보는 필수 파일 `build.config`가 현재 실행 위치에서 존재하지 않아 읽지 못한 것입니다. 다만 파일 누락이 실제 원인인지, 경로·작업 디렉터리 문제인지는 확인되지 않았습니다.",
+                "findings": [
+                  {
+                    "claim": "`build.config`를 찾지 못해 필수 설정을 읽는 단계에서 빌드가 중단되었습니다.",
+                    "confidence": "observed",
+                    "evidence_ids": [
+                      "55bf6f17-3ec3-4afe-8bc2-aed58ca2a97a:L0003",
+                      "55bf6f17-3ec3-4afe-8bc2-aed58ca2a97a:L0004"
+                    ]
+                  },
+                  {
+                    "claim": "빌드는 `build.config`에 특정 내용이 정확히 있어야 한다고 요구합니다.",
+                    "confidence": "observed",
+                    "evidence_ids": [
+                      "55bf6f17-3ec3-4afe-8bc2-aed58ca2a97a:L0002"
+                    ]
+                  },
+                  {
+                    "claim": "문제는 파일 자체의 부재일 수도 있고, 잘못된 작업 디렉터리 또는 경로 설정일 수도 있습니다.",
+                    "confidence": "uncertain",
+                    "evidence_ids": [
+                      "55bf6f17-3ec3-4afe-8bc2-aed58ca2a97a:L0003"
+                    ]
+                  }
+                ],
+                "next_checks": [
+                  "빌드 실행 위치와 기대되는 `build.config` 경로를 확인한다.",
+                  "해당 경로에 파일이 실제로 존재하는지와 파일명이 정확한지 확인한다.",
+                  "파일이 있다면 권한 및 요구되는 정확한 내용(`configured`)을 검증한다.",
+                  "전체 실행 이력이 관찰되지 않았으므로 파일 탐색 또는 경로 설정 관련 선행 오류를 확인한다."
+                ],
+                "uncertainties": [
+                  "스냅샷에 과거 이력이 없어 `build.config`가 누락된 경위는 알 수 없습니다.",
+                  "L0002의 `exactly configured`가 문자 그대로의 요구인지, 설정 상태를 뜻하는 표현인지 불명확합니다.",
+                  "표시된 종료 코드 `2`의 세부 의미는 스냅샷만으로 판단할 수 없습니다."
+                ]
+              }
+            },
+            "evidence": {
+              "items": [
+                {
+                  "evidence_id": "55bf6f17-3ec3-4afe-8bc2-aed58ca2a97a:L0003",
+                  "text": "cat: build.config: No such file or directory",
+                  "offset_bytes": 0
+                },
+                {
+                  "evidence_id": "55bf6f17-3ec3-4afe-8bc2-aed58ca2a97a:L0004",
+                  "text": "BUILD_FAILED: required configuration could not be read; exit",
+                  "offset_bytes": 0
+                },
+                {
+                  "evidence_id": "55bf6f17-3ec3-4afe-8bc2-aed58ca2a97a:L0002",
+                  "text": "Build requires build.config containing exactly configured.",
+                  "offset_bytes": 0
+                }
+              ],
+              "truncation_scope": "excerpt",
+              "truncated": false,
+              "next": null
+            },
+            "budget": {
+              "deadline_ms": 300000,
+              "deadline_remaining_ms": 280108,
+              "parent_payload_bytes_limit": 16384,
+              "parent_payload_bytes_used": 4217,
+              "parent_payload_bytes_remaining": 12167
+            }
+          }
+        }
+      ]
     }
   ]
 }

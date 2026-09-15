@@ -9,10 +9,9 @@
   "files": [
     "dist",
     "docs/mcp.md",
-    "docs/implementation/issue-13-passive-context.md",
-    "npm-shrinkwrap.json",
-    "docs/implementation/issue-13-acceptance.json",
-    "docs/operations.md"
+    "docs/operations.md",
+    "docs/implementation",
+    "npm-shrinkwrap.json"
   ],
   "engines": {
     "node": ">=24 <25"

@@ -8,7 +8,7 @@ const encodeConsole = (value: unknown) => JSON.stringify(value).replace(/[\u007f
 
 interface ConsoleCore { socketPath: string; close(): Promise<void>; summary(): object; purge(id: string): object; actions?: Actions }
 export function startConsole(core: ConsoleCore, input: Readable, output: Writable) {
-  const commands = ['status', 'purge <job_id>', 'purge all', 'review <proposal_id>', 'approve <proposal_id>', 'reject <proposal_id>', 'revoke <proposal_id>', 'mode <session_id> <1|2|3>', 'inspect <pane_id>', 'recover <original_proposal_id> <new objective>', 'help', 'quit'];
+  const commands = ['status', 'purge <job_id>', 'purge all', 'review <proposal_id>', 'approve <proposal_id>', 'reject <proposal_id>', 'revoke <proposal_id>', 'mode <session_id> <1|2|3>', 'inspect <pane_id>', 'ssh-ready <pane_session_id> <absolute cwd>', 'recover <original_proposal_id> <new objective>', 'help', 'quit'];
   let buffer = '';
   let reviewed: { id: string; digest: string } | undefined;
   let inspected: Awaited<ReturnType<Actions['inspect']>> | undefined;
@@ -28,15 +28,16 @@ export function startConsole(core: ConsoleCore, input: Readable, output: Writabl
       const purge = /^purge (all|[0-9a-f-]{36})$/.exec(command);
       try {
         const inspect = /^inspect (\S{1,256})$/.exec(command);
+        const sshReady = /^ssh-ready ([0-9a-f-]{36}) (.+)$/.exec(command);
         const recover = /^recover ([0-9a-f-]{36}) (.+)$/.exec(command);
-        if (inspect || recover) {
+        if (inspect || recover || sshReady) {
           if (!interactive || !core.actions) throw new BrokerError('interactive_console_required');
           let response;
           if (inspect) { inspected = await core.actions.inspect(inspect[1]!); response = inspected; }
           else {
             if (!inspected) throw new BrokerError('inspect_required');
             const previous = inspected; inspected = undefined; reviewed = undefined;
-            response = await core.actions.recover(previous, recover![1]!, recover![2]!);
+            response = sshReady ? await core.actions.confirmSSH(previous, sshReady[1]!, sshReady[2]!) : await core.actions.recover(previous, recover![1]!, recover![2]!);
           }
           output.write(encodeConsole(response) + '\n');
           return;

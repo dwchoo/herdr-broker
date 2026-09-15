@@ -1,0 +1,825 @@
+{
+  "at": "2026-09-15T13:46:00.891Z",
+  "installation": {
+    "at": "2026-09-15T13:37:33.986Z",
+    "node": "24.19.0",
+    "platform": "darwin",
+    "arch": "arm64",
+    "root": "/private/tmp/hb-installed-dxaLQi",
+    "executable": "/private/tmp/hb-installed-dxaLQi/installed/node_modules/.bin/herdr-broker",
+    "tarball": "/private/tmp/hb-installed-dxaLQi/package/herdr-broker-0.1.0.tgz",
+    "integrity": "sha512-q1jBKHZ3ekPxlyLx8t7np1HIxoIqB0n3TN3OIvKEhx+lQwtpTjdDkv6pur+mUiA7LRwtm3q7gZHDhAWWWjjGCg==",
+    "files": [
+      "README.md",
+      "dist/actions.js",
+      "dist/authority.js",
+      "dist/cli.js",
+      "dist/config.js",
+      "dist/core.js",
+      "dist/doctor.js",
+      "dist/herdr.js",
+      "dist/jobs.js",
+      "dist/ledger.js",
+      "dist/runtime.js",
+      "dist/sessions.js",
+      "dist/snapshot.js",
+      "dist/worker.js",
+      "docs/implementation/issue-13-acceptance.json",
+      "docs/implementation/issue-13-passive-context.md",
+      "docs/implementation/issue-24-ssh-acceptance.md",
+      "docs/implementation/issue-24-ssh-profile-results.json",
+      "docs/implementation/issue-24-ssh-recovery-results.json",
+      "docs/mcp.md",
+      "docs/operations.md",
+      "npm-shrinkwrap.json",
+      "package.json"
+    ],
+    "package": "herdr-broker",
+    "version": "0.1.0"
+  },
+  "doctor": {
+    "ok": true,
+    "runtime": {
+      "node": "24.19.0",
+      "platform": "darwin",
+      "arch": "arm64",
+      "sqlite": "3.53.4",
+      "supported": true
+    },
+    "herdr": {
+      "ok": true,
+      "version": "0.9.0",
+      "protocol": 22
+    },
+    "worker": {
+      "ok": true,
+      "cli_version": "0.154.0",
+      "model_requested": "gpt-5.6-luna",
+      "effort": "low",
+      "model_observed": null,
+      "profile": "restricted_diagnosis",
+      "model_availability": "not_probed",
+      "inference_performed": false
+    },
+    "state": {
+      "ok": true,
+      "directory": "/Users/dwchoo/.local/state/herdr-broker/5d639e16d0b7d2f631087b25",
+      "initialized": true,
+      "owner_only": true,
+      "writable": true,
+      "ledger_integrity": "checked_by_core_on_use"
+    },
+    "profiles": {
+      "passive": true,
+      "local_posix": true,
+      "ssh_posix": true,
+      "ssh_readiness": "interactive_confirmation_required"
+    },
+    "limits": {
+      "parent_payload_bytes": 16384,
+      "worker_calls": 4,
+      "ordinary_actions": 3,
+      "interrupts": 1
+    },
+    "privacy": {
+      "mode": "broker_memory",
+      "complete_no_store": false
+    },
+    "pane_input_attempts": 0
+  },
+  "environment": {
+    "endpoint": "127.0.0.1:65345",
+    "user": "dwchoo",
+    "shell": "/bin/sh -i",
+    "cwd": "<disposable-cwd>",
+    "default_observation_ms": 60000
+  },
+  "failure": "HB_DIAG_BEGIN\nBuild requires build.config containing exactly configured.\ncat: build.config: No such file or directory\nBUILD_FAILED: required configuration could not be read; exit\n 2",
+  "parent": {
+    "code": 0,
+    "elapsed_ms": 60177,
+    "calls": [
+      {
+        "id": "item_1",
+        "type": "mcp_tool_call",
+        "server": "herdr_broker",
+        "tool": "pane_describe",
+        "arguments": {
+          "pane_id": "wV:p1"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"target\":{\"pane_id\":\"wV:p1\",\"terminal_id\":\"term_65b85c1b4172223\",\"workspace_id\":\"wV\",\"tab_id\":\"wV:t1\"},\"pane_session_id\":\"10f901fa-f946-45e0-8e86-cc350263dea7\",\"action_mode\":2,\"mode_revision\":2,\"observed_connection\":{\"kind\":\"ssh\",\"local_ssh_process_ids\":[20679],\"remote_identity_authenticated\":false},\"context\":{\"cwd\":\"<disposable-cwd>\",\"foreground_cwd\":\"<disposable-cwd>\",\"agent_status\":\"unknown\"},\"supported_profiles\":[\"passive\",\"ssh_posix\"],\"action_supported\":true,\"automatic_modes_supported\":true}"
+            }
+          ],
+          "structured_content": null
+        },
+        "error": null,
+        "status": "completed"
+      },
+      {
+        "id": "item_2",
+        "type": "mcp_tool_call",
+        "server": "herdr_broker",
+        "tool": "job_start",
+        "arguments": {
+          "pane_id": "wV:p1",
+          "objective": "Fix SSH build fixture",
+          "analysis": "auto",
+          "action_scope": {
+            "profile": "ssh_posix",
+            "cwd": "<disposable-cwd>",
+            "paths": [
+              "<disposable-cwd>"
+            ],
+            "trusted": true
+          }
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"job_id\":\"c01437fb-ad68-4f56-96d5-f686607fb9df\",\"pane_session_id\":\"9999b362-a997-48b5-be94-3e69d0696dfe\",\"pane_id\":\"wV:p1\",\"phase\":\"observing\",\"data_state\":\"retained\",\"result_ready\":false,\"job_ended\":false,\"action_mode\":null,\"mode_revision\":null,\"action_state\":\"available\",\"wait_timed_out\":false,\"budget\":{\"deadline_ms\":300000,\"deadline_remaining_ms\":300000,\"parent_payload_bytes_limit\":16384,\"parent_payload_bytes_used\":466,\"parent_payload_bytes_remaining\":15918}}"
+            }
+          ],
+          "structured_content": null
+        },
+        "error": null,
+        "status": "completed"
+      },
+      {
+        "id": "item_3",
+        "type": "mcp_tool_call",
+        "server": "herdr_broker",
+        "tool": "job_wait",
+        "arguments": {
+          "job_id": "c01437fb-ad68-4f56-96d5-f686607fb9df",
+          "wait_ms": 20000
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"job_id\":\"c01437fb-ad68-4f56-96d5-f686607fb9df\",\"pane_session_id\":\"10f901fa-f946-45e0-8e86-cc350263dea7\",\"pane_id\":\"wV:p1\",\"phase\":\"result_ready\",\"data_state\":\"retained\",\"result_ready\":true,\"job_ended\":false,\"action_mode\":2,\"mode_revision\":2,\"action_state\":\"available\",\"wait_timed_out\":false,\"cursor\":\"b05e7755-69fd-4e3f-b495-38a4e3e44264\",\"cursor_expires_at\":\"2026-09-15T13:46:20.261Z\",\"observation\":{\"sequence\":1,\"observed_at\":\"2026-09-15T13:45:20.260Z\"},\"delta\":{\"kind\":\"replace\",\"history_complete\":false},\"snapshot\":{\"snapshot_id\":\"a07b7a1d-6c7b-4344-90f0-e0919f2a001c\",\"pane_session_id\":\"10f901fa-f946-45e0-8e86-cc350263dea7\",\"capture_sequence\":1,\"captured_at\":\"2026-09-15T13:45:20.260Z\",\"source\":\"recent\",\"format\":\"ansi\",\"physical_rows\":10,\"utf8_bytes\":220,\"truncated\":false,\"gaps\":[\"history_unobserved\"],\"history_complete\":false,\"row_mapping\":{\"normalized_to_physical\":\"one_to_one\",\"first_physical_row\":1,\"last_physical_row\":10,\"first_row_partial\":false},\"redaction\":{\"version\":\"basic-v1\",\"pattern_digest\":\"4f53cda18c2baa0c\",\"count\":0,\"rules\":[]}},\"result\":{\"kind\":\"prepared_context\",\"text\":\"a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0001 \\na07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0002 HB_REMOTE_READY\\na07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0003 HB> \\na07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0004 HB_DIAG_BEGIN\\na07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0005 Build requires build.config containing exactly configured.\\na07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0006 cat: build.config: No such file or directory\\na07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0007 BUILD_FAILED: required configuration could not be read; exit\\na07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0008  2\\na07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0009 HB_DIAG_END\\na07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0010 HB> \"},\"evidence\":{\"items\":[{\"evidence_id\":\"a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0001\",\"text\":\"\",\"offset_bytes\":0},{\"evidence_id\":\"a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0002\",\"text\":\"HB_REMOTE_READY\",\"offset_bytes\":0},{\"evidence_id\":\"a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0003\",\"text\":\"HB> \",\"offset_bytes\":0},{\"evidence_id\":\"a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0004\",\"text\":\"HB_DIAG_BEGIN\",\"offset_bytes\":0},{\"evidence_id\":\"a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0005\",\"text\":\"Build requires build.config containing exactly configured.\",\"offset_bytes\":0},{\"evidence_id\":\"a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0006\",\"text\":\"cat: build.config: No such file or directory\",\"offset_bytes\":0},{\"evidence_id\":\"a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0007\",\"text\":\"BUILD_FAILED: required configuration could not be read; exit\",\"offset_bytes\":0},{\"evidence_id\":\"a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0008\",\"text\":\" 2\",\"offset_bytes\":0},{\"evidence_id\":\"a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0009\",\"text\":\"HB_DIAG_END\",\"offset_bytes\":0},{\"evidence_id\":\"a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0010\",\"text\":\"HB> \",\"offset_bytes\":0}],\"truncation_scope\":\"excerpt\",\"truncated\":false,\"next\":null},\"budget\":{\"deadline_ms\":300000,\"deadline_remaining_ms\":297186,\"parent_payload_bytes_limit\":16384,\"parent_payload_bytes_used\":3571,\"parent_payload_bytes_remaining\":12813}}"
+            }
+          ],
+          "structured_content": null
+        },
+        "error": null,
+        "status": "completed"
+      },
+      {
+        "id": "item_4",
+        "type": "mcp_tool_call",
+        "server": "herdr_broker",
+        "tool": "evidence_get",
+        "arguments": {
+          "job_id": "c01437fb-ad68-4f56-96d5-f686607fb9df",
+          "evidence_id": "a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0001"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"job_id\":\"c01437fb-ad68-4f56-96d5-f686607fb9df\",\"evidence\":{\"items\":[{\"evidence_id\":\"a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0001\",\"text\":\"\",\"offset_bytes\":0},{\"evidence_id\":\"a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0002\",\"text\":\"HB_REMOTE_READY\",\"offset_bytes\":0},{\"evidence_id\":\"a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0003\",\"text\":\"HB> \",\"offset_bytes\":0},{\"evidence_id\":\"a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0004\",\"text\":\"HB_DIAG_BEGIN\",\"offset_bytes\":0},{\"evidence_id\":\"a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0005\",\"text\":\"Build requires build.config containing exactly configured.\",\"offset_bytes\":0},{\"evidence_id\":\"a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0006\",\"text\":\"cat: build.config: No such file or directory\",\"offset_bytes\":0},{\"evidence_id\":\"a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0007\",\"text\":\"BUILD_FAILED: required configuration could not be read; exit\",\"offset_bytes\":0},{\"evidence_id\":\"a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0008\",\"text\":\" 2\",\"offset_bytes\":0},{\"evidence_id\":\"a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0009\",\"text\":\"HB_DIAG_END\",\"offset_bytes\":0},{\"evidence_id\":\"a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0010\",\"text\":\"HB> \",\"offset_bytes\":0}],\"truncation_scope\":\"excerpt\",\"truncated\":false,\"next\":null},\"budget\":{\"deadline_ms\":300000,\"deadline_remaining_ms\":292767,\"parent_payload_bytes_limit\":16384,\"parent_payload_bytes_used\":4963,\"parent_payload_bytes_remaining\":11421}}"
+            }
+          ],
+          "structured_content": null
+        },
+        "error": null,
+        "status": "completed"
+      },
+      {
+        "id": "item_5",
+        "type": "mcp_tool_call",
+        "server": "herdr_broker",
+        "tool": "action_propose",
+        "arguments": {
+          "job_id": "c01437fb-ad68-4f56-96d5-f686607fb9df",
+          "objective": "Fix SSH build fixture",
+          "operation": "execute",
+          "target": {
+            "pane_id": "wV:p1",
+            "terminal_id": "term_65b85c1b4172223",
+            "workspace_id": "wV",
+            "tab_id": "wV:t1"
+          },
+          "cwd": "<disposable-cwd>",
+          "env": {},
+          "affected_paths": [
+            "<disposable-cwd>"
+          ],
+          "command": "set -C; printf '%s\\n' configured > build.config && ./build.sh",
+          "risk": {
+            "classification": "bounded_change",
+            "inspected": true,
+            "impact": "Creates the missing relative build.config with exactly configured plus newline, then runs the supplied build fixture in the confirmed disposable SSH fixture directory.",
+            "recovery": "The single created file can be removed after verification; noclobber refuses overwrite if it appears before execution.",
+            "uncertainties": [
+              "The supplied fixture script may produce an environment-dependent result beyond the observed missing-file failure."
+            ],
+            "categories": []
+          }
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"job_id\":\"c01437fb-ad68-4f56-96d5-f686607fb9df\",\"proposal_id\":\"d32b34b3-48e2-488b-8af0-658ec4fc7c38\",\"pane_session_id\":\"10f901fa-f946-45e0-8e86-cc350263dea7\",\"target\":{\"pane_id\":\"wV:p1\",\"terminal_id\":\"term_65b85c1b4172223\",\"workspace_id\":\"wV\",\"tab_id\":\"wV:t1\"},\"mode_revision\":2,\"operation\":\"execute\",\"original_proposal_id\":null,\"payload_digest\":\"8fd26102f80b70933fdcd7669e258ae13a7228626c882e6ae9dc415d8f67333b\",\"contract\":\"action.v1\",\"submission_state\":\"not_submitted\",\"observation_state\":\"not_started\",\"exit_code\":null,\"authorization\":\"approval_required\",\"reason\":\"policy_requires_approval\",\"approval_expires_at\":null,\"payload\":{\"text\":\"/bin/sh -c 'printf '\\\\''\\\\n__HERDR_%s_%s__\\\\n'\\\\'' BEGIN '\\\\''f4a2202e3e3dfc509200d75cd5fc605c'\\\\''; ( cd '\\\\''<disposable-cwd>'\\\\'' && /usr/bin/env -i PATH=/usr/bin:/bin:/usr/sbin:/sbin  /bin/sh -c '\\\\''set -C; printf '\\\\''\\\\'\\\\'''\\\\''%s\\\\n'\\\\''\\\\'\\\\'''\\\\'' configured > build.config && ./build.sh'\\\\''\\n); herdr_broker_exit=$?; printf '\\\\''\\\\n__HERDR_%s_%s__:%s\\\\n'\\\\'' END '\\\\''f4a2202e3e3dfc509200d75cd5fc605c'\\\\'' \\\"$herdr_broker_exit\\\"; exit \\\"$herdr_broker_exit\\\"'\",\"keys\":[\"Enter\"]},\"budget\":{\"deadline_ms\":300000,\"deadline_remaining_ms\":282018,\"parent_payload_bytes_limit\":16384,\"parent_payload_bytes_used\":6282,\"parent_payload_bytes_remaining\":10102}}"
+            }
+          ],
+          "structured_content": null
+        },
+        "error": null,
+        "status": "completed"
+      },
+      {
+        "id": "item_6",
+        "type": "mcp_tool_call",
+        "server": "herdr_broker",
+        "tool": "action_submit",
+        "arguments": {
+          "proposal_id": "d32b34b3-48e2-488b-8af0-658ec4fc7c38"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"job_id\":\"c01437fb-ad68-4f56-96d5-f686607fb9df\",\"error\":\"policy_requires_approval\",\"budget\":{\"deadline_ms\":300000,\"deadline_remaining_ms\":276850,\"parent_payload_bytes_limit\":16384,\"parent_payload_bytes_used\":6536,\"parent_payload_bytes_remaining\":9848}} "
+            }
+          ],
+          "structured_content": null
+        },
+        "error": null,
+        "status": "completed"
+      },
+      {
+        "id": "item_7",
+        "type": "mcp_tool_call",
+        "server": "herdr_broker",
+        "tool": "action_status",
+        "arguments": {
+          "job_id": "c01437fb-ad68-4f56-96d5-f686607fb9df",
+          "proposal_id": "d32b34b3-48e2-488b-8af0-658ec4fc7c38"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"job_id\":\"c01437fb-ad68-4f56-96d5-f686607fb9df\",\"proposal_id\":\"d32b34b3-48e2-488b-8af0-658ec4fc7c38\",\"pane_session_id\":\"10f901fa-f946-45e0-8e86-cc350263dea7\",\"target\":{\"pane_id\":\"wV:p1\",\"terminal_id\":\"term_65b85c1b4172223\",\"workspace_id\":\"wV\",\"tab_id\":\"wV:t1\"},\"mode_revision\":2,\"operation\":\"execute\",\"original_proposal_id\":null,\"payload_digest\":\"8fd26102f80b70933fdcd7669e258ae13a7228626c882e6ae9dc415d8f67333b\",\"contract\":\"action.v1\",\"submission_state\":\"not_submitted\",\"observation_state\":\"not_started\",\"exit_code\":null,\"authorization\":\"approval_required\",\"reason\":\"policy_requires_approval\",\"approval_expires_at\":null,\"budget\":{\"deadline_ms\":300000,\"deadline_remaining_ms\":273782,\"parent_payload_bytes_limit\":16384,\"parent_payload_bytes_used\":7327,\"parent_payload_bytes_remaining\":9057}}"
+            }
+          ],
+          "structured_content": null
+        },
+        "error": null,
+        "status": "completed"
+      },
+      {
+        "id": "item_8",
+        "type": "mcp_tool_call",
+        "server": "herdr_broker",
+        "tool": "job_wait",
+        "arguments": {
+          "job_id": "c01437fb-ad68-4f56-96d5-f686607fb9df",
+          "cursor": "b05e7755-69fd-4e3f-b495-38a4e3e44264",
+          "wait_ms": 20000
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"job_id\":\"c01437fb-ad68-4f56-96d5-f686607fb9df\",\"pane_session_id\":\"10f901fa-f946-45e0-8e86-cc350263dea7\",\"pane_id\":\"wV:p1\",\"phase\":\"result_ready\",\"data_state\":\"retained\",\"result_ready\":true,\"job_ended\":false,\"action_mode\":2,\"mode_revision\":2,\"action_state\":\"available\",\"wait_timed_out\":false,\"cursor\":\"b05e7755-69fd-4e3f-b495-38a4e3e44264\",\"cursor_expires_at\":\"2026-09-15T13:46:20.261Z\",\"observation\":{\"sequence\":2,\"observed_at\":\"2026-09-15T13:45:49.458Z\"},\"delta\":{\"kind\":\"unchanged_view\",\"snapshot_id\":\"a07b7a1d-6c7b-4344-90f0-e0919f2a001c\",\"history_complete\":false},\"budget\":{\"deadline_ms\":300000,\"deadline_remaining_ms\":270576,\"parent_payload_bytes_limit\":16384,\"parent_payload_bytes_used\":8066,\"parent_payload_bytes_remaining\":8318}}"
+            }
+          ],
+          "structured_content": null
+        },
+        "error": null,
+        "status": "completed"
+      },
+      {
+        "id": "item_9",
+        "type": "mcp_tool_call",
+        "server": "herdr_broker",
+        "tool": "job_cancel",
+        "arguments": {
+          "job_id": "c01437fb-ad68-4f56-96d5-f686607fb9df"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"job_id\":\"c01437fb-ad68-4f56-96d5-f686607fb9df\",\"pane_session_id\":\"10f901fa-f946-45e0-8e86-cc350263dea7\",\"pane_id\":\"wV:p1\",\"phase\":\"cancelled\",\"data_state\":\"retained\",\"result_ready\":true,\"job_ended\":true,\"action_mode\":2,\"mode_revision\":2,\"action_state\":\"available\",\"wait_timed_out\":false,\"cursor\":\"b05e7755-69fd-4e3f-b495-38a4e3e44264\",\"cursor_expires_at\":\"2026-09-15T13:46:20.261Z\",\"observation\":{\"sequence\":2,\"observed_at\":\"2026-09-15T13:45:49.458Z\"},\"delta\":{\"kind\":\"replace\",\"history_complete\":false},\"snapshot\":{\"snapshot_id\":\"a07b7a1d-6c7b-4344-90f0-e0919f2a001c\",\"pane_session_id\":\"10f901fa-f946-45e0-8e86-cc350263dea7\",\"capture_sequence\":1,\"captured_at\":\"2026-09-15T13:45:20.260Z\",\"source\":\"recent\",\"format\":\"ansi\",\"physical_rows\":10,\"utf8_bytes\":220,\"truncated\":false,\"gaps\":[\"history_unobserved\"],\"history_complete\":false,\"row_mapping\":{\"normalized_to_physical\":\"one_to_one\",\"first_physical_row\":1,\"last_physical_row\":10,\"first_row_partial\":false},\"redaction\":{\"version\":\"basic-v1\",\"pattern_digest\":\"4f53cda18c2baa0c\",\"count\":0,\"rules\":[]}},\"result\":{\"kind\":\"prepared_context\",\"text\":\"a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0001 \\na07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0002 HB_REMOTE_READY\\na07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0003 HB> \\na07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0004 HB_DIAG_BEGIN\\na07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0005 Build requires build.config containing exactly configured.\\na07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0006 cat: build.config: No such file or directory\\na07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0007 BUILD_FAILED: required configuration could not be read; exit\\na07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0008  2\\na07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0009 HB_DIAG_END\\na07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0010 HB> \"},\"evidence\":{\"items\":[{\"evidence_id\":\"a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0001\",\"text\":\"\",\"offset_bytes\":0},{\"evidence_id\":\"a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0002\",\"text\":\"HB_REMOTE_READY\",\"offset_bytes\":0},{\"evidence_id\":\"a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0003\",\"text\":\"HB> \",\"offset_bytes\":0},{\"evidence_id\":\"a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0004\",\"text\":\"HB_DIAG_BEGIN\",\"offset_bytes\":0},{\"evidence_id\":\"a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0005\",\"text\":\"Build requires build.config containing exactly configured.\",\"offset_bytes\":0},{\"evidence_id\":\"a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0006\",\"text\":\"cat: build.config: No such file or directory\",\"offset_bytes\":0},{\"evidence_id\":\"a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0007\",\"text\":\"BUILD_FAILED: required configuration could not be read; exit\",\"offset_bytes\":0},{\"evidence_id\":\"a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0008\",\"text\":\" 2\",\"offset_bytes\":0},{\"evidence_id\":\"a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0009\",\"text\":\"HB_DIAG_END\",\"offset_bytes\":0},{\"evidence_id\":\"a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0010\",\"text\":\"HB> \",\"offset_bytes\":0}],\"truncation_scope\":\"excerpt\",\"truncated\":false,\"next\":null},\"budget\":{\"deadline_ms\":300000,\"deadline_remaining_ms\":264581,\"parent_payload_bytes_limit\":16384,\"parent_payload_bytes_used\":11167,\"parent_payload_bytes_remaining\":5217}}"
+            }
+          ],
+          "structured_content": null
+        },
+        "error": null,
+        "status": "completed"
+      }
+    ],
+    "values": [
+      {
+        "tool": "pane_describe",
+        "value": {
+          "target": {
+            "pane_id": "wV:p1",
+            "terminal_id": "term_65b85c1b4172223",
+            "workspace_id": "wV",
+            "tab_id": "wV:t1"
+          },
+          "pane_session_id": "10f901fa-f946-45e0-8e86-cc350263dea7",
+          "action_mode": 2,
+          "mode_revision": 2,
+          "observed_connection": {
+            "kind": "ssh",
+            "local_ssh_process_ids": [
+              20679
+            ],
+            "remote_identity_authenticated": false
+          },
+          "context": {
+            "cwd": "<disposable-cwd>",
+            "foreground_cwd": "<disposable-cwd>",
+            "agent_status": "unknown"
+          },
+          "supported_profiles": [
+            "passive",
+            "ssh_posix"
+          ],
+          "action_supported": true,
+          "automatic_modes_supported": true
+        }
+      },
+      {
+        "tool": "job_start",
+        "value": {
+          "job_id": "c01437fb-ad68-4f56-96d5-f686607fb9df",
+          "pane_session_id": "9999b362-a997-48b5-be94-3e69d0696dfe",
+          "pane_id": "wV:p1",
+          "phase": "observing",
+          "data_state": "retained",
+          "result_ready": false,
+          "job_ended": false,
+          "action_mode": null,
+          "mode_revision": null,
+          "action_state": "available",
+          "wait_timed_out": false,
+          "budget": {
+            "deadline_ms": 300000,
+            "deadline_remaining_ms": 300000,
+            "parent_payload_bytes_limit": 16384,
+            "parent_payload_bytes_used": 466,
+            "parent_payload_bytes_remaining": 15918
+          }
+        }
+      },
+      {
+        "tool": "job_wait",
+        "value": {
+          "job_id": "c01437fb-ad68-4f56-96d5-f686607fb9df",
+          "pane_session_id": "10f901fa-f946-45e0-8e86-cc350263dea7",
+          "pane_id": "wV:p1",
+          "phase": "result_ready",
+          "data_state": "retained",
+          "result_ready": true,
+          "job_ended": false,
+          "action_mode": 2,
+          "mode_revision": 2,
+          "action_state": "available",
+          "wait_timed_out": false,
+          "cursor": "b05e7755-69fd-4e3f-b495-38a4e3e44264",
+          "cursor_expires_at": "2026-09-15T13:46:20.261Z",
+          "observation": {
+            "sequence": 1,
+            "observed_at": "2026-09-15T13:45:20.260Z"
+          },
+          "delta": {
+            "kind": "replace",
+            "history_complete": false
+          },
+          "snapshot": {
+            "snapshot_id": "a07b7a1d-6c7b-4344-90f0-e0919f2a001c",
+            "pane_session_id": "10f901fa-f946-45e0-8e86-cc350263dea7",
+            "capture_sequence": 1,
+            "captured_at": "2026-09-15T13:45:20.260Z",
+            "source": "recent",
+            "format": "ansi",
+            "physical_rows": 10,
+            "utf8_bytes": 220,
+            "truncated": false,
+            "gaps": [
+              "history_unobserved"
+            ],
+            "history_complete": false,
+            "row_mapping": {
+              "normalized_to_physical": "one_to_one",
+              "first_physical_row": 1,
+              "last_physical_row": 10,
+              "first_row_partial": false
+            },
+            "redaction": {
+              "version": "basic-v1",
+              "pattern_digest": "4f53cda18c2baa0c",
+              "count": 0,
+              "rules": []
+            }
+          },
+          "result": {
+            "kind": "prepared_context",
+            "text": "a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0001 \na07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0002 HB_REMOTE_READY\na07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0003 HB> \na07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0004 HB_DIAG_BEGIN\na07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0005 Build requires build.config containing exactly configured.\na07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0006 cat: build.config: No such file or directory\na07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0007 BUILD_FAILED: required configuration could not be read; exit\na07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0008  2\na07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0009 HB_DIAG_END\na07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0010 HB> "
+          },
+          "evidence": {
+            "items": [
+              {
+                "evidence_id": "a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0001",
+                "text": "",
+                "offset_bytes": 0
+              },
+              {
+                "evidence_id": "a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0002",
+                "text": "HB_REMOTE_READY",
+                "offset_bytes": 0
+              },
+              {
+                "evidence_id": "a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0003",
+                "text": "HB> ",
+                "offset_bytes": 0
+              },
+              {
+                "evidence_id": "a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0004",
+                "text": "HB_DIAG_BEGIN",
+                "offset_bytes": 0
+              },
+              {
+                "evidence_id": "a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0005",
+                "text": "Build requires build.config containing exactly configured.",
+                "offset_bytes": 0
+              },
+              {
+                "evidence_id": "a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0006",
+                "text": "cat: build.config: No such file or directory",
+                "offset_bytes": 0
+              },
+              {
+                "evidence_id": "a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0007",
+                "text": "BUILD_FAILED: required configuration could not be read; exit",
+                "offset_bytes": 0
+              },
+              {
+                "evidence_id": "a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0008",
+                "text": " 2",
+                "offset_bytes": 0
+              },
+              {
+                "evidence_id": "a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0009",
+                "text": "HB_DIAG_END",
+                "offset_bytes": 0
+              },
+              {
+                "evidence_id": "a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0010",
+                "text": "HB> ",
+                "offset_bytes": 0
+              }
+            ],
+            "truncation_scope": "excerpt",
+            "truncated": false,
+            "next": null
+          },
+          "budget": {
+            "deadline_ms": 300000,
+            "deadline_remaining_ms": 297186,
+            "parent_payload_bytes_limit": 16384,
+            "parent_payload_bytes_used": 3571,
+            "parent_payload_bytes_remaining": 12813
+          }
+        }
+      },
+      {
+        "tool": "evidence_get",
+        "value": {
+          "job_id": "c01437fb-ad68-4f56-96d5-f686607fb9df",
+          "evidence": {
+            "items": [
+              {
+                "evidence_id": "a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0001",
+                "text": "",
+                "offset_bytes": 0
+              },
+              {
+                "evidence_id": "a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0002",
+                "text": "HB_REMOTE_READY",
+                "offset_bytes": 0
+              },
+              {
+                "evidence_id": "a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0003",
+                "text": "HB> ",
+                "offset_bytes": 0
+              },
+              {
+                "evidence_id": "a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0004",
+                "text": "HB_DIAG_BEGIN",
+                "offset_bytes": 0
+              },
+              {
+                "evidence_id": "a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0005",
+                "text": "Build requires build.config containing exactly configured.",
+                "offset_bytes": 0
+              },
+              {
+                "evidence_id": "a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0006",
+                "text": "cat: build.config: No such file or directory",
+                "offset_bytes": 0
+              },
+              {
+                "evidence_id": "a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0007",
+                "text": "BUILD_FAILED: required configuration could not be read; exit",
+                "offset_bytes": 0
+              },
+              {
+                "evidence_id": "a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0008",
+                "text": " 2",
+                "offset_bytes": 0
+              },
+              {
+                "evidence_id": "a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0009",
+                "text": "HB_DIAG_END",
+                "offset_bytes": 0
+              },
+              {
+                "evidence_id": "a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0010",
+                "text": "HB> ",
+                "offset_bytes": 0
+              }
+            ],
+            "truncation_scope": "excerpt",
+            "truncated": false,
+            "next": null
+          },
+          "budget": {
+            "deadline_ms": 300000,
+            "deadline_remaining_ms": 292767,
+            "parent_payload_bytes_limit": 16384,
+            "parent_payload_bytes_used": 4963,
+            "parent_payload_bytes_remaining": 11421
+          }
+        }
+      },
+      {
+        "tool": "action_propose",
+        "value": {
+          "job_id": "c01437fb-ad68-4f56-96d5-f686607fb9df",
+          "proposal_id": "d32b34b3-48e2-488b-8af0-658ec4fc7c38",
+          "pane_session_id": "10f901fa-f946-45e0-8e86-cc350263dea7",
+          "target": {
+            "pane_id": "wV:p1",
+            "terminal_id": "term_65b85c1b4172223",
+            "workspace_id": "wV",
+            "tab_id": "wV:t1"
+          },
+          "mode_revision": 2,
+          "operation": "execute",
+          "original_proposal_id": null,
+          "payload_digest": "8fd26102f80b70933fdcd7669e258ae13a7228626c882e6ae9dc415d8f67333b",
+          "contract": "action.v1",
+          "submission_state": "not_submitted",
+          "observation_state": "not_started",
+          "exit_code": null,
+          "authorization": "approval_required",
+          "reason": "policy_requires_approval",
+          "approval_expires_at": null,
+          "payload": {
+            "text": "/bin/sh -c 'printf '\\''\\n__HERDR_%s_%s__\\n'\\'' BEGIN '\\''f4a2202e3e3dfc509200d75cd5fc605c'\\''; ( cd '\\''<disposable-cwd>'\\'' && /usr/bin/env -i PATH=/usr/bin:/bin:/usr/sbin:/sbin  /bin/sh -c '\\''set -C; printf '\\''\\'\\'''\\''%s\\n'\\''\\'\\'''\\'' configured > build.config && ./build.sh'\\''\n); herdr_broker_exit=$?; printf '\\''\\n__HERDR_%s_%s__:%s\\n'\\'' END '\\''f4a2202e3e3dfc509200d75cd5fc605c'\\'' \"$herdr_broker_exit\"; exit \"$herdr_broker_exit\"'",
+            "keys": [
+              "Enter"
+            ]
+          },
+          "budget": {
+            "deadline_ms": 300000,
+            "deadline_remaining_ms": 282018,
+            "parent_payload_bytes_limit": 16384,
+            "parent_payload_bytes_used": 6282,
+            "parent_payload_bytes_remaining": 10102
+          }
+        }
+      },
+      {
+        "tool": "action_submit",
+        "value": {
+          "job_id": "c01437fb-ad68-4f56-96d5-f686607fb9df",
+          "error": "policy_requires_approval",
+          "budget": {
+            "deadline_ms": 300000,
+            "deadline_remaining_ms": 276850,
+            "parent_payload_bytes_limit": 16384,
+            "parent_payload_bytes_used": 6536,
+            "parent_payload_bytes_remaining": 9848
+          }
+        }
+      },
+      {
+        "tool": "action_status",
+        "value": {
+          "job_id": "c01437fb-ad68-4f56-96d5-f686607fb9df",
+          "proposal_id": "d32b34b3-48e2-488b-8af0-658ec4fc7c38",
+          "pane_session_id": "10f901fa-f946-45e0-8e86-cc350263dea7",
+          "target": {
+            "pane_id": "wV:p1",
+            "terminal_id": "term_65b85c1b4172223",
+            "workspace_id": "wV",
+            "tab_id": "wV:t1"
+          },
+          "mode_revision": 2,
+          "operation": "execute",
+          "original_proposal_id": null,
+          "payload_digest": "8fd26102f80b70933fdcd7669e258ae13a7228626c882e6ae9dc415d8f67333b",
+          "contract": "action.v1",
+          "submission_state": "not_submitted",
+          "observation_state": "not_started",
+          "exit_code": null,
+          "authorization": "approval_required",
+          "reason": "policy_requires_approval",
+          "approval_expires_at": null,
+          "budget": {
+            "deadline_ms": 300000,
+            "deadline_remaining_ms": 273782,
+            "parent_payload_bytes_limit": 16384,
+            "parent_payload_bytes_used": 7327,
+            "parent_payload_bytes_remaining": 9057
+          }
+        }
+      },
+      {
+        "tool": "job_wait",
+        "value": {
+          "job_id": "c01437fb-ad68-4f56-96d5-f686607fb9df",
+          "pane_session_id": "10f901fa-f946-45e0-8e86-cc350263dea7",
+          "pane_id": "wV:p1",
+          "phase": "result_ready",
+          "data_state": "retained",
+          "result_ready": true,
+          "job_ended": false,
+          "action_mode": 2,
+          "mode_revision": 2,
+          "action_state": "available",
+          "wait_timed_out": false,
+          "cursor": "b05e7755-69fd-4e3f-b495-38a4e3e44264",
+          "cursor_expires_at": "2026-09-15T13:46:20.261Z",
+          "observation": {
+            "sequence": 2,
+            "observed_at": "2026-09-15T13:45:49.458Z"
+          },
+          "delta": {
+            "kind": "unchanged_view",
+            "snapshot_id": "a07b7a1d-6c7b-4344-90f0-e0919f2a001c",
+            "history_complete": false
+          },
+          "budget": {
+            "deadline_ms": 300000,
+            "deadline_remaining_ms": 270576,
+            "parent_payload_bytes_limit": 16384,
+            "parent_payload_bytes_used": 8066,
+            "parent_payload_bytes_remaining": 8318
+          }
+        }
+      },
+      {
+        "tool": "job_cancel",
+        "value": {
+          "job_id": "c01437fb-ad68-4f56-96d5-f686607fb9df",
+          "pane_session_id": "10f901fa-f946-45e0-8e86-cc350263dea7",
+          "pane_id": "wV:p1",
+          "phase": "cancelled",
+          "data_state": "retained",
+          "result_ready": true,
+          "job_ended": true,
+          "action_mode": 2,
+          "mode_revision": 2,
+          "action_state": "available",
+          "wait_timed_out": false,
+          "cursor": "b05e7755-69fd-4e3f-b495-38a4e3e44264",
+          "cursor_expires_at": "2026-09-15T13:46:20.261Z",
+          "observation": {
+            "sequence": 2,
+            "observed_at": "2026-09-15T13:45:49.458Z"
+          },
+          "delta": {
+            "kind": "replace",
+            "history_complete": false
+          },
+          "snapshot": {
+            "snapshot_id": "a07b7a1d-6c7b-4344-90f0-e0919f2a001c",
+            "pane_session_id": "10f901fa-f946-45e0-8e86-cc350263dea7",
+            "capture_sequence": 1,
+            "captured_at": "2026-09-15T13:45:20.260Z",
+            "source": "recent",
+            "format": "ansi",
+            "physical_rows": 10,
+            "utf8_bytes": 220,
+            "truncated": false,
+            "gaps": [
+              "history_unobserved"
+            ],
+            "history_complete": false,
+            "row_mapping": {
+              "normalized_to_physical": "one_to_one",
+              "first_physical_row": 1,
+              "last_physical_row": 10,
+              "first_row_partial": false
+            },
+            "redaction": {
+              "version": "basic-v1",
+              "pattern_digest": "4f53cda18c2baa0c",
+              "count": 0,
+              "rules": []
+            }
+          },
+          "result": {
+            "kind": "prepared_context",
+            "text": "a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0001 \na07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0002 HB_REMOTE_READY\na07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0003 HB> \na07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0004 HB_DIAG_BEGIN\na07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0005 Build requires build.config containing exactly configured.\na07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0006 cat: build.config: No such file or directory\na07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0007 BUILD_FAILED: required configuration could not be read; exit\na07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0008  2\na07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0009 HB_DIAG_END\na07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0010 HB> "
+          },
+          "evidence": {
+            "items": [
+              {
+                "evidence_id": "a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0001",
+                "text": "",
+                "offset_bytes": 0
+              },
+              {
+                "evidence_id": "a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0002",
+                "text": "HB_REMOTE_READY",
+                "offset_bytes": 0
+              },
+              {
+                "evidence_id": "a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0003",
+                "text": "HB> ",
+                "offset_bytes": 0
+              },
+              {
+                "evidence_id": "a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0004",
+                "text": "HB_DIAG_BEGIN",
+                "offset_bytes": 0
+              },
+              {
+                "evidence_id": "a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0005",
+                "text": "Build requires build.config containing exactly configured.",
+                "offset_bytes": 0
+              },
+              {
+                "evidence_id": "a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0006",
+                "text": "cat: build.config: No such file or directory",
+                "offset_bytes": 0
+              },
+              {
+                "evidence_id": "a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0007",
+                "text": "BUILD_FAILED: required configuration could not be read; exit",
+                "offset_bytes": 0
+              },
+              {
+                "evidence_id": "a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0008",
+                "text": " 2",
+                "offset_bytes": 0
+              },
+              {
+                "evidence_id": "a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0009",
+                "text": "HB_DIAG_END",
+                "offset_bytes": 0
+              },
+              {
+                "evidence_id": "a07b7a1d-6c7b-4344-90f0-e0919f2a001c:L0010",
+                "text": "HB> ",
+                "offset_bytes": 0
+              }
+            ],
+            "truncation_scope": "excerpt",
+            "truncated": false,
+            "next": null
+          },
+          "budget": {
+            "deadline_ms": 300000,
+            "deadline_remaining_ms": 264581,
+            "parent_payload_bytes_limit": 16384,
+            "parent_payload_bytes_used": 11167,
+            "parent_payload_bytes_remaining": 5217
+          }
+        }
+      }
+    ],
+    "usage": [
+      {
+        "input_tokens": 210021,
+        "cached_input_tokens": 190720,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 1334,
+        "reasoning_output_tokens": 207
+      }
+    ],
+    "stderr_bytes": 0,
+    "final": [
+      "요청한 정확한 pane/job 흐름만 사용해 진단하고, 제안 명령은 `set -C`로 보호되는 bounded reversible change로 평가한 뒤 제출하겠습니다. 먼저 `wV:p1`을 설명하고 job을 시작하겠습니다.",
+      "관찰 결과:\n\n- `build.config`가 없어 `cat: build.config: No such file or directory`가 발생했습니다.\n- fixture는 exit code `2`로 실패했습니다.\n- 제안한 bounded change:\n\n```sh\nset -C; printf '%s\\n' configured > build.config && ./build.sh\n```\n\n- 명시된 cwd: `<disposable-cwd>`\n- env: 제한된 기본 `PATH`\n- 영향 범위: 해당 fixture 디렉터리\n\n위 변경은 위험 평가상 허용 가능했지만, mode 2 정책상 추가 승인이 필요해 제출되지 않았습니다(`policy_requires_approval`). 따라서 명령은 실행되지 않았고 성공 여부나 exit code를 주장할 수 없습니다.\n\n첫 ready cursor로 재관찰한 결과는 `unchanged_view`였으며, job은 취소 완료했습니다."
+    ]
+  },
+  "phase": "parent_complete"
+}

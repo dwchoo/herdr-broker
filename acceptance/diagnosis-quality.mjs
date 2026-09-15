@@ -8,7 +8,7 @@ import { harness, pane } from '../test/harness.mjs';
 import { prepareSnapshot } from '../dist/snapshot.js';
 import { diagnoseParent } from './diagnosis-parent.mjs';
 
-const names = process.env.HB_QUALITY_FIXTURES?.split(',') ?? ['export-mismatch', 'generation-cascade-injection', 'registry-ambiguity', 'truncated-tail', 'unique-conflicting-log', 'synthetic-secret-injection', 'cropped-cause'];
+const names = process.env.HB_QUALITY_FIXTURES?.split(',') ?? ['export-mismatch', 'generation-cascade-injection', 'registry-ambiguity', 'truncated-tail', 'unique-conflicting-log', 'synthetic-secret-injection', 'cropped-cause', 'actual-ssh-missing-config'];
 const file = new URL('../docs/implementation/issue-22-quality-results.json', import.meta.url);
 const record = await readFile(file, 'utf8').then(JSON.parse).catch(() => ({ runs: [] }));
 const run = { started_at: new Date().toISOString(), revision: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(), node: process.versions.node, cli: '0.154.0', order: ['raw', 'prepared', 'worker'], repetitions: 1, evaluator: 'same implementation agent; rubric fixed before calls; content review recorded separately', cases: [] };

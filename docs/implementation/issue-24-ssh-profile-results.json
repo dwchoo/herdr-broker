@@ -1,0 +1,225 @@
+{
+  "at": "2026-09-15T13:53:37.062Z",
+  "profile": "candidate CoreOptions sshEnabled; not yet public default",
+  "node": "24.19.0",
+  "herdr": "0.9.0/protocol22",
+  "endpoint": "127.0.0.1:65345",
+  "remote_user": "dwchoo",
+  "shell": "/bin/sh -i",
+  "cwd": "<disposable-cwd>",
+  "identity": "fixture declaration; local SSH process is not remote authentication",
+  "results": [
+    {
+      "mode": 1,
+      "authorization": "user_approval",
+      "outcome": {
+        "proposal_id": "5c351ad0-cd81-4434-9a37-4b95a1b09ce4",
+        "job_id": "bbdffae3-420c-46b6-acd6-9a2ed5a12de4",
+        "pane_session_id": "777bfbcd-136e-4474-8836-5a1d79b7f259",
+        "terminal_id": "term_65b85e0573c0a27",
+        "payload_digest": "0b2e5396045f63e661322709cf2968cdd559aba2a1de1c321ab0640176f32fca",
+        "mode_revision": 3,
+        "operation": "execute",
+        "original_proposal_id": null,
+        "authorization": "user_approval",
+        "approval_expires": 1789480714665,
+        "approval_consumed": true,
+        "submission_state": "accepted",
+        "observation_state": "completion_observed",
+        "exit_code": 0,
+        "created_at": 1789480414679,
+        "updated_at": 1789480415158,
+        "hold_reason": null,
+        "recovery": null,
+        "target": {
+          "pane_id": "wZ:p1",
+          "terminal_id": "term_65b85e0573c0a27",
+          "workspace_id": "wZ",
+          "tab_id": "wZ:t1"
+        },
+        "contract": "action.v1",
+        "evidence": {
+          "items": [
+            {
+              "evidence_id": "42a3c8a3-490e-415e-8a9b-e3e1c2fc6697:L0014",
+              "text": "__HERDR_END_c415f1430f2580e005e10a81c6cf19b2__:0",
+              "offset_bytes": 0
+            }
+          ],
+          "truncation_scope": "excerpt",
+          "truncated": false,
+          "next": null
+        },
+        "observation": {
+          "method": "bounded_passive_marker",
+          "truncated": false,
+          "baseline_digest": "155a8f8ca6ce5e30a14b6fb33d2531461863482359ed7a8b80ab06cadb7105a2"
+        },
+        "budget": {
+          "deadline_ms": 300000,
+          "deadline_remaining_ms": 298992,
+          "parent_payload_bytes_limit": 16384,
+          "parent_payload_bytes_used": 12362,
+          "parent_payload_bytes_remaining": 4022
+        }
+      },
+      "input_attempts": 1
+    },
+    {
+      "mode": 2,
+      "authorization": "parent_risk_review",
+      "outcome": {
+        "proposal_id": "bd5dd10d-30ae-4789-90bd-43f31de1844a",
+        "job_id": "5efdb2de-3769-49f5-a784-2f2f94fa9a4a",
+        "pane_session_id": "777bfbcd-136e-4474-8836-5a1d79b7f259",
+        "terminal_id": "term_65b85e0573c0a27",
+        "payload_digest": "9eb7b304408257702167f254b2958100e68239372f7714e154b4bdff76620427",
+        "mode_revision": 4,
+        "operation": "execute",
+        "original_proposal_id": null,
+        "authorization": "parent_risk_review",
+        "approval_expires": null,
+        "approval_consumed": false,
+        "submission_state": "accepted",
+        "observation_state": "completion_observed",
+        "exit_code": 0,
+        "created_at": 1789480415784,
+        "updated_at": 1789480416135,
+        "hold_reason": null,
+        "recovery": null,
+        "target": {
+          "pane_id": "wZ:p1",
+          "terminal_id": "term_65b85e0573c0a27",
+          "workspace_id": "wZ",
+          "tab_id": "wZ:t1"
+        },
+        "contract": "action.v1",
+        "evidence": {
+          "items": [
+            {
+              "evidence_id": "7166e7ce-1201-432b-8fd1-ba243e1b822e:L0019",
+              "text": "__HERDR_END_fff1357c80611261213c69e6d4804ca4__:0",
+              "offset_bytes": 0
+            }
+          ],
+          "truncation_scope": "excerpt",
+          "truncated": false,
+          "next": null
+        },
+        "observation": {
+          "method": "bounded_passive_marker",
+          "truncated": false,
+          "baseline_digest": "008ba097f050acc03cee4e7ac54606fd4d10431e9a0fa570394a8de4bb0936a9"
+        },
+        "budget": {
+          "deadline_ms": 300000,
+          "deadline_remaining_ms": 299025,
+          "parent_payload_bytes_limit": 16384,
+          "parent_payload_bytes_used": 10801,
+          "parent_payload_bytes_remaining": 5583
+        }
+      },
+      "input_attempts": 1
+    },
+    {
+      "mode": 3,
+      "authorization": "autonomous",
+      "outcome": {
+        "proposal_id": "980c29c6-3f1d-4d86-854a-b5158da899c5",
+        "job_id": "b5124dd2-f59c-49b5-b739-081e4135c475",
+        "pane_session_id": "777bfbcd-136e-4474-8836-5a1d79b7f259",
+        "terminal_id": "term_65b85e0573c0a27",
+        "payload_digest": "0a3c29bfa42fd7702d2836c5b6dece833d9f9d3cd9b03173b4642755d03e941a",
+        "mode_revision": 5,
+        "operation": "execute",
+        "original_proposal_id": null,
+        "authorization": "autonomous",
+        "approval_expires": null,
+        "approval_consumed": false,
+        "submission_state": "accepted",
+        "observation_state": "completion_observed",
+        "exit_code": 0,
+        "created_at": 1789480416460,
+        "updated_at": 1789480416585,
+        "hold_reason": null,
+        "recovery": null,
+        "target": {
+          "pane_id": "wZ:p1",
+          "terminal_id": "term_65b85e0573c0a27",
+          "workspace_id": "wZ",
+          "tab_id": "wZ:t1"
+        },
+        "contract": "action.v1",
+        "evidence": {
+          "items": [
+            {
+              "evidence_id": "b90f34c8-b1fb-4ae4-8343-07d216fc9dc9:L0023",
+              "text": "__HERDR_END_1a58b67a4104caef7529c6d8161e0f69__:0",
+              "offset_bytes": 0
+            }
+          ],
+          "truncation_scope": "excerpt",
+          "truncated": false,
+          "next": null
+        },
+        "observation": {
+          "method": "bounded_passive_marker",
+          "truncated": false,
+          "baseline_digest": "3358d9ca6494e2971dc6bfda11591300cb359334f26b2d04178fcfa0cebcd94e"
+        },
+        "budget": {
+          "deadline_ms": 300000,
+          "deadline_remaining_ms": 299653,
+          "parent_payload_bytes_limit": 16384,
+          "parent_payload_bytes_used": 10153,
+          "parent_payload_bytes_remaining": 6231
+        }
+      },
+      "input_attempts": 1
+    }
+  ],
+  "failure_fixture": {
+    "name": "actual-ssh-missing-config",
+    "source": "Captured from the disposable localhost SSH build, not a synthetic replacement of the observed error",
+    "truncated": false,
+    "lines": [
+      "HB_DIAG_BEGIN",
+      "Build requires build.config containing exactly configured.",
+      "cat: build.config: No such file or directory",
+      "BUILD_FAILED: required configuration could not be read; exit",
+      " 2"
+    ]
+  },
+  "reconnect": {
+    "target": {
+      "pane_id": "wZ:p1",
+      "terminal_id": "term_65b85e0573c0a27",
+      "workspace_id": "wZ",
+      "tab_id": "wZ:t1"
+    },
+    "pane_session_id": "89865fa3-2bc4-4c8c-ad0b-b5397d3c20d6",
+    "action_mode": 2,
+    "mode_revision": 1,
+    "observed_connection": {
+      "kind": "ssh",
+      "local_ssh_process_ids": [
+        23567
+      ],
+      "remote_identity_authenticated": false
+    },
+    "context": {
+      "cwd": "<disposable-cwd>",
+      "foreground_cwd": "<disposable-cwd>",
+      "agent_status": "unknown"
+    },
+    "supported_profiles": [
+      "passive"
+    ],
+    "action_supported": false,
+    "automatic_modes_supported": false
+  },
+  "stale_input_attempts": 0,
+  "changed_remote_cwd": "<disposable-cwd>/reconnected-cwd",
+  "ordinary_wire_attempts": 3,
+  "setup": "Owned native CLI only for SSH connect/build-failure/exit; Broker inputs counted separately"
+}

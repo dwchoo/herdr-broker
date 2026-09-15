@@ -2,10 +2,10 @@ import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { join } from 'node:path';
 
-export async function consoleProcess(t, h, { tty = true, clockPath, fault, observationMs, beforeWireConsole, redactionPatterns, executable } = {}) {
+export async function consoleProcess(t, h, { tty = true, clockPath, fault, observationMs, beforeWireConsole, redactionPatterns, executable, sshEnabled } = {}) {
   await h.core.close();
   const args = executable ? [executable, 'serve'] : ['test/process-fixture.mjs', 'serve', h.endpoint, join(h.root, 'state'), ...(clockPath ? [clockPath] : [])];
-  const env = { ...process.env, ...(fault && { HB_TEST_FAULT: fault }), ...(observationMs && { HB_TEST_OBSERVATION_MS: String(observationMs) }), ...(beforeWireConsole && { HB_TEST_BEFORE_WIRE_CONSOLE: beforeWireConsole }), ...(redactionPatterns && { HB_TEST_REDACTION: JSON.stringify(redactionPatterns) }) };
+  const env = { ...process.env, ...(sshEnabled !== undefined && { HB_TEST_SSH: String(sshEnabled) }), ...(fault && { HB_TEST_FAULT: fault }), ...(observationMs && { HB_TEST_OBSERVATION_MS: String(observationMs) }), ...(beforeWireConsole && { HB_TEST_BEFORE_WIRE_CONSOLE: beforeWireConsole }), ...(redactionPatterns && { HB_TEST_REDACTION: JSON.stringify(redactionPatterns) }) };
   const child = tty ? spawn('python3', ['test/pty-fixture.py', process.execPath, ...args], { detached: true, stdio: 'pipe', env }) : spawn(process.execPath, args, { detached: true, stdio: 'pipe', env });
   const messages = [], readers = [];
   let buffer = '', raw = '';

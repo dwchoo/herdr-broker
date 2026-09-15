@@ -10,7 +10,9 @@ export async function liveHarness(t) {
   let core, workspace;
   const peerSockets = new Set(), calls = [], captures = [];
   const endpoint = join(root, 'herdr.sock');
+  const state = { connected: true, transform: null, input: null };
   const proxy = createServer(socket => {
+    if (!state.connected) { socket.destroy(); return; }
     const upstream = createConnection('/Users/dwchoo/.config/herdr/herdr.sock');
     peerSockets.add(socket); peerSockets.add(upstream);
     let buffer = '';
@@ -21,17 +23,23 @@ export async function liveHarness(t) {
       while ((end = received.indexOf('\n')) >= 0) {
         const response = JSON.parse(received.slice(0, end)); received = received.slice(end + 1);
         if (response.result?.type === 'pane_read') captures.push(response.result.read.text);
+        const forwarded = state.transform ? state.transform(response) : response;
+        if (forwarded !== null) socket.write(JSON.stringify(forwarded) + '\n');
       }
     });
     socket.on('data', chunk => {
       buffer += chunk;
       let end;
-      while ((end = buffer.indexOf('\n')) >= 0) { calls.push(JSON.parse(buffer.slice(0, end))); buffer = buffer.slice(end + 1); }
+      while ((end = buffer.indexOf('\n')) >= 0) {
+        const request = JSON.parse(buffer.slice(0, end)); buffer = buffer.slice(end + 1); calls.push(request);
+        const forwarded = state.input ? state.input(request) : request;
+        if (forwarded !== null) upstream.write(JSON.stringify(forwarded) + '\n');
+      }
     });
     for (const connection of [socket, upstream]) connection.on('error', () => {});
     socket.on('close', () => { upstream.destroy(); peerSockets.delete(socket); });
     upstream.on('close', () => { socket.destroy(); peerSockets.delete(upstream); });
-    socket.pipe(upstream); upstream.pipe(socket);
+
   });
   t.after(async () => {
     await core?.close();
@@ -45,5 +53,5 @@ export async function liveHarness(t) {
   const pane = created.root_pane;
   await new Promise(resolve => proxy.listen(endpoint, resolve));
   core = await startCore({ endpoint, stateRoot: join(root, 'state') });
-  return { root, endpoint, core, pane, workspace, calls, captures };
+  return { root, endpoint, core, pane, workspace, calls, captures, state };
 }

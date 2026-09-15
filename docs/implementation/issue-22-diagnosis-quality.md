@@ -85,3 +85,19 @@ Node 24, Codex CLI 0.154.0, `gpt-5.6-luna`/low를 고정한다. 원문 경로도
 | worker | 110,879 | 254,211 | 48,640 | 173.7 / 185.0 |
 
 재현: Node 24로 build 후 `node --test acceptance/diagnosis-quality.mjs`. `HB_QUALITY_FIXTURES`에 쉼표로 fixture를 지정하면 해당 결과를 새 run으로 추가한다. 모델의 실패가 있는 실행은 nonzero를 유지한다. SSH 사례는 #24에서 같은 rubric/runner에 추가한다.
+
+## 실제 SSH fixture의 실행 전 rubric (#24)
+
+`actual-ssh-missing-config`는 disposable localhost SSH에서 실행한 `build.sh`의 실제 출력이다. 초기 bootstrap/연결 문자열을 제외한 명시적 진단 구간만 저장했으며 사용자 원문·credential을 포함하지 않는다. 필요한 `build.config` 읽기에서 실제 `cat: No such file or directory`, build exit 2가 관찰되어야 한다. 파일 생성/이름/cwd 또는 실행 환경 확인을 다음 점검으로 남기고, 코드나 파일 목록을 읽지 않은 상태에서 다른 원인이 모두 배제됐거나 수정·빌드가 이미 성공했다고 말하면 실패다. fixture에 상충 관측은 없으므로 이를 만들어 내지 않는다. 같은 질문·세 경로·모델·누적 usage 방식으로 단회 비교한다.
+
+### SSH 비교 결과
+
+세 경로 모두 schema/ID/4 KiB를 통과했다. 실제 `cat` 실패와 build exit 2, 파일/작업 경로 확인을 보존했고 수정이 실행됐다는 주장은 없었다. Worker Parent는 `exactly configured`의 의미에도 불확실성을 남겨 다소 과도하게 유보했지만, 관측과 상충하는 확정 원인이나 위험한 권고는 없었다. 이 비교 실행은 2 tests pass였다. 진단 비교 호출만 합하면 Parent 30회·Worker 10회이며, 앞선 reference ID 실패 2건을 그대로 포함한다.
+
+| 경로 | Parent 전달 bytes | Parent input / cached / output | Worker input / cached / output | Parent / Worker 초 |
+| --- | ---: | ---: | ---: | ---: |
+| raw | 2,311 | 8,514 / 0 / 482 | 0 / 0 / 0 | 17.7 / 0.0 |
+| prepared | 2,192 | 8,480 / 4,864 / 517 | 0 / 0 / 0 | 20.4 / 0.0 |
+| worker | 9,586 | 11,066 / 0 / 492 | 8,347 / 4,864 / 505 | 18.9 / 19.9 |
+
+SSH fixture에서는 작은 auto Worker 0회, 명시적 Worker 1회다. 전체 Worker+Parent 사용량은 직접 Parent보다 컸다. 작은 입력의 경제성 개선 근거로 해석하지 않는다.

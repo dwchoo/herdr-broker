@@ -2,7 +2,7 @@
 
 ## 필요한 환경
 
-검증 기준은 macOS arm64, Node 24, Herdr 0.9.0/protocol 22, Codex CLI 0.154.0이다. Worker는 `gpt-5.6-luna`/low를 사용하며 로컬 Codex 계정의 기존 인증으로 실행한다. 원격에 AI runtime이나 credential을 설치하지 않는다. SSH 실행 지원 여부는 최종 SSH acceptance 문서에서 확인한다.
+검증 기준은 macOS arm64, Node 24, Herdr 0.9.0/protocol 22, Codex CLI 0.154.0이다. Worker는 `gpt-5.6-luna`/low를 사용하며 로컬 Codex 계정의 기존 인증으로 실행한다. 원격에 AI runtime이나 credential을 설치하지 않는다. SSH 실행은 사용자 준비 확인이 필요한 `ssh_posix` profile로 제공한다. 검증 범위는 [SSH acceptance](implementation/issue-24-ssh-acceptance.md)에서 확인한다.
 
 ## 설치·기동
 
@@ -109,3 +109,14 @@ purge는 Snapshot·report·Evidence·pending payload를 제거한다. 제거된 
 | `ledger_missing` / `ledger_invalid` / `ledger_unavailable` | core를 중지하고 신뢰할 수 있는 저장 상태를 확인. 기존 intent를 버리는 빈 ledger 생성 금지 |
 
 원격 identity 인증, 감지되지 않는 연결 변화, 재검증과 전송 사이 race, 외부 Herdr client 입력 잠금, exactly-once 실행은 보장하지 않는다.
+
+## SSH POSIX shell 준비
+
+SSH 연결 후 실제 pane이 협조적인 idle POSIX shell이고 현재 cwd가 맞는지 확인한다. 이어서 `serve` console에서 다음을 실행한다.
+
+```text
+inspect <pane_id>
+ssh-ready <pane_session_id> <absolute cwd>
+```
+
+Parent는 같은 cwd의 `ssh_posix` scope로 job을 시작한다. 이 확인은 사용자 선언이며 remote host/user의 인증 결과가 아니다. 명령 제출 시 준비 상태를 소비하고 신뢰 가능한 완료 관찰 뒤에만 다음 입력이 가능하다. 결과 불명은 실제 shell 확인 후 `inspect`/`ssh-ready`, 다시 `inspect`/`recover` 순서로 복구한다. 재연결·대상 변경·core restart 뒤에는 다시 확인해야 한다. 최종 acceptance가 통과한 package만 SSH 실행 profile을 제공한다.
