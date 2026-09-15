@@ -8,10 +8,11 @@ test('Parent discovers passive tools and describes the exact pane without input'
   assert.equal(client.hello.result.serverInfo.name, 'herdr-broker');
   const tools = await client.request('tools/list', {});
   for (const tool of tools.result.tools) {
-    assert.equal(tool.annotations?.readOnlyHint, ['pane_describe', 'job_status', 'job_wait'].includes(tool.name));
+    assert.equal(tool.annotations?.readOnlyHint, ['pane_describe', 'job_status', 'job_wait', 'evidence_get'].includes(tool.name));
     assert.equal(tool.annotations?.destructiveHint, false);
+    assert.equal(tool.inputSchema.additionalProperties, false);
   }
-  assert.deepEqual(tools.result.tools.map(tool => tool.name).sort(), ['pane_describe', 'job_start', 'job_status', 'job_wait', 'job_cancel'].sort());
+  assert.deepEqual(tools.result.tools.map(tool => tool.name).sort(), ['pane_describe', 'job_start', 'job_status', 'job_wait', 'job_cancel', 'evidence_get'].sort());
   const result = await client.call('pane_describe', { pane_id: pane.pane_id });
   assert.deepEqual(result.target, { pane_id: 'ws:pane', terminal_id: 'terminal-1', workspace_id: 'ws', tab_id: 'tab-1' });
   assert.equal(result.context.cwd, '/fixture');
@@ -129,11 +130,11 @@ test('Delegation Jobs enforce connection ownership, deadlines, wait timeout, and
   assert.equal((await client.call('job_wait', { job_id: pending.job_id, wait_ms: 0 })).result, undefined);
   assert.equal(h.calls.length, before);
   now += 30 * 60 * 1000 + 1;
-  assert.equal((await client.call('job_status', { job_id: pending.job_id })).error, 'job_unavailable');
+  assert.equal((await client.call('job_status', { job_id: pending.job_id })).data_state, 'expired');
 });
 
-test('Retained diagnostic memory evicts ended jobs first and refuses active overflow', async t => {
-  const h = await harness(t, { core: { memoryLimit: 40000 } });
+test('Retained diagnostic memory evicts ended bodies first and refuses active overflow', async t => {
+  const h = await harness(t, { core: { memoryLimit: 45000 } });
   const client = await h.connect();
   const start = async () => client.call('job_start', { pane_id: pane.pane_id, objective: 'diagnose' });
   const first = await start();
@@ -143,7 +144,7 @@ test('Retained diagnostic memory evicts ended jobs first and refuses active over
   await client.call('job_wait', { job_id: second.job_id, wait_ms: 1000 });
   const third = await start();
   await client.call('job_wait', { job_id: third.job_id, wait_ms: 1000 });
-  assert.equal((await client.call('job_status', { job_id: first.job_id })).error, 'job_unavailable');
+  assert.equal((await client.call('job_status', { job_id: first.job_id })).data_state, 'evicted');
   assert.equal((await start()).error, 'memory_budget_exhausted');
   assert.equal((await client.call('job_status', { job_id: second.job_id })).phase, 'result_ready');
 });

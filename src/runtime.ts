@@ -2,8 +2,9 @@ import { createConnection } from 'node:net';
 import type { Readable, Writable } from 'node:stream';
 import { BrokerError } from './herdr.js';
 
-interface ConsoleCore { socketPath: string; close(): Promise<void>; summary(): object }
+interface ConsoleCore { socketPath: string; close(): Promise<void>; summary(): object; purge(id: string): object }
 export function startConsole(core: ConsoleCore, input: Readable, output: Writable) {
+  const commands = ['status', 'purge <job_id>', 'purge all', 'help', 'quit'];
   let buffer = '';
   let closing = false;
   const close = async () => {
@@ -21,13 +22,16 @@ export function startConsole(core: ConsoleCore, input: Readable, output: Writabl
       const command = buffer.slice(0, end).trim();
       buffer = buffer.slice(end + 1);
       if (command === 'quit') { void close(); return; }
-      output.write(JSON.stringify(command === 'status' ? core.summary() : { commands: ['status', 'help', 'quit'], action_supported: false }) + '\n');
+      const purge = /^purge (all|[0-9a-f-]{36})$/.exec(command);
+      try {
+        output.write(JSON.stringify(command === 'status' ? core.summary() : purge ? core.purge(purge[1]!) : { commands, action_supported: false }) + '\n');
+      } catch (error) { output.write(JSON.stringify({ error: error instanceof BrokerError ? error.code : 'internal_error' }) + '\n'); }
     }
   };
   input.on('data', onData);
   input.once('end', () => void close());
   input.once('error', () => void close());
-  output.write(JSON.stringify({ status: 'ready', socket: core.socketPath, commands: ['status', 'help', 'quit'] }) + '\n');
+  output.write(JSON.stringify({ status: 'ready', socket: core.socketPath, commands }) + '\n');
   return close;
 }
 

@@ -28,7 +28,7 @@ export function sanitize(raw: string, patterns: string[] = []) {
   return { text, redaction: { version: 'basic-v1', pattern_digest: createHash('sha256').update(JSON.stringify(patterns)).digest('hex').slice(0, 16), count, rules: [...rules] } };
 }
 
-export function prepareSnapshot(raw: string, session: string, truncated: boolean, patterns: string[], now: number) {
+export function prepareSnapshot(raw: string, session: string, truncated: boolean, patterns: string[], now: number, sequence = 1) {
   const clean = sanitize(raw, patterns);
   const allRows = clean.text.split('\n');
   const gaps = ['history_unobserved'];
@@ -59,8 +59,44 @@ export function prepareSnapshot(raw: string, session: string, truncated: boolean
     groups.push(count === 1 ? `${evidenceId(first + 1)} ${text}` : `${evidenceId(first + 1)}..${evidenceId(index)} [count=${count} omitted=${count - 1}] ${text}`);
   }
   return {
-    metadata: { snapshot_id: snapshotId, pane_session_id: session, capture_sequence: 1, captured_at: new Date(now).toISOString(), source: 'recent', format: 'ansi', physical_rows: rows.length, utf8_bytes: Buffer.byteLength(bounded), truncated: truncated || gaps.length > 1, gaps, history_complete: false,
+    metadata: { snapshot_id: snapshotId, pane_session_id: session, capture_sequence: sequence, captured_at: new Date(now).toISOString(), source: 'recent', format: 'ansi', physical_rows: rows.length, utf8_bytes: Buffer.byteLength(bounded), truncated: truncated || gaps.length > 1, gaps, history_complete: false,
       row_mapping: { normalized_to_physical: 'one_to_one', first_physical_row: firstPhysicalRow, last_physical_row: allRows.length, first_row_partial: firstRowPartial }, redaction: clean.redaction },
     text: groups.join('\n'), rows,
   };
+}
+
+export function excerpt(snapshotId: string, rows: readonly string[], firstRow = 0, offsetBytes = 0) {
+  const rowId = (index: number) => `${snapshotId}:L${String(index + 1).padStart(4, '0')}`;
+  type Item = { evidence_id: string; text: string; offset_bytes: number };
+  type Position = { evidence_id: string; offset_bytes: number };
+  const items: Item[] = [];
+  const wrap = (entries: Item[], next: Position | null) => ({ items: entries, truncated: next !== null, next });
+  let row = firstRow;
+  let offset = offsetBytes;
+  while (row < rows.length && items.length < 16) {
+    const bytes = Buffer.from(rows[row]!);
+    const characters = [...bytes.subarray(offset).toString('utf8')];
+    const candidate = (length: number) => {
+      const text = characters.slice(0, length).join('');
+      const next = length < characters.length ? { evidence_id: rowId(row), offset_bytes: offset + Buffer.byteLength(text) }
+        : row + 1 < rows.length ? { evidence_id: rowId(row + 1), offset_bytes: 0 } : null;
+      return wrap([...items, { evidence_id: rowId(row), text, offset_bytes: offset }], next);
+    };
+    const full = candidate(characters.length);
+    if (Buffer.byteLength(JSON.stringify(full)) <= 2048) {
+      items.push(full.items[full.items.length - 1]!);
+      row++; offset = 0;
+      continue;
+    }
+    let lower = 0;
+    let upper = characters.length;
+    while (lower < upper) {
+      const middle = Math.ceil((lower + upper) / 2);
+      if (Buffer.byteLength(JSON.stringify(candidate(middle))) <= 2048) lower = middle;
+      else upper = middle - 1;
+    }
+    if (lower === 0 && items.length) return wrap(items, { evidence_id: rowId(row), offset_bytes: offset });
+    return candidate(lower);
+  }
+  return wrap(items, row < rows.length ? { evidence_id: rowId(row), offset_bytes: 0 } : null);
 }

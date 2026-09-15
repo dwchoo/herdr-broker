@@ -1,16 +1,22 @@
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
 import { Herdr, BrokerError } from './herdr.js';
-import { prepareSnapshot, sanitize } from './snapshot.js';
+import { prepareSnapshot, sanitize, excerpt } from './snapshot.js';
 
-type Phase = 'observing' | 'result_ready' | 'failed' | 'cancelled' | 'deadline' | 'budget_exhausted';
+type Phase = 'observing' | 'result_ready' | 'failed' | 'cancelled' | 'deadline' | 'budget_exhausted' | 'purged';
+type DataState = 'retained' | 'purged' | 'expired' | 'evicted';
 interface Budget { deadline_ms?: number | undefined; parent_payload_bytes?: number | undefined }
+interface SnapshotRecord {
+  value?: ReturnType<typeof prepareSnapshot>; rowCount: number; cursor?: string; cursorExpires: number;
+  digest?: string; scope?: string; prepared: boolean;
+}
 interface Job {
   id: string; owner: string; paneId: string; objective: string; session: string;
   phase: Phase; controller: AbortController; done: Promise<void>;
   created: number; deadline: number; limit: number; used: number; noticeSent: boolean;
-  memory: number; rows?: readonly string[];
+  memory: number; dataState: DataState; snapshots: Map<string, SnapshotRecord>; current?: SnapshotRecord;
+  binding?: string; sequence: number; observedAt?: number;
   ended?: number; timer?: NodeJS.Timeout;
-  snapshot?: object; result?: { kind: string; text: string }; error?: string;
+  error?: string;
 }
 const ended = (job: Job) => job.ended !== undefined;
 
@@ -26,7 +32,7 @@ export class Jobs {
     this.reserve(16384);
     if ([...this.jobs.values()].filter(job => job.phase === 'observing').length >= 4) throw new BrokerError('observation_busy');
     const created = this.now();
-    const job: Job = { id: randomUUID(), owner, paneId, objective: sanitize(objective, this.patterns).text, session: randomUUID(), phase: 'observing', controller: new AbortController(), done: Promise.resolve(), created, deadline: created + (budget.deadline_ms ?? 300000), limit: budget.parent_payload_bytes ?? 16384, used: 0, noticeSent: false, memory: 16384 };
+    const job: Job = { id: randomUUID(), owner, paneId, objective: sanitize(objective, this.patterns).text, session: randomUUID(), phase: 'observing', controller: new AbortController(), done: Promise.resolve(), created, deadline: created + (budget.deadline_ms ?? 300000), limit: budget.parent_payload_bytes ?? 16384, used: 0, noticeSent: false, memory: 16384, dataState: 'retained', snapshots: new Map(), sequence: 0 };
     this.jobs.set(job.id, job);
     job.timer = setTimeout(() => this.stop(job, 'deadline'), job.deadline - created);
     job.timer.unref();
@@ -45,10 +51,21 @@ export class Jobs {
     job.controller.abort();
   }
   private sweep() {
-    for (const [id, job] of this.jobs) {
+    for (const job of this.jobs.values()) {
       this.active(job);
-      if (job.ended !== undefined && this.now() - job.ended >= 1800000) this.jobs.delete(id);
+      if (job.ended !== undefined && this.now() - job.ended >= 1800000) this.clearBodies(job, 'expired');
     }
+  }
+  private clearBodies(job: Job, reason: DataState) {
+    if (job.dataState !== 'retained') return;
+    for (const record of job.snapshots.values()) {
+      delete record.value; delete record.cursor; delete record.digest; delete record.scope;
+      record.cursorExpires = 0; record.prepared = false;
+    }
+    delete job.current;
+    job.objective = '';
+    job.dataState = reason;
+    job.memory = 2048 + job.snapshots.size * 256;
   }
   private async observe(job: Job, analysis: string) {
     try {
@@ -61,14 +78,23 @@ export class Jobs {
       const verified = await this.herdr.describe(job.paneId, job.controller.signal);
       if (!this.active(job)) return;
       if (verified.terminal_id !== pane.terminal_id || verified.workspace_id !== pane.workspace_id || verified.tab_id !== pane.tab_id) throw new BrokerError('target_changed');
-      const snapshot = prepareSnapshot(read.text, job.session, read.truncated, this.patterns, this.now());
-      const retained = 2 * Buffer.byteLength(snapshot.rows.join('\n')) + 128 * snapshot.rows.length + 2 * Buffer.byteLength(snapshot.text);
-      this.reserve(retained);
-      job.memory += retained;
-      job.rows = Object.freeze(snapshot.rows);
-      job.snapshot = Object.freeze(snapshot.metadata);
-      if (Buffer.byteLength(snapshot.text) > 4096) throw new BrokerError('worker_unsupported');
-      job.result = { kind: 'prepared_context', text: snapshot.text };
+      const binding = JSON.stringify([pane.terminal_id, pane.workspace_id, pane.tab_id]);
+      const session = job.binding !== undefined && job.binding !== binding ? randomUUID() : job.session;
+      const sequence = job.sequence + 1;
+      const observedAt = this.now();
+      const snapshot = prepareSnapshot(read.text, session, read.truncated, this.patterns, observedAt, sequence);
+      const scope = JSON.stringify([job.owner, job.id, session, snapshot.metadata.source, snapshot.metadata.format, snapshot.metadata.redaction.version, snapshot.metadata.redaction.pattern_digest]);
+      const digest = createHash('sha256').update(JSON.stringify([scope, snapshot.rows, snapshot.metadata.gaps, snapshot.metadata.row_mapping, snapshot.metadata.redaction])).digest('hex');
+      if (job.current?.digest !== digest) {
+        const retained = 2048 + 2 * Buffer.byteLength(snapshot.rows.join('\n')) + 128 * snapshot.rows.length + 2 * Buffer.byteLength(snapshot.text);
+        this.reserve(retained);
+        job.memory += retained;
+        const record: SnapshotRecord = { value: Object.freeze(snapshot), rowCount: snapshot.rows.length, cursor: randomUUID(), cursorExpires: this.now() + 60000, digest, scope, prepared: Buffer.byteLength(snapshot.text) <= 4096 };
+        job.snapshots.set(snapshot.metadata.snapshot_id, record);
+        job.current = record;
+      }
+      job.session = session; job.binding = binding; job.sequence = sequence; job.observedAt = observedAt;
+      if (!job.current?.prepared) throw new BrokerError('worker_unsupported');
       job.phase = 'result_ready';
     } catch (error) {
       if (!this.active(job)) return;
@@ -79,19 +105,26 @@ export class Jobs {
   private reserve(bytes: number) {
     const limit = Math.min(this.memoryLimit, 64 * 1024 * 1024);
     const total = () => [...this.jobs.values()].reduce((sum, job) => sum + job.memory, 0);
-    for (const job of [...this.jobs.values()].filter(ended).sort((a, b) => a.ended! - b.ended!)) {
+    for (const job of [...this.jobs.values()].filter(job => ended(job) && job.dataState === 'retained').sort((a, b) => a.ended! - b.ended!)) {
       if (total() + bytes <= limit) break;
-      this.jobs.delete(job.id);
+      this.clearBodies(job, 'evicted');
     }
     if (total() + bytes > limit) throw new BrokerError('memory_budget_exhausted');
   }
   summary() {
     this.sweep();
     return {
-      jobs: [...this.jobs.values()].slice(-32).map(job => ({ job_id: job.id, phase: job.phase, job_ended: ended(job), result_ready: !!job.result, deadline_remaining_ms: Math.max(0, job.deadline - this.now()), parent_payload_bytes_remaining: job.limit - job.used, snapshot: job.snapshot })),
+      jobs: [...this.jobs.values()].slice(-32).map(job => ({ job_id: job.id, phase: job.phase, data_state: job.dataState, job_ended: ended(job), result_ready: !job.error && job.phase !== 'observing' && !!job.current?.prepared, deadline_remaining_ms: Math.max(0, job.deadline - this.now()), parent_payload_bytes_remaining: job.limit - job.used, ...(job.ended !== undefined && { ended_at: new Date(job.ended).toISOString(), retention_expires_at: new Date(job.ended + 1800000).toISOString() }), snapshot: job.current?.value?.metadata })),
       job_count: this.jobs.size, memory_bytes: [...this.jobs.values()].reduce((sum, job) => sum + job.memory, 0), memory_limit_bytes: Math.min(this.memoryLimit, 64 * 1024 * 1024), retention_after_end_ms: 1800000,
       action_submission: 'unsupported', action_outcome: 'unsupported', action_mode: 'unavailable',
     };
+  }
+  purge(id: string) {
+    this.sweep();
+    const selected = [...this.jobs.values()].filter(job => id === 'all' || job.id === id);
+    if (!selected.length && id !== 'all') return { error: 'job_unavailable' };
+    for (const job of selected) { this.stop(job, 'purged'); this.clearBodies(job, 'purged'); }
+    return { purged_job_ids: selected.slice(0, 32).map(job => job.id), purged_job_count: selected.length, truncated: selected.length > 32 };
   }
   private owned(owner: string, id: string) {
     this.sweep();
@@ -99,14 +132,32 @@ export class Jobs {
     if (!job || job.owner !== owner) throw new BrokerError('job_unavailable');
     return job;
   }
-  private status(job: Job, waitTimedOut = false) {
-    return { job_id: job.id, pane_session_id: job.session, pane_id: job.paneId, phase: job.phase, result_ready: !!job.result, job_ended: ended(job), action_state: 'unsupported', wait_timed_out: waitTimedOut,
-      ...(job.snapshot && { snapshot: job.snapshot }), ...(job.result && { result: job.result }), ...(job.error && { error: job.error }) };
+  invalidInput(owner: string, id?: string) {
+    if (id === undefined) return { error: 'invalid_tool_arguments' };
+    const job = this.owned(owner, id);
+    return this.deliver(job, false, { job_id: job.id, error: 'invalid_tool_arguments' });
   }
-  private deliver(job: Job, waitTimedOut = false): string | null {
+  private status(job: Job, waitTimedOut = false, cursor?: string) {
+    const base = { job_id: job.id, pane_session_id: job.session, pane_id: job.paneId, phase: job.phase, data_state: job.dataState, result_ready: !job.error && job.phase !== 'observing' && !!job.current?.prepared, job_ended: ended(job), action_state: 'unsupported', wait_timed_out: waitTimedOut, ...(job.error && { error: job.error }) };
+    const current = job.current;
+    if (!current?.value || job.phase === 'observing' || (job.error && current.prepared)) return base;
+    const baseline = [...job.snapshots.values()].find(record => record.cursor === cursor);
+    const unchanged = baseline && baseline.cursorExpires > this.now() && baseline.scope === current.scope && baseline.digest === current.digest;
+    if (current.cursorExpires <= this.now()) {
+      current.cursor = randomUUID();
+      current.cursorExpires = this.now() + 60000;
+    }
+    const view = { cursor: current.cursor, cursor_expires_at: new Date(current.cursorExpires).toISOString(), observation: { sequence: job.sequence, observed_at: new Date(job.observedAt!).toISOString() } };
+    const snapshot = current.value;
+    if (unchanged) return { ...base, ...view, delta: { kind: 'unchanged_view', snapshot_id: snapshot.metadata.snapshot_id, history_complete: false } };
+    return { ...base, ...view, delta: { kind: 'replace', history_complete: false }, snapshot: snapshot.metadata,
+      ...(current.prepared && { result: { kind: 'prepared_context', text: snapshot.text }, evidence: excerpt(snapshot.metadata.snapshot_id, snapshot.rows) }) };
+  }
+  private deliver(job: Job, waitTimedOut = false, body?: object, cursor?: string): string | null {
     if (job.noticeSent) return null;
     const budget = { deadline_ms: job.deadline - job.created, deadline_remaining_ms: Math.max(0, job.deadline - this.now()), parent_payload_bytes_limit: job.limit, parent_payload_bytes_used: 0, parent_payload_bytes_remaining: 0 };
-    let response: object = { ...this.status(job, waitTimedOut), budget };
+    const view = body === undefined ? this.status(job, waitTimedOut, cursor) : undefined;
+    let response: object = { ...(body ?? view), budget };
     const encode = () => {
       let bytes = 0;
       for (;;) {
@@ -120,6 +171,10 @@ export class Jobs {
       }
     };
     let text = encode();
+    if (view && 'evidence' in view && job.current?.value && (budget.parent_payload_bytes_used > job.limit - 512 || Buffer.byteLength(text) > 8192)) {
+      response = { ...view, evidence: { items: [], truncated: true, next: { evidence_id: `${job.current.value.metadata.snapshot_id}:L0001`, offset_bytes: 0 } }, budget };
+      text = encode();
+    }
     if (budget.parent_payload_bytes_used > job.limit - 512 || Buffer.byteLength(text) > 8192) {
       this.stop(job, 'budget_exhausted');
       response = { job_id: job.id, error: 'parent_budget_exhausted', job_ended: true, action_state: 'unsupported', budget };
@@ -129,9 +184,14 @@ export class Jobs {
     job.used += Buffer.byteLength(text);
     return text;
   }
-  async call(owner: string, id: string, operation: 'status' | 'wait' | 'cancel', waitMs = 0) {
+  async call(owner: string, id: string, operation: 'status' | 'wait' | 'cancel', waitMs = 0, cursor?: string) {
     const job = this.owned(owner, id);
     if (operation === 'cancel') this.stop(job, 'cancelled');
+    if (operation === 'wait' && this.active(job) && job.phase !== 'observing' && cursor !== undefined && cursor === job.current?.cursor && job.current.cursorExpires > this.now()) {
+      if ([...this.jobs.values()].filter(other => other.phase === 'observing').length >= 4) return this.deliver(job, false, { job_id: job.id, error: 'observation_busy' });
+      job.phase = 'observing';
+      job.done = this.observe(job, 'auto');
+    }
     let waitTimedOut = false;
     if (operation === 'wait' && job.phase === 'observing') {
       let timer: NodeJS.Timeout | undefined;
@@ -139,7 +199,23 @@ export class Jobs {
       clearTimeout(timer);
       this.active(job);
     }
-    return this.deliver(job, waitTimedOut && job.phase === 'observing');
+    return this.deliver(job, waitTimedOut && job.phase === 'observing', undefined, cursor);
+  }
+  evidence(owner: string, id: string, evidenceId: string, offsetBytes = 0) {
+    const job = this.owned(owner, id);
+    const [snapshotId, line] = evidenceId.split(':L');
+    const record = snapshotId ? job.snapshots.get(snapshotId) : undefined;
+    const row = Number(line) - 1;
+    if (!record || row < 0 || row >= record.rowCount) {
+      return this.deliver(job, false, { job_id: job.id, error: 'evidence_not_found' });
+    }
+    if (!record.value) return this.deliver(job, false, { job_id: job.id, error: 'evidence_expired' });
+    const rows = record.value.rows;
+    const bytes = Buffer.from(rows[row]!);
+    if (offsetBytes > bytes.length || (offsetBytes < bytes.length && (bytes[offsetBytes]! & 0xc0) === 0x80)) {
+      return this.deliver(job, false, { job_id: job.id, error: 'invalid_evidence_offset' });
+    }
+    return this.deliver(job, false, { job_id: job.id, evidence: excerpt(record.value.metadata.snapshot_id, rows, row, offsetBytes) });
   }
   disconnect(owner: string) {
     for (const job of this.jobs.values()) if (job.owner === owner) this.stop(job, 'cancelled');
