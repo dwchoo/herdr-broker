@@ -1,0 +1,957 @@
+{
+  "fixture": "export-mismatch",
+  "expected": "TS2305/Account export 불일치를 지목. export/import를 확인하고 원인을 파일 미존재로 단정하지 않음.",
+  "summary": {
+    "fixture": "export-mismatch",
+    "rawBytes": 31668,
+    "preparedBytes": 765,
+    "delegatedParentBytes": 1954,
+    "evidenceBytes": 350,
+    "additionalEvidenceCalls": 0,
+    "repairs": {
+      "raw": 0,
+      "prepared": 0,
+      "worker": 0,
+      "delegated": 0
+    },
+    "rawUsage": {
+      "input_tokens": 16890,
+      "cached_input_tokens": 0,
+      "output_tokens": 515,
+      "elapsedMs": 21435
+    },
+    "preparedUsage": {
+      "input_tokens": 10278,
+      "cached_input_tokens": 0,
+      "output_tokens": 466,
+      "elapsedMs": 15367
+    },
+    "delegatedUsage": {
+      "input_tokens": 18718,
+      "cached_input_tokens": 0,
+      "output_tokens": 841,
+      "elapsedMs": 26222
+    },
+    "structuralValidity": [
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "rawParent": {
+    "result": {
+      "model": "gpt-5.6-sol",
+      "effort": "low",
+      "inputBytes": 32326,
+      "elapsedMs": 21435,
+      "code": 0,
+      "timedOut": false,
+      "processGroupPresent": false,
+      "usage": {
+        "input_tokens": 16890,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 515,
+        "reasoning_output_tokens": 0
+      },
+      "envelopeValid": true,
+      "validationErrors": [],
+      "observedToolItems": [],
+      "events": [
+        {
+          "type": "thread.started",
+          "thread_id": "01a0a382-118b-73f3-ae8b-e064a1e2dc9d"
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_0",
+            "type": "error",
+            "message": "Under-development features enabled: skip_host_skill_discovery. Under-development features are incomplete and may behave unpredictably. To suppress this warning, set `suppress_unstable_features_warning = true` in <user-home>/.codex/config.toml."
+          }
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_1",
+            "type": "error",
+            "message": "Code Mode is unavailable because code-mode host is disabled. Code mode will fail closed; enable `features.code_mode_host` and install `codex-code-mode-host`."
+          }
+        },
+        {
+          "type": "turn.started"
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_2",
+            "type": "agent_message",
+            "text": "{\"status\":\"diagnosed\",\"summary\":\"TypeScript 컴파일이 실패했으며, 직접 관찰된 오류는 `src/main.ts`가 `./schema`에 없는 `Account` 멤버를 import한다는 것입니다. 다만 export 누락, 이름 변경, 잘못된 모듈 해석 중 무엇이 근본 원인인지는 제공 자료만으로 확정할 수 없습니다.\",\"findings\":[{\"claim\":\"`npm run build`에서 TypeScript 컴파일이 exit code 2로 실패했다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0001\",\"L0303\"]},{\"claim\":\"컴파일러는 `src/main.ts` 2행의 `./schema` 모듈에 `Account` export가 없다고 보고했다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0152\"]},{\"claim\":\"`Account` export와 import 간 불일치가 빌드 실패의 직접 원인일 가능성이 높다.\",\"confidence\":\"likely\",\"evidence_ids\":[\"L0152\",\"L0303\"]},{\"claim\":\"반복된 cache-hit 메시지는 의존성 변경이 감지되지 않았음을 나타내지만, 캐시가 오류에 기여했는지는 입증되지 않았다.\",\"confidence\":\"uncertain\",\"evidence_ids\":[\"L0002\",\"L0153\",\"L0304\"]}],\"next_checks\":[\"`src/main.ts` 2행의 `Account` import 구문과 의도한 symbol 이름을 확인한다.\",\"`./schema`가 실제로 export하는 멤버와 `Account`의 삭제·이름 변경 여부를 확인한다.\",\"`./schema`가 기대한 파일 또는 barrel module로 해석되는지 확인한다.\",\"캐시를 배제한 clean TypeScript build에서 동일한 TS2305가 재현되는지 확인한다.\",\"관련 변경 이력에서 `Account` export와 소비 코드가 함께 갱신되었는지 확인한다.\"],\"uncertainties\":[\"`./schema`의 소스와 export 목록이 제공되지 않았다.\",\"`Account`가 삭제됐는지, 이름이 바뀌었는지, export가 누락됐는지 알 수 없다.\",\"TypeScript 설정과 module resolution 결과가 제공되지 않았다.\",\"전체 빌드 로그의 순서·중복 생성 방식이 명확하지 않다.\",\"캐시를 사용하지 않은 빌드 결과가 없어 캐시 영향 여부를 판단할 수 없다.\"]}"
+          }
+        },
+        {
+          "type": "turn.completed",
+          "usage": {
+            "input_tokens": 16890,
+            "cached_input_tokens": 0,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 515,
+            "reasoning_output_tokens": 0
+          }
+        }
+      ],
+      "stderr": "",
+      "report": {
+        "status": "diagnosed",
+        "summary": "TypeScript 컴파일이 실패했으며, 직접 관찰된 오류는 `src/main.ts`가 `./schema`에 없는 `Account` 멤버를 import한다는 것입니다. 다만 export 누락, 이름 변경, 잘못된 모듈 해석 중 무엇이 근본 원인인지는 제공 자료만으로 확정할 수 없습니다.",
+        "findings": [
+          {
+            "claim": "`npm run build`에서 TypeScript 컴파일이 exit code 2로 실패했다.",
+            "confidence": "observed",
+            "evidence_ids": [
+              "L0001",
+              "L0303"
+            ]
+          },
+          {
+            "claim": "컴파일러는 `src/main.ts` 2행의 `./schema` 모듈에 `Account` export가 없다고 보고했다.",
+            "confidence": "observed",
+            "evidence_ids": [
+              "L0152"
+            ]
+          },
+          {
+            "claim": "`Account` export와 import 간 불일치가 빌드 실패의 직접 원인일 가능성이 높다.",
+            "confidence": "likely",
+            "evidence_ids": [
+              "L0152",
+              "L0303"
+            ]
+          },
+          {
+            "claim": "반복된 cache-hit 메시지는 의존성 변경이 감지되지 않았음을 나타내지만, 캐시가 오류에 기여했는지는 입증되지 않았다.",
+            "confidence": "uncertain",
+            "evidence_ids": [
+              "L0002",
+              "L0153",
+              "L0304"
+            ]
+          }
+        ],
+        "next_checks": [
+          "`src/main.ts` 2행의 `Account` import 구문과 의도한 symbol 이름을 확인한다.",
+          "`./schema`가 실제로 export하는 멤버와 `Account`의 삭제·이름 변경 여부를 확인한다.",
+          "`./schema`가 기대한 파일 또는 barrel module로 해석되는지 확인한다.",
+          "캐시를 배제한 clean TypeScript build에서 동일한 TS2305가 재현되는지 확인한다.",
+          "관련 변경 이력에서 `Account` export와 소비 코드가 함께 갱신되었는지 확인한다."
+        ],
+        "uncertainties": [
+          "`./schema`의 소스와 export 목록이 제공되지 않았다.",
+          "`Account`가 삭제됐는지, 이름이 바뀌었는지, export가 누락됐는지 알 수 없다.",
+          "TypeScript 설정과 module resolution 결과가 제공되지 않았다.",
+          "전체 빌드 로그의 순서·중복 생성 방식이 명확하지 않다.",
+          "캐시를 사용하지 않은 빌드 결과가 없어 캐시 영향 여부를 판단할 수 없다."
+        ]
+      },
+      "reportBytes": 2015
+    },
+    "attempts": [
+      {
+        "model": "gpt-5.6-sol",
+        "effort": "low",
+        "inputBytes": 32326,
+        "elapsedMs": 21435,
+        "code": 0,
+        "timedOut": false,
+        "processGroupPresent": false,
+        "usage": {
+          "input_tokens": 16890,
+          "cached_input_tokens": 0,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 515,
+          "reasoning_output_tokens": 0
+        },
+        "envelopeValid": true,
+        "validationErrors": [],
+        "observedToolItems": [],
+        "events": [
+          {
+            "type": "thread.started",
+            "thread_id": "01a0a382-118b-73f3-ae8b-e064a1e2dc9d"
+          },
+          {
+            "type": "item.completed",
+            "item": {
+              "id": "item_0",
+              "type": "error",
+              "message": "Under-development features enabled: skip_host_skill_discovery. Under-development features are incomplete and may behave unpredictably. To suppress this warning, set `suppress_unstable_features_warning = true` in <user-home>/.codex/config.toml."
+            }
+          },
+          {
+            "type": "item.completed",
+            "item": {
+              "id": "item_1",
+              "type": "error",
+              "message": "Code Mode is unavailable because code-mode host is disabled. Code mode will fail closed; enable `features.code_mode_host` and install `codex-code-mode-host`."
+            }
+          },
+          {
+            "type": "turn.started"
+          },
+          {
+            "type": "item.completed",
+            "item": {
+              "id": "item_2",
+              "type": "agent_message",
+              "text": "{\"status\":\"diagnosed\",\"summary\":\"TypeScript 컴파일이 실패했으며, 직접 관찰된 오류는 `src/main.ts`가 `./schema`에 없는 `Account` 멤버를 import한다는 것입니다. 다만 export 누락, 이름 변경, 잘못된 모듈 해석 중 무엇이 근본 원인인지는 제공 자료만으로 확정할 수 없습니다.\",\"findings\":[{\"claim\":\"`npm run build`에서 TypeScript 컴파일이 exit code 2로 실패했다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0001\",\"L0303\"]},{\"claim\":\"컴파일러는 `src/main.ts` 2행의 `./schema` 모듈에 `Account` export가 없다고 보고했다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0152\"]},{\"claim\":\"`Account` export와 import 간 불일치가 빌드 실패의 직접 원인일 가능성이 높다.\",\"confidence\":\"likely\",\"evidence_ids\":[\"L0152\",\"L0303\"]},{\"claim\":\"반복된 cache-hit 메시지는 의존성 변경이 감지되지 않았음을 나타내지만, 캐시가 오류에 기여했는지는 입증되지 않았다.\",\"confidence\":\"uncertain\",\"evidence_ids\":[\"L0002\",\"L0153\",\"L0304\"]}],\"next_checks\":[\"`src/main.ts` 2행의 `Account` import 구문과 의도한 symbol 이름을 확인한다.\",\"`./schema`가 실제로 export하는 멤버와 `Account`의 삭제·이름 변경 여부를 확인한다.\",\"`./schema`가 기대한 파일 또는 barrel module로 해석되는지 확인한다.\",\"캐시를 배제한 clean TypeScript build에서 동일한 TS2305가 재현되는지 확인한다.\",\"관련 변경 이력에서 `Account` export와 소비 코드가 함께 갱신되었는지 확인한다.\"],\"uncertainties\":[\"`./schema`의 소스와 export 목록이 제공되지 않았다.\",\"`Account`가 삭제됐는지, 이름이 바뀌었는지, export가 누락됐는지 알 수 없다.\",\"TypeScript 설정과 module resolution 결과가 제공되지 않았다.\",\"전체 빌드 로그의 순서·중복 생성 방식이 명확하지 않다.\",\"캐시를 사용하지 않은 빌드 결과가 없어 캐시 영향 여부를 판단할 수 없다.\"]}"
+            }
+          },
+          {
+            "type": "turn.completed",
+            "usage": {
+              "input_tokens": 16890,
+              "cached_input_tokens": 0,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 515,
+              "reasoning_output_tokens": 0
+            }
+          }
+        ],
+        "stderr": "",
+        "report": {
+          "status": "diagnosed",
+          "summary": "TypeScript 컴파일이 실패했으며, 직접 관찰된 오류는 `src/main.ts`가 `./schema`에 없는 `Account` 멤버를 import한다는 것입니다. 다만 export 누락, 이름 변경, 잘못된 모듈 해석 중 무엇이 근본 원인인지는 제공 자료만으로 확정할 수 없습니다.",
+          "findings": [
+            {
+              "claim": "`npm run build`에서 TypeScript 컴파일이 exit code 2로 실패했다.",
+              "confidence": "observed",
+              "evidence_ids": [
+                "L0001",
+                "L0303"
+              ]
+            },
+            {
+              "claim": "컴파일러는 `src/main.ts` 2행의 `./schema` 모듈에 `Account` export가 없다고 보고했다.",
+              "confidence": "observed",
+              "evidence_ids": [
+                "L0152"
+              ]
+            },
+            {
+              "claim": "`Account` export와 import 간 불일치가 빌드 실패의 직접 원인일 가능성이 높다.",
+              "confidence": "likely",
+              "evidence_ids": [
+                "L0152",
+                "L0303"
+              ]
+            },
+            {
+              "claim": "반복된 cache-hit 메시지는 의존성 변경이 감지되지 않았음을 나타내지만, 캐시가 오류에 기여했는지는 입증되지 않았다.",
+              "confidence": "uncertain",
+              "evidence_ids": [
+                "L0002",
+                "L0153",
+                "L0304"
+              ]
+            }
+          ],
+          "next_checks": [
+            "`src/main.ts` 2행의 `Account` import 구문과 의도한 symbol 이름을 확인한다.",
+            "`./schema`가 실제로 export하는 멤버와 `Account`의 삭제·이름 변경 여부를 확인한다.",
+            "`./schema`가 기대한 파일 또는 barrel module로 해석되는지 확인한다.",
+            "캐시를 배제한 clean TypeScript build에서 동일한 TS2305가 재현되는지 확인한다.",
+            "관련 변경 이력에서 `Account` export와 소비 코드가 함께 갱신되었는지 확인한다."
+          ],
+          "uncertainties": [
+            "`./schema`의 소스와 export 목록이 제공되지 않았다.",
+            "`Account`가 삭제됐는지, 이름이 바뀌었는지, export가 누락됐는지 알 수 없다.",
+            "TypeScript 설정과 module resolution 결과가 제공되지 않았다.",
+            "전체 빌드 로그의 순서·중복 생성 방식이 명확하지 않다.",
+            "캐시를 사용하지 않은 빌드 결과가 없어 캐시 영향 여부를 판단할 수 없다."
+          ]
+        },
+        "reportBytes": 2015
+      }
+    ]
+  },
+  "preparedParent": {
+    "result": {
+      "model": "gpt-5.6-sol",
+      "effort": "low",
+      "inputBytes": 1423,
+      "elapsedMs": 15367,
+      "code": 0,
+      "timedOut": false,
+      "processGroupPresent": false,
+      "usage": {
+        "input_tokens": 10278,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 466,
+        "reasoning_output_tokens": 0
+      },
+      "envelopeValid": true,
+      "validationErrors": [],
+      "observedToolItems": [],
+      "events": [
+        {
+          "type": "thread.started",
+          "thread_id": "01a0a382-50b8-7483-a9b0-5580e863aebc"
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_0",
+            "type": "error",
+            "message": "Under-development features enabled: skip_host_skill_discovery. Under-development features are incomplete and may behave unpredictably. To suppress this warning, set `suppress_unstable_features_warning = true` in <user-home>/.codex/config.toml."
+          }
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_1",
+            "type": "error",
+            "message": "Code Mode is unavailable because code-mode host is disabled. Code mode will fail closed; enable `features.code_mode_host` and install `codex-code-mode-host`."
+          }
+        },
+        {
+          "type": "turn.started"
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_2",
+            "type": "agent_message",
+            "text": "{\"status\":\"diagnosed\",\"summary\":\"TypeScript 컴파일 단계에서 './schema' 모듈의 'Account' export를 찾지 못해 빌드가 종료 코드 2로 실패했다. 다만 제공된 로그만으로 실제 근본 원인까지 확정할 수는 없다.\",\"findings\":[{\"claim\":\"직접 관찰된 실패는 src/main.ts 2행의 TS2305 오류이며, './schema'에 'Account'라는 exported member가 없다고 보고됐다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0152\"]},{\"claim\":\"TypeScript 컴파일이 실패했고 프로세스는 종료 코드 2를 반환했다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0303\"]},{\"claim\":\"'Account'의 export 누락·이름 변경·잘못된 import 경로 중 하나가 원인일 가능성이 있으나, schema 소스와 설정이 없어 구분할 수 없다.\",\"confidence\":\"likely\",\"evidence_ids\":[\"L0152\"]},{\"claim\":\"의존성 스캔에서는 변경이 없었고 cache hit가 반복됐지만, 이것이 오류의 원인 또는 무관함을 입증하지는 않는다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0002\",\"L0151\",\"L0302\"]}],\"next_checks\":[\"'./schema'가 해석되는 실제 파일과 해당 파일의 export 목록을 확인한다.\",\"src/main.ts 2행의 import 이름과 현재 schema API의 이름·대소문자를 비교한다.\",\"'Account'가 type-only export라면 export/import type 선언이 올바른지 확인한다.\",\"tsconfig의 moduleResolution, paths, include 설정으로 다른 schema 파일이 선택되는지 확인한다.\",\"캐시를 배제한 깨끗한 TypeScript 빌드에서도 동일한 TS2305가 재현되는지 확인한다.\"],\"uncertainties\":[\"'./schema' 파일 내용과 export 선언이 제공되지 않았다.\",\"src/main.ts의 실제 import 구문 전체가 제공되지 않았다.\",\"tsconfig 및 모듈 해석 결과가 제공되지 않았다.\",\"반복된 cache hit 로그와 컴파일 오류의 인과관계는 확인되지 않았다.\"]}"
+          }
+        },
+        {
+          "type": "turn.completed",
+          "usage": {
+            "input_tokens": 10278,
+            "cached_input_tokens": 0,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 466,
+            "reasoning_output_tokens": 0
+          }
+        }
+      ],
+      "stderr": "",
+      "report": {
+        "status": "diagnosed",
+        "summary": "TypeScript 컴파일 단계에서 './schema' 모듈의 'Account' export를 찾지 못해 빌드가 종료 코드 2로 실패했다. 다만 제공된 로그만으로 실제 근본 원인까지 확정할 수는 없다.",
+        "findings": [
+          {
+            "claim": "직접 관찰된 실패는 src/main.ts 2행의 TS2305 오류이며, './schema'에 'Account'라는 exported member가 없다고 보고됐다.",
+            "confidence": "observed",
+            "evidence_ids": [
+              "L0152"
+            ]
+          },
+          {
+            "claim": "TypeScript 컴파일이 실패했고 프로세스는 종료 코드 2를 반환했다.",
+            "confidence": "observed",
+            "evidence_ids": [
+              "L0303"
+            ]
+          },
+          {
+            "claim": "'Account'의 export 누락·이름 변경·잘못된 import 경로 중 하나가 원인일 가능성이 있으나, schema 소스와 설정이 없어 구분할 수 없다.",
+            "confidence": "likely",
+            "evidence_ids": [
+              "L0152"
+            ]
+          },
+          {
+            "claim": "의존성 스캔에서는 변경이 없었고 cache hit가 반복됐지만, 이것이 오류의 원인 또는 무관함을 입증하지는 않는다.",
+            "confidence": "observed",
+            "evidence_ids": [
+              "L0002",
+              "L0151",
+              "L0302"
+            ]
+          }
+        ],
+        "next_checks": [
+          "'./schema'가 해석되는 실제 파일과 해당 파일의 export 목록을 확인한다.",
+          "src/main.ts 2행의 import 이름과 현재 schema API의 이름·대소문자를 비교한다.",
+          "'Account'가 type-only export라면 export/import type 선언이 올바른지 확인한다.",
+          "tsconfig의 moduleResolution, paths, include 설정으로 다른 schema 파일이 선택되는지 확인한다.",
+          "캐시를 배제한 깨끗한 TypeScript 빌드에서도 동일한 TS2305가 재현되는지 확인한다."
+        ],
+        "uncertainties": [
+          "'./schema' 파일 내용과 export 선언이 제공되지 않았다.",
+          "src/main.ts의 실제 import 구문 전체가 제공되지 않았다.",
+          "tsconfig 및 모듈 해석 결과가 제공되지 않았다.",
+          "반복된 cache hit 로그와 컴파일 오류의 인과관계는 확인되지 않았다."
+        ]
+      },
+      "reportBytes": 1911
+    },
+    "attempts": [
+      {
+        "model": "gpt-5.6-sol",
+        "effort": "low",
+        "inputBytes": 1423,
+        "elapsedMs": 15367,
+        "code": 0,
+        "timedOut": false,
+        "processGroupPresent": false,
+        "usage": {
+          "input_tokens": 10278,
+          "cached_input_tokens": 0,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 466,
+          "reasoning_output_tokens": 0
+        },
+        "envelopeValid": true,
+        "validationErrors": [],
+        "observedToolItems": [],
+        "events": [
+          {
+            "type": "thread.started",
+            "thread_id": "01a0a382-50b8-7483-a9b0-5580e863aebc"
+          },
+          {
+            "type": "item.completed",
+            "item": {
+              "id": "item_0",
+              "type": "error",
+              "message": "Under-development features enabled: skip_host_skill_discovery. Under-development features are incomplete and may behave unpredictably. To suppress this warning, set `suppress_unstable_features_warning = true` in <user-home>/.codex/config.toml."
+            }
+          },
+          {
+            "type": "item.completed",
+            "item": {
+              "id": "item_1",
+              "type": "error",
+              "message": "Code Mode is unavailable because code-mode host is disabled. Code mode will fail closed; enable `features.code_mode_host` and install `codex-code-mode-host`."
+            }
+          },
+          {
+            "type": "turn.started"
+          },
+          {
+            "type": "item.completed",
+            "item": {
+              "id": "item_2",
+              "type": "agent_message",
+              "text": "{\"status\":\"diagnosed\",\"summary\":\"TypeScript 컴파일 단계에서 './schema' 모듈의 'Account' export를 찾지 못해 빌드가 종료 코드 2로 실패했다. 다만 제공된 로그만으로 실제 근본 원인까지 확정할 수는 없다.\",\"findings\":[{\"claim\":\"직접 관찰된 실패는 src/main.ts 2행의 TS2305 오류이며, './schema'에 'Account'라는 exported member가 없다고 보고됐다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0152\"]},{\"claim\":\"TypeScript 컴파일이 실패했고 프로세스는 종료 코드 2를 반환했다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0303\"]},{\"claim\":\"'Account'의 export 누락·이름 변경·잘못된 import 경로 중 하나가 원인일 가능성이 있으나, schema 소스와 설정이 없어 구분할 수 없다.\",\"confidence\":\"likely\",\"evidence_ids\":[\"L0152\"]},{\"claim\":\"의존성 스캔에서는 변경이 없었고 cache hit가 반복됐지만, 이것이 오류의 원인 또는 무관함을 입증하지는 않는다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0002\",\"L0151\",\"L0302\"]}],\"next_checks\":[\"'./schema'가 해석되는 실제 파일과 해당 파일의 export 목록을 확인한다.\",\"src/main.ts 2행의 import 이름과 현재 schema API의 이름·대소문자를 비교한다.\",\"'Account'가 type-only export라면 export/import type 선언이 올바른지 확인한다.\",\"tsconfig의 moduleResolution, paths, include 설정으로 다른 schema 파일이 선택되는지 확인한다.\",\"캐시를 배제한 깨끗한 TypeScript 빌드에서도 동일한 TS2305가 재현되는지 확인한다.\"],\"uncertainties\":[\"'./schema' 파일 내용과 export 선언이 제공되지 않았다.\",\"src/main.ts의 실제 import 구문 전체가 제공되지 않았다.\",\"tsconfig 및 모듈 해석 결과가 제공되지 않았다.\",\"반복된 cache hit 로그와 컴파일 오류의 인과관계는 확인되지 않았다.\"]}"
+            }
+          },
+          {
+            "type": "turn.completed",
+            "usage": {
+              "input_tokens": 10278,
+              "cached_input_tokens": 0,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 466,
+              "reasoning_output_tokens": 0
+            }
+          }
+        ],
+        "stderr": "",
+        "report": {
+          "status": "diagnosed",
+          "summary": "TypeScript 컴파일 단계에서 './schema' 모듈의 'Account' export를 찾지 못해 빌드가 종료 코드 2로 실패했다. 다만 제공된 로그만으로 실제 근본 원인까지 확정할 수는 없다.",
+          "findings": [
+            {
+              "claim": "직접 관찰된 실패는 src/main.ts 2행의 TS2305 오류이며, './schema'에 'Account'라는 exported member가 없다고 보고됐다.",
+              "confidence": "observed",
+              "evidence_ids": [
+                "L0152"
+              ]
+            },
+            {
+              "claim": "TypeScript 컴파일이 실패했고 프로세스는 종료 코드 2를 반환했다.",
+              "confidence": "observed",
+              "evidence_ids": [
+                "L0303"
+              ]
+            },
+            {
+              "claim": "'Account'의 export 누락·이름 변경·잘못된 import 경로 중 하나가 원인일 가능성이 있으나, schema 소스와 설정이 없어 구분할 수 없다.",
+              "confidence": "likely",
+              "evidence_ids": [
+                "L0152"
+              ]
+            },
+            {
+              "claim": "의존성 스캔에서는 변경이 없었고 cache hit가 반복됐지만, 이것이 오류의 원인 또는 무관함을 입증하지는 않는다.",
+              "confidence": "observed",
+              "evidence_ids": [
+                "L0002",
+                "L0151",
+                "L0302"
+              ]
+            }
+          ],
+          "next_checks": [
+            "'./schema'가 해석되는 실제 파일과 해당 파일의 export 목록을 확인한다.",
+            "src/main.ts 2행의 import 이름과 현재 schema API의 이름·대소문자를 비교한다.",
+            "'Account'가 type-only export라면 export/import type 선언이 올바른지 확인한다.",
+            "tsconfig의 moduleResolution, paths, include 설정으로 다른 schema 파일이 선택되는지 확인한다.",
+            "캐시를 배제한 깨끗한 TypeScript 빌드에서도 동일한 TS2305가 재현되는지 확인한다."
+          ],
+          "uncertainties": [
+            "'./schema' 파일 내용과 export 선언이 제공되지 않았다.",
+            "src/main.ts의 실제 import 구문 전체가 제공되지 않았다.",
+            "tsconfig 및 모듈 해석 결과가 제공되지 않았다.",
+            "반복된 cache hit 로그와 컴파일 오류의 인과관계는 확인되지 않았다."
+          ]
+        },
+        "reportBytes": 1911
+      }
+    ]
+  },
+  "worker": {
+    "result": {
+      "model": "gpt-5.6-luna",
+      "effort": "low",
+      "inputBytes": 1423,
+      "elapsedMs": 13774,
+      "code": 0,
+      "timedOut": false,
+      "processGroupPresent": false,
+      "usage": {
+        "input_tokens": 8163,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 393,
+        "reasoning_output_tokens": 26
+      },
+      "envelopeValid": true,
+      "validationErrors": [],
+      "observedToolItems": [],
+      "events": [
+        {
+          "type": "thread.started",
+          "thread_id": "01a0a382-8cc6-7b03-ad54-bd56b329e746"
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_0",
+            "type": "error",
+            "message": "Under-development features enabled: skip_host_skill_discovery. Under-development features are incomplete and may behave unpredictably. To suppress this warning, set `suppress_unstable_features_warning = true` in <user-home>/.codex/config.toml."
+          }
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_1",
+            "type": "error",
+            "message": "Code Mode is unavailable because code-mode host is disabled. Code mode will fail closed; enable `features.code_mode_host` and install `codex-code-mode-host`."
+          }
+        },
+        {
+          "type": "turn.started"
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_2",
+            "type": "agent_message",
+            "text": "{\"status\":\"diagnosed\",\"summary\":\"TypeScript 컴파일이 실패했으며, `src/main.ts`가 `./schema`에서 내보내지 않은 `Account`를 가져오려 한 오류가 직접 확인됩니다.\",\"findings\":[{\"claim\":\"`src/main.ts` 2행 10열에서 `./schema` 모듈에 `Account` export가 없어 TS2305가 발생했습니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0152\"]},{\"claim\":\"이 TypeScript 컴파일 오류로 빌드가 종료 코드 2로 실패했습니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0303\",\"L0152\"]},{\"claim\":\"반복된 build cache hit 메시지는 의존성 변경이 감지되지 않았음을 보여주지만, 오류가 캐시 때문에 발생했다는 근거는 없습니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0002\",\"L0151\",\"L0302\"]}],\"next_checks\":[\"`src/main.ts`의 `Account` import가 의도한 export 이름인지 확인\",\"`src/schema`가 실제로 `Account`를 export하는지 확인\",\"최근 schema 변경에서 export 삭제 또는 이름 변경 여부 확인\",\"import 경로와 대소문자가 프로젝트 파일명과 일치하는지 확인\",\"수정 후 `npm run build` 재실행\"],\"uncertainties\":[\"제공된 데이터에 `src/main.ts`와 `./schema`의 실제 소스 내용이 없습니다.\",\"`Account`가 누락된 export인지, import 이름 또는 경로가 잘못된 것인지 판별할 수 없습니다.\",\"캐시 상태가 컴파일 대상 파일에 영향을 주었는지는 확인할 수 없습니다.\"]}"
+          }
+        },
+        {
+          "type": "turn.completed",
+          "usage": {
+            "input_tokens": 8163,
+            "cached_input_tokens": 0,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 393,
+            "reasoning_output_tokens": 26
+          }
+        }
+      ],
+      "stderr": "",
+      "report": {
+        "status": "diagnosed",
+        "summary": "TypeScript 컴파일이 실패했으며, `src/main.ts`가 `./schema`에서 내보내지 않은 `Account`를 가져오려 한 오류가 직접 확인됩니다.",
+        "findings": [
+          {
+            "claim": "`src/main.ts` 2행 10열에서 `./schema` 모듈에 `Account` export가 없어 TS2305가 발생했습니다.",
+            "confidence": "observed",
+            "evidence_ids": [
+              "L0152"
+            ]
+          },
+          {
+            "claim": "이 TypeScript 컴파일 오류로 빌드가 종료 코드 2로 실패했습니다.",
+            "confidence": "observed",
+            "evidence_ids": [
+              "L0303",
+              "L0152"
+            ]
+          },
+          {
+            "claim": "반복된 build cache hit 메시지는 의존성 변경이 감지되지 않았음을 보여주지만, 오류가 캐시 때문에 발생했다는 근거는 없습니다.",
+            "confidence": "observed",
+            "evidence_ids": [
+              "L0002",
+              "L0151",
+              "L0302"
+            ]
+          }
+        ],
+        "next_checks": [
+          "`src/main.ts`의 `Account` import가 의도한 export 이름인지 확인",
+          "`src/schema`가 실제로 `Account`를 export하는지 확인",
+          "최근 schema 변경에서 export 삭제 또는 이름 변경 여부 확인",
+          "import 경로와 대소문자가 프로젝트 파일명과 일치하는지 확인",
+          "수정 후 `npm run build` 재실행"
+        ],
+        "uncertainties": [
+          "제공된 데이터에 `src/main.ts`와 `./schema`의 실제 소스 내용이 없습니다.",
+          "`Account`가 누락된 export인지, import 이름 또는 경로가 잘못된 것인지 판별할 수 없습니다.",
+          "캐시 상태가 컴파일 대상 파일에 영향을 주었는지는 확인할 수 없습니다."
+        ]
+      },
+      "reportBytes": 1462
+    },
+    "attempts": [
+      {
+        "model": "gpt-5.6-luna",
+        "effort": "low",
+        "inputBytes": 1423,
+        "elapsedMs": 13774,
+        "code": 0,
+        "timedOut": false,
+        "processGroupPresent": false,
+        "usage": {
+          "input_tokens": 8163,
+          "cached_input_tokens": 0,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 393,
+          "reasoning_output_tokens": 26
+        },
+        "envelopeValid": true,
+        "validationErrors": [],
+        "observedToolItems": [],
+        "events": [
+          {
+            "type": "thread.started",
+            "thread_id": "01a0a382-8cc6-7b03-ad54-bd56b329e746"
+          },
+          {
+            "type": "item.completed",
+            "item": {
+              "id": "item_0",
+              "type": "error",
+              "message": "Under-development features enabled: skip_host_skill_discovery. Under-development features are incomplete and may behave unpredictably. To suppress this warning, set `suppress_unstable_features_warning = true` in <user-home>/.codex/config.toml."
+            }
+          },
+          {
+            "type": "item.completed",
+            "item": {
+              "id": "item_1",
+              "type": "error",
+              "message": "Code Mode is unavailable because code-mode host is disabled. Code mode will fail closed; enable `features.code_mode_host` and install `codex-code-mode-host`."
+            }
+          },
+          {
+            "type": "turn.started"
+          },
+          {
+            "type": "item.completed",
+            "item": {
+              "id": "item_2",
+              "type": "agent_message",
+              "text": "{\"status\":\"diagnosed\",\"summary\":\"TypeScript 컴파일이 실패했으며, `src/main.ts`가 `./schema`에서 내보내지 않은 `Account`를 가져오려 한 오류가 직접 확인됩니다.\",\"findings\":[{\"claim\":\"`src/main.ts` 2행 10열에서 `./schema` 모듈에 `Account` export가 없어 TS2305가 발생했습니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0152\"]},{\"claim\":\"이 TypeScript 컴파일 오류로 빌드가 종료 코드 2로 실패했습니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0303\",\"L0152\"]},{\"claim\":\"반복된 build cache hit 메시지는 의존성 변경이 감지되지 않았음을 보여주지만, 오류가 캐시 때문에 발생했다는 근거는 없습니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0002\",\"L0151\",\"L0302\"]}],\"next_checks\":[\"`src/main.ts`의 `Account` import가 의도한 export 이름인지 확인\",\"`src/schema`가 실제로 `Account`를 export하는지 확인\",\"최근 schema 변경에서 export 삭제 또는 이름 변경 여부 확인\",\"import 경로와 대소문자가 프로젝트 파일명과 일치하는지 확인\",\"수정 후 `npm run build` 재실행\"],\"uncertainties\":[\"제공된 데이터에 `src/main.ts`와 `./schema`의 실제 소스 내용이 없습니다.\",\"`Account`가 누락된 export인지, import 이름 또는 경로가 잘못된 것인지 판별할 수 없습니다.\",\"캐시 상태가 컴파일 대상 파일에 영향을 주었는지는 확인할 수 없습니다.\"]}"
+            }
+          },
+          {
+            "type": "turn.completed",
+            "usage": {
+              "input_tokens": 8163,
+              "cached_input_tokens": 0,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 393,
+              "reasoning_output_tokens": 26
+            }
+          }
+        ],
+        "stderr": "",
+        "report": {
+          "status": "diagnosed",
+          "summary": "TypeScript 컴파일이 실패했으며, `src/main.ts`가 `./schema`에서 내보내지 않은 `Account`를 가져오려 한 오류가 직접 확인됩니다.",
+          "findings": [
+            {
+              "claim": "`src/main.ts` 2행 10열에서 `./schema` 모듈에 `Account` export가 없어 TS2305가 발생했습니다.",
+              "confidence": "observed",
+              "evidence_ids": [
+                "L0152"
+              ]
+            },
+            {
+              "claim": "이 TypeScript 컴파일 오류로 빌드가 종료 코드 2로 실패했습니다.",
+              "confidence": "observed",
+              "evidence_ids": [
+                "L0303",
+                "L0152"
+              ]
+            },
+            {
+              "claim": "반복된 build cache hit 메시지는 의존성 변경이 감지되지 않았음을 보여주지만, 오류가 캐시 때문에 발생했다는 근거는 없습니다.",
+              "confidence": "observed",
+              "evidence_ids": [
+                "L0002",
+                "L0151",
+                "L0302"
+              ]
+            }
+          ],
+          "next_checks": [
+            "`src/main.ts`의 `Account` import가 의도한 export 이름인지 확인",
+            "`src/schema`가 실제로 `Account`를 export하는지 확인",
+            "최근 schema 변경에서 export 삭제 또는 이름 변경 여부 확인",
+            "import 경로와 대소문자가 프로젝트 파일명과 일치하는지 확인",
+            "수정 후 `npm run build` 재실행"
+          ],
+          "uncertainties": [
+            "제공된 데이터에 `src/main.ts`와 `./schema`의 실제 소스 내용이 없습니다.",
+            "`Account`가 누락된 export인지, import 이름 또는 경로가 잘못된 것인지 판별할 수 없습니다.",
+            "캐시 상태가 컴파일 대상 파일에 영향을 주었는지는 확인할 수 없습니다."
+          ]
+        },
+        "reportBytes": 1462
+      }
+    ]
+  },
+  "delegatedParent": {
+    "result": {
+      "model": "gpt-5.6-sol",
+      "effort": "low",
+      "inputBytes": 2612,
+      "elapsedMs": 12448,
+      "code": 0,
+      "timedOut": false,
+      "processGroupPresent": false,
+      "usage": {
+        "input_tokens": 10555,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 448,
+        "reasoning_output_tokens": 0
+      },
+      "envelopeValid": true,
+      "validationErrors": [],
+      "observedToolItems": [],
+      "events": [
+        {
+          "type": "thread.started",
+          "thread_id": "01a0a382-c298-7d13-a974-fbe8cc588bd2"
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_0",
+            "type": "error",
+            "message": "Under-development features enabled: skip_host_skill_discovery. Under-development features are incomplete and may behave unpredictably. To suppress this warning, set `suppress_unstable_features_warning = true` in <user-home>/.codex/config.toml."
+          }
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_1",
+            "type": "error",
+            "message": "Code Mode is unavailable because code-mode host is disabled. Code mode will fail closed; enable `features.code_mode_host` and install `codex-code-mode-host`."
+          }
+        },
+        {
+          "type": "turn.started"
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_2",
+            "type": "agent_message",
+            "text": "{\"status\":\"diagnosed\",\"summary\":\"TypeScript 컴파일은 `src/main.ts`의 `Account` import 관련 TS2305와 함께 종료 코드 2로 실패했습니다. 다만 잘못된 import인지 누락된 export인지는 제공 자료만으로 확정할 수 없습니다.\",\"findings\":[{\"claim\":\"`src/main.ts` 2행 10열에서 `./schema`에 export된 `Account`가 없다는 TS2305가 관찰됩니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0152\"]},{\"claim\":\"TypeScript 컴파일이 종료 코드 2로 실패했습니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0303\"]},{\"claim\":\"TS2305가 빌드 실패의 직접 원인일 가능성이 높지만, 전체 로그나 소스가 없어 유일한 근본 원인으로 확정할 수 없습니다.\",\"confidence\":\"likely\",\"evidence_ids\":[\"L0152\",\"L0303\"]},{\"claim\":\"의존성 스캔에서 변경 사항이 없는 cache hit가 반복됐지만, 캐시가 오류를 유발했다는 증거는 없습니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0002\",\"L0151\",\"L0302\"]}],\"next_checks\":[\"`src/main.ts`의 `Account` import 이름과 경로가 의도와 일치하는지 확인\",\"`./schema`의 실제 export 목록에서 `Account` 존재 여부 확인\",\"최근 schema 변경에서 export 삭제 또는 이름 변경 여부 확인\",\"경로·파일명 대소문자와 모듈 해석 결과 확인\",\"수정 후 동일 빌드를 재실행해 TS2305 및 종료 코드 확인\"],\"uncertainties\":[\"`src/main.ts`와 `./schema`의 실제 소스가 제공되지 않았습니다.\",\"`Account` export 누락과 import 이름·경로 오류 중 어느 쪽인지 판별할 수 없습니다.\",\"TS2305 외에 생략된 추가 컴파일 오류가 있는지 알 수 없습니다.\",\"캐시가 컴파일 대상이나 결과에 영향을 주었는지 확인할 수 없습니다.\"]}"
+          }
+        },
+        {
+          "type": "turn.completed",
+          "usage": {
+            "input_tokens": 10555,
+            "cached_input_tokens": 0,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 448,
+            "reasoning_output_tokens": 0
+          }
+        }
+      ],
+      "stderr": "",
+      "report": {
+        "status": "diagnosed",
+        "summary": "TypeScript 컴파일은 `src/main.ts`의 `Account` import 관련 TS2305와 함께 종료 코드 2로 실패했습니다. 다만 잘못된 import인지 누락된 export인지는 제공 자료만으로 확정할 수 없습니다.",
+        "findings": [
+          {
+            "claim": "`src/main.ts` 2행 10열에서 `./schema`에 export된 `Account`가 없다는 TS2305가 관찰됩니다.",
+            "confidence": "observed",
+            "evidence_ids": [
+              "L0152"
+            ]
+          },
+          {
+            "claim": "TypeScript 컴파일이 종료 코드 2로 실패했습니다.",
+            "confidence": "observed",
+            "evidence_ids": [
+              "L0303"
+            ]
+          },
+          {
+            "claim": "TS2305가 빌드 실패의 직접 원인일 가능성이 높지만, 전체 로그나 소스가 없어 유일한 근본 원인으로 확정할 수 없습니다.",
+            "confidence": "likely",
+            "evidence_ids": [
+              "L0152",
+              "L0303"
+            ]
+          },
+          {
+            "claim": "의존성 스캔에서 변경 사항이 없는 cache hit가 반복됐지만, 캐시가 오류를 유발했다는 증거는 없습니다.",
+            "confidence": "observed",
+            "evidence_ids": [
+              "L0002",
+              "L0151",
+              "L0302"
+            ]
+          }
+        ],
+        "next_checks": [
+          "`src/main.ts`의 `Account` import 이름과 경로가 의도와 일치하는지 확인",
+          "`./schema`의 실제 export 목록에서 `Account` 존재 여부 확인",
+          "최근 schema 변경에서 export 삭제 또는 이름 변경 여부 확인",
+          "경로·파일명 대소문자와 모듈 해석 결과 확인",
+          "수정 후 동일 빌드를 재실행해 TS2305 및 종료 코드 확인"
+        ],
+        "uncertainties": [
+          "`src/main.ts`와 `./schema`의 실제 소스가 제공되지 않았습니다.",
+          "`Account` export 누락과 import 이름·경로 오류 중 어느 쪽인지 판별할 수 없습니다.",
+          "TS2305 외에 생략된 추가 컴파일 오류가 있는지 알 수 없습니다.",
+          "캐시가 컴파일 대상이나 결과에 영향을 주었는지 확인할 수 없습니다."
+        ]
+      },
+      "reportBytes": 1788
+    },
+    "attempts": [
+      {
+        "model": "gpt-5.6-sol",
+        "effort": "low",
+        "inputBytes": 2612,
+        "elapsedMs": 12448,
+        "code": 0,
+        "timedOut": false,
+        "processGroupPresent": false,
+        "usage": {
+          "input_tokens": 10555,
+          "cached_input_tokens": 0,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 448,
+          "reasoning_output_tokens": 0
+        },
+        "envelopeValid": true,
+        "validationErrors": [],
+        "observedToolItems": [],
+        "events": [
+          {
+            "type": "thread.started",
+            "thread_id": "01a0a382-c298-7d13-a974-fbe8cc588bd2"
+          },
+          {
+            "type": "item.completed",
+            "item": {
+              "id": "item_0",
+              "type": "error",
+              "message": "Under-development features enabled: skip_host_skill_discovery. Under-development features are incomplete and may behave unpredictably. To suppress this warning, set `suppress_unstable_features_warning = true` in <user-home>/.codex/config.toml."
+            }
+          },
+          {
+            "type": "item.completed",
+            "item": {
+              "id": "item_1",
+              "type": "error",
+              "message": "Code Mode is unavailable because code-mode host is disabled. Code mode will fail closed; enable `features.code_mode_host` and install `codex-code-mode-host`."
+            }
+          },
+          {
+            "type": "turn.started"
+          },
+          {
+            "type": "item.completed",
+            "item": {
+              "id": "item_2",
+              "type": "agent_message",
+              "text": "{\"status\":\"diagnosed\",\"summary\":\"TypeScript 컴파일은 `src/main.ts`의 `Account` import 관련 TS2305와 함께 종료 코드 2로 실패했습니다. 다만 잘못된 import인지 누락된 export인지는 제공 자료만으로 확정할 수 없습니다.\",\"findings\":[{\"claim\":\"`src/main.ts` 2행 10열에서 `./schema`에 export된 `Account`가 없다는 TS2305가 관찰됩니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0152\"]},{\"claim\":\"TypeScript 컴파일이 종료 코드 2로 실패했습니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0303\"]},{\"claim\":\"TS2305가 빌드 실패의 직접 원인일 가능성이 높지만, 전체 로그나 소스가 없어 유일한 근본 원인으로 확정할 수 없습니다.\",\"confidence\":\"likely\",\"evidence_ids\":[\"L0152\",\"L0303\"]},{\"claim\":\"의존성 스캔에서 변경 사항이 없는 cache hit가 반복됐지만, 캐시가 오류를 유발했다는 증거는 없습니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0002\",\"L0151\",\"L0302\"]}],\"next_checks\":[\"`src/main.ts`의 `Account` import 이름과 경로가 의도와 일치하는지 확인\",\"`./schema`의 실제 export 목록에서 `Account` 존재 여부 확인\",\"최근 schema 변경에서 export 삭제 또는 이름 변경 여부 확인\",\"경로·파일명 대소문자와 모듈 해석 결과 확인\",\"수정 후 동일 빌드를 재실행해 TS2305 및 종료 코드 확인\"],\"uncertainties\":[\"`src/main.ts`와 `./schema`의 실제 소스가 제공되지 않았습니다.\",\"`Account` export 누락과 import 이름·경로 오류 중 어느 쪽인지 판별할 수 없습니다.\",\"TS2305 외에 생략된 추가 컴파일 오류가 있는지 알 수 없습니다.\",\"캐시가 컴파일 대상이나 결과에 영향을 주었는지 확인할 수 없습니다.\"]}"
+            }
+          },
+          {
+            "type": "turn.completed",
+            "usage": {
+              "input_tokens": 10555,
+              "cached_input_tokens": 0,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 448,
+              "reasoning_output_tokens": 0
+            }
+          }
+        ],
+        "stderr": "",
+        "report": {
+          "status": "diagnosed",
+          "summary": "TypeScript 컴파일은 `src/main.ts`의 `Account` import 관련 TS2305와 함께 종료 코드 2로 실패했습니다. 다만 잘못된 import인지 누락된 export인지는 제공 자료만으로 확정할 수 없습니다.",
+          "findings": [
+            {
+              "claim": "`src/main.ts` 2행 10열에서 `./schema`에 export된 `Account`가 없다는 TS2305가 관찰됩니다.",
+              "confidence": "observed",
+              "evidence_ids": [
+                "L0152"
+              ]
+            },
+            {
+              "claim": "TypeScript 컴파일이 종료 코드 2로 실패했습니다.",
+              "confidence": "observed",
+              "evidence_ids": [
+                "L0303"
+              ]
+            },
+            {
+              "claim": "TS2305가 빌드 실패의 직접 원인일 가능성이 높지만, 전체 로그나 소스가 없어 유일한 근본 원인으로 확정할 수 없습니다.",
+              "confidence": "likely",
+              "evidence_ids": [
+                "L0152",
+                "L0303"
+              ]
+            },
+            {
+              "claim": "의존성 스캔에서 변경 사항이 없는 cache hit가 반복됐지만, 캐시가 오류를 유발했다는 증거는 없습니다.",
+              "confidence": "observed",
+              "evidence_ids": [
+                "L0002",
+                "L0151",
+                "L0302"
+              ]
+            }
+          ],
+          "next_checks": [
+            "`src/main.ts`의 `Account` import 이름과 경로가 의도와 일치하는지 확인",
+            "`./schema`의 실제 export 목록에서 `Account` 존재 여부 확인",
+            "최근 schema 변경에서 export 삭제 또는 이름 변경 여부 확인",
+            "경로·파일명 대소문자와 모듈 해석 결과 확인",
+            "수정 후 동일 빌드를 재실행해 TS2305 및 종료 코드 확인"
+          ],
+          "uncertainties": [
+            "`src/main.ts`와 `./schema`의 실제 소스가 제공되지 않았습니다.",
+            "`Account` export 누락과 import 이름·경로 오류 중 어느 쪽인지 판별할 수 없습니다.",
+            "TS2305 외에 생략된 추가 컴파일 오류가 있는지 알 수 없습니다.",
+            "캐시가 컴파일 대상이나 결과에 영향을 주었는지 확인할 수 없습니다."
+          ]
+        },
+        "reportBytes": 1788
+      }
+    ]
+  },
+  "initialBrokeredPayload": "Validated Worker report (claims still require evidence review):\n{\"status\":\"diagnosed\",\"summary\":\"TypeScript 컴파일이 실패했으며, `src/main.ts`가 `./schema`에서 내보내지 않은 `Account`를 가져오려 한 오류가 직접 확인됩니다.\",\"findings\":[{\"claim\":\"`src/main.ts` 2행 10열에서 `./schema` 모듈에 `Account` export가 없어 TS2305가 발생했습니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0152\"]},{\"claim\":\"이 TypeScript 컴파일 오류로 빌드가 종료 코드 2로 실패했습니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0303\",\"L0152\"]},{\"claim\":\"반복된 build cache hit 메시지는 의존성 변경이 감지되지 않았음을 보여주지만, 오류가 캐시 때문에 발생했다는 근거는 없습니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0002\",\"L0151\",\"L0302\"]}],\"next_checks\":[\"`src/main.ts`의 `Account` import가 의도한 export 이름인지 확인\",\"`src/schema`가 실제로 `Account`를 export하는지 확인\",\"최근 schema 변경에서 export 삭제 또는 이름 변경 여부 확인\",\"import 경로와 대소문자가 프로젝트 파일명과 일치하는지 확인\",\"수정 후 `npm run build` 재실행\"],\"uncertainties\":[\"제공된 데이터에 `src/main.ts`와 `./schema`의 실제 소스 내용이 없습니다.\",\"`Account`가 누락된 export인지, import 이름 또는 경로가 잘못된 것인지 판별할 수 없습니다.\",\"캐시 상태가 컴파일 대상 파일에 영향을 주었는지는 확인할 수 없습니다.\"]}\nBroker-issued source excerpts:\nL0002 INFO build cache hit; dependency scan completed with no changes\nL0151 INFO build cache hit; dependency scan completed with no changes\nL0152 src/main.ts(2,10): error TS2305: Module './schema' has no exported member 'Account'.\nL0302 INFO build cache hit; dependency scan completed with no changes\nL0303 TypeScript compilation failed; exit code 2\n\nSource is bounded. Excerpts truncated: false."
+}

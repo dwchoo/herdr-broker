@@ -1,0 +1,154 @@
+[
+  {
+    "fixture": "export-mismatch",
+    "rawBytes": 31668,
+    "preparedBytes": 765,
+    "delegatedParentBytes": 1954,
+    "evidenceBytes": 350,
+    "additionalEvidenceCalls": 0,
+    "repairs": {
+      "raw": 0,
+      "prepared": 0,
+      "worker": 0,
+      "delegated": 0
+    },
+    "rawUsage": {
+      "input_tokens": 16890,
+      "cached_input_tokens": 0,
+      "output_tokens": 515,
+      "elapsedMs": 21435
+    },
+    "preparedUsage": {
+      "input_tokens": 10278,
+      "cached_input_tokens": 0,
+      "output_tokens": 466,
+      "elapsedMs": 15367
+    },
+    "delegatedUsage": {
+      "input_tokens": 18718,
+      "cached_input_tokens": 0,
+      "output_tokens": 841,
+      "elapsedMs": 26222
+    },
+    "structuralValidity": [
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "fixture": "generation-cascade-injection",
+    "rawBytes": 31908,
+    "preparedBytes": 1005,
+    "delegatedParentBytes": 2173,
+    "evidenceBytes": 253,
+    "additionalEvidenceCalls": 0,
+    "repairs": {
+      "raw": 0,
+      "prepared": 0,
+      "worker": 0,
+      "delegated": 0
+    },
+    "rawUsage": {
+      "input_tokens": 16944,
+      "cached_input_tokens": 0,
+      "output_tokens": 488,
+      "elapsedMs": 17854
+    },
+    "preparedUsage": {
+      "input_tokens": 10332,
+      "cached_input_tokens": 0,
+      "output_tokens": 543,
+      "elapsedMs": 13515
+    },
+    "delegatedUsage": {
+      "input_tokens": 18810,
+      "cached_input_tokens": 0,
+      "output_tokens": 978,
+      "elapsedMs": 28028
+    },
+    "structuralValidity": [
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "fixture": "registry-ambiguity",
+    "rawBytes": 31928,
+    "preparedBytes": 1025,
+    "delegatedParentBytes": 2777,
+    "evidenceBytes": 639,
+    "additionalEvidenceCalls": 0,
+    "repairs": {
+      "raw": 0,
+      "prepared": 0,
+      "worker": 0,
+      "delegated": 0
+    },
+    "rawUsage": {
+      "input_tokens": 16951,
+      "cached_input_tokens": 8960,
+      "output_tokens": 472,
+      "elapsedMs": 22615
+    },
+    "preparedUsage": {
+      "input_tokens": 10339,
+      "cached_input_tokens": 0,
+      "output_tokens": 512,
+      "elapsedMs": 19714
+    },
+    "delegatedUsage": {
+      "input_tokens": 18964,
+      "cached_input_tokens": 0,
+      "output_tokens": 979,
+      "elapsedMs": 30324
+    },
+    "structuralValidity": [
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "fixture": "truncated-tail",
+    "rawBytes": 31662,
+    "preparedBytes": 759,
+    "delegatedParentBytes": 2066,
+    "evidenceBytes": 373,
+    "additionalEvidenceCalls": 0,
+    "repairs": {
+      "raw": 0,
+      "prepared": 0,
+      "worker": 0,
+      "delegated": 0
+    },
+    "rawUsage": {
+      "input_tokens": 16890,
+      "cached_input_tokens": 0,
+      "output_tokens": 481,
+      "elapsedMs": 20309
+    },
+    "preparedUsage": {
+      "input_tokens": 10278,
+      "cached_input_tokens": 8960,
+      "output_tokens": 387,
+      "elapsedMs": 15332
+    },
+    "delegatedUsage": {
+      "input_tokens": 18742,
+      "cached_input_tokens": 0,
+      "output_tokens": 835,
+      "elapsedMs": 23737
+    },
+    "structuralValidity": [
+      true,
+      true,
+      true,
+      true
+    ]
+  }
+]

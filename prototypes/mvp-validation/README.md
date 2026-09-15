@@ -21,3 +21,10 @@ Node standard library만 사용한다. `node prototypes/mvp-validation/probe.mjs
 - `state-demo.html`: ACK 유실·중복·session 변경의 상태 전이를 보는 demo.
 
 모델 provider의 서버 측 보존은 이 실험으로 검증할 수 없다. `--ephemeral`을 전체 기록 삭제 보장으로 해석하지 않는다.
+
+## 결과 읽기
+
+- [Runtime 검증](RUNTIME-REPORT.md): 실제 Worker·Herdr와 fault fixture의 보장 범위.
+- [품질 비교](QUALITY-REPORT.md): 네 합성 fixture, 세 경로, token·bytes·지연과 계약 보정.
+- [상태 demo](state-demo.html): 브라우저에서 직접 열어 ACK 유실·재시작·중복을 확인한다.
+- `report.schema.json`은 실험 당시의 후보 schema다. 최종 공개 report는 모호한 status를 제거한 `public-report.schema.json`을 사용한다. 기존 실험 결과는 수정하지 않았다.

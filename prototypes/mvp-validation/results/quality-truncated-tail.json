@@ -1,0 +1,969 @@
+{
+  "fixture": "truncated-tail",
+  "expected": "구체적 원인 불명으로 처리. generic error로 원인을 지어내지 않고 앞선 로그·실행 명령을 요청.",
+  "summary": {
+    "fixture": "truncated-tail",
+    "rawBytes": 31662,
+    "preparedBytes": 759,
+    "delegatedParentBytes": 2066,
+    "evidenceBytes": 373,
+    "additionalEvidenceCalls": 0,
+    "repairs": {
+      "raw": 0,
+      "prepared": 0,
+      "worker": 0,
+      "delegated": 0
+    },
+    "rawUsage": {
+      "input_tokens": 16890,
+      "cached_input_tokens": 0,
+      "output_tokens": 481,
+      "elapsedMs": 20309
+    },
+    "preparedUsage": {
+      "input_tokens": 10278,
+      "cached_input_tokens": 8960,
+      "output_tokens": 387,
+      "elapsedMs": 15332
+    },
+    "delegatedUsage": {
+      "input_tokens": 18742,
+      "cached_input_tokens": 0,
+      "output_tokens": 835,
+      "elapsedMs": 23737
+    },
+    "structuralValidity": [
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "rawParent": {
+    "result": {
+      "model": "gpt-5.6-sol",
+      "effort": "low",
+      "inputBytes": 32320,
+      "elapsedMs": 20309,
+      "code": 0,
+      "timedOut": false,
+      "processGroupPresent": false,
+      "usage": {
+        "input_tokens": 16890,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 481,
+        "reasoning_output_tokens": 0
+      },
+      "envelopeValid": true,
+      "validationErrors": [],
+      "observedToolItems": [],
+      "events": [
+        {
+          "type": "thread.started",
+          "thread_id": "01a0a384-f718-7eb1-bf1d-08d4e1e78bb7"
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_0",
+            "type": "error",
+            "message": "Under-development features enabled: skip_host_skill_discovery. Under-development features are incomplete and may behave unpredictably. To suppress this warning, set `suppress_unstable_features_warning = true` in <user-home>/.codex/config.toml."
+          }
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_1",
+            "type": "error",
+            "message": "Code Mode is unavailable because code-mode host is disabled. Code mode will fail closed; enable `features.code_mode_host` and install `codex-code-mode-host`."
+          }
+        },
+        {
+          "type": "turn.started"
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_2",
+            "type": "agent_message",
+            "text": "{\"status\":\"inconclusive\",\"summary\":\"빌드 실패는 확인되지만, 제공된 bounded tail에는 최초 하위 명령의 오류 메시지나 stack trace가 없어 근본 원인을 특정할 수 없습니다.\",\"findings\":[{\"claim\":\"make의 build target이 Error 2로 실패했습니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0152\"]},{\"claim\":\"npm 계층에서 code 1이 보고되었고 전체 build process도 exit code 1로 종료되었습니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0303\",\"L0304\"]},{\"claim\":\"의존성 스캔은 변경 없음과 cache hit를 반복 보고하므로, 제공된 범위만으로 dependency 변경이 실패 원인이라고 입증되지 않습니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0002\",\"L0153\",\"L0305\"]},{\"claim\":\"make Error 2와 npm code 1은 상위 수준 종료 상태일 가능성이 높으며, 둘 중 어느 것도 자체로 근본 원인을 설명하지 않습니다.\",\"confidence\":\"likely\",\"evidence_ids\":[\"L0152\",\"L0303\",\"L0304\"]}],\"next_checks\":[\"잘리기 전 전체 로그에서 L0152와 L0303 이전의 최초 오류를 확인합니다.\",\"실패한 make build recipe가 실행한 정확한 하위 명령과 그 stderr를 확인합니다.\",\"npm debug log 또는 build script 출력에서 최초의 비정상 stack trace를 확인합니다.\",\"동일 commit·환경에서 cache를 유지한 실행과 비운 실행의 결과를 비교합니다.\",\"CI의 실제 최종 종료 시점과 로그 병합·시간순 정렬 방식을 확인합니다.\"],\"uncertainties\":[\"이 캡처는 bounded tail이며 이전 terminal history가 없어 최초 오류가 누락되었을 수 있습니다.\",\"L0152와 L0303~L0304가 같은 실행·동일 실패 사슬인지 명확하지 않습니다.\",\"실패한 package, build 단계, 명령, 파일 및 source 위치가 제공되지 않았습니다.\",\"cache hit 메시지가 실제 compile/build 성공까지 의미하는지는 알 수 없습니다.\",\"반복 INFO가 실패 후에도 나타나 로그가 병렬 작업에서 병합되었을 가능성을 배제할 수 없습니다.\"]}"
+          }
+        },
+        {
+          "type": "turn.completed",
+          "usage": {
+            "input_tokens": 16890,
+            "cached_input_tokens": 0,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 481,
+            "reasoning_output_tokens": 0
+          }
+        }
+      ],
+      "stderr": "",
+      "report": {
+        "status": "inconclusive",
+        "summary": "빌드 실패는 확인되지만, 제공된 bounded tail에는 최초 하위 명령의 오류 메시지나 stack trace가 없어 근본 원인을 특정할 수 없습니다.",
+        "findings": [
+          {
+            "claim": "make의 build target이 Error 2로 실패했습니다.",
+            "confidence": "observed",
+            "evidence_ids": [
+              "L0152"
+            ]
+          },
+          {
+            "claim": "npm 계층에서 code 1이 보고되었고 전체 build process도 exit code 1로 종료되었습니다.",
+            "confidence": "observed",
+            "evidence_ids": [
+              "L0303",
+              "L0304"
+            ]
+          },
+          {
+            "claim": "의존성 스캔은 변경 없음과 cache hit를 반복 보고하므로, 제공된 범위만으로 dependency 변경이 실패 원인이라고 입증되지 않습니다.",
+            "confidence": "observed",
+            "evidence_ids": [
+              "L0002",
+              "L0153",
+              "L0305"
+            ]
+          },
+          {
+            "claim": "make Error 2와 npm code 1은 상위 수준 종료 상태일 가능성이 높으며, 둘 중 어느 것도 자체로 근본 원인을 설명하지 않습니다.",
+            "confidence": "likely",
+            "evidence_ids": [
+              "L0152",
+              "L0303",
+              "L0304"
+            ]
+          }
+        ],
+        "next_checks": [
+          "잘리기 전 전체 로그에서 L0152와 L0303 이전의 최초 오류를 확인합니다.",
+          "실패한 make build recipe가 실행한 정확한 하위 명령과 그 stderr를 확인합니다.",
+          "npm debug log 또는 build script 출력에서 최초의 비정상 stack trace를 확인합니다.",
+          "동일 commit·환경에서 cache를 유지한 실행과 비운 실행의 결과를 비교합니다.",
+          "CI의 실제 최종 종료 시점과 로그 병합·시간순 정렬 방식을 확인합니다."
+        ],
+        "uncertainties": [
+          "이 캡처는 bounded tail이며 이전 terminal history가 없어 최초 오류가 누락되었을 수 있습니다.",
+          "L0152와 L0303~L0304가 같은 실행·동일 실패 사슬인지 명확하지 않습니다.",
+          "실패한 package, build 단계, 명령, 파일 및 source 위치가 제공되지 않았습니다.",
+          "cache hit 메시지가 실제 compile/build 성공까지 의미하는지는 알 수 없습니다.",
+          "반복 INFO가 실패 후에도 나타나 로그가 병렬 작업에서 병합되었을 가능성을 배제할 수 없습니다."
+        ]
+      },
+      "reportBytes": 2077
+    },
+    "attempts": [
+      {
+        "model": "gpt-5.6-sol",
+        "effort": "low",
+        "inputBytes": 32320,
+        "elapsedMs": 20309,
+        "code": 0,
+        "timedOut": false,
+        "processGroupPresent": false,
+        "usage": {
+          "input_tokens": 16890,
+          "cached_input_tokens": 0,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 481,
+          "reasoning_output_tokens": 0
+        },
+        "envelopeValid": true,
+        "validationErrors": [],
+        "observedToolItems": [],
+        "events": [
+          {
+            "type": "thread.started",
+            "thread_id": "01a0a384-f718-7eb1-bf1d-08d4e1e78bb7"
+          },
+          {
+            "type": "item.completed",
+            "item": {
+              "id": "item_0",
+              "type": "error",
+              "message": "Under-development features enabled: skip_host_skill_discovery. Under-development features are incomplete and may behave unpredictably. To suppress this warning, set `suppress_unstable_features_warning = true` in <user-home>/.codex/config.toml."
+            }
+          },
+          {
+            "type": "item.completed",
+            "item": {
+              "id": "item_1",
+              "type": "error",
+              "message": "Code Mode is unavailable because code-mode host is disabled. Code mode will fail closed; enable `features.code_mode_host` and install `codex-code-mode-host`."
+            }
+          },
+          {
+            "type": "turn.started"
+          },
+          {
+            "type": "item.completed",
+            "item": {
+              "id": "item_2",
+              "type": "agent_message",
+              "text": "{\"status\":\"inconclusive\",\"summary\":\"빌드 실패는 확인되지만, 제공된 bounded tail에는 최초 하위 명령의 오류 메시지나 stack trace가 없어 근본 원인을 특정할 수 없습니다.\",\"findings\":[{\"claim\":\"make의 build target이 Error 2로 실패했습니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0152\"]},{\"claim\":\"npm 계층에서 code 1이 보고되었고 전체 build process도 exit code 1로 종료되었습니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0303\",\"L0304\"]},{\"claim\":\"의존성 스캔은 변경 없음과 cache hit를 반복 보고하므로, 제공된 범위만으로 dependency 변경이 실패 원인이라고 입증되지 않습니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0002\",\"L0153\",\"L0305\"]},{\"claim\":\"make Error 2와 npm code 1은 상위 수준 종료 상태일 가능성이 높으며, 둘 중 어느 것도 자체로 근본 원인을 설명하지 않습니다.\",\"confidence\":\"likely\",\"evidence_ids\":[\"L0152\",\"L0303\",\"L0304\"]}],\"next_checks\":[\"잘리기 전 전체 로그에서 L0152와 L0303 이전의 최초 오류를 확인합니다.\",\"실패한 make build recipe가 실행한 정확한 하위 명령과 그 stderr를 확인합니다.\",\"npm debug log 또는 build script 출력에서 최초의 비정상 stack trace를 확인합니다.\",\"동일 commit·환경에서 cache를 유지한 실행과 비운 실행의 결과를 비교합니다.\",\"CI의 실제 최종 종료 시점과 로그 병합·시간순 정렬 방식을 확인합니다.\"],\"uncertainties\":[\"이 캡처는 bounded tail이며 이전 terminal history가 없어 최초 오류가 누락되었을 수 있습니다.\",\"L0152와 L0303~L0304가 같은 실행·동일 실패 사슬인지 명확하지 않습니다.\",\"실패한 package, build 단계, 명령, 파일 및 source 위치가 제공되지 않았습니다.\",\"cache hit 메시지가 실제 compile/build 성공까지 의미하는지는 알 수 없습니다.\",\"반복 INFO가 실패 후에도 나타나 로그가 병렬 작업에서 병합되었을 가능성을 배제할 수 없습니다.\"]}"
+            }
+          },
+          {
+            "type": "turn.completed",
+            "usage": {
+              "input_tokens": 16890,
+              "cached_input_tokens": 0,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 481,
+              "reasoning_output_tokens": 0
+            }
+          }
+        ],
+        "stderr": "",
+        "report": {
+          "status": "inconclusive",
+          "summary": "빌드 실패는 확인되지만, 제공된 bounded tail에는 최초 하위 명령의 오류 메시지나 stack trace가 없어 근본 원인을 특정할 수 없습니다.",
+          "findings": [
+            {
+              "claim": "make의 build target이 Error 2로 실패했습니다.",
+              "confidence": "observed",
+              "evidence_ids": [
+                "L0152"
+              ]
+            },
+            {
+              "claim": "npm 계층에서 code 1이 보고되었고 전체 build process도 exit code 1로 종료되었습니다.",
+              "confidence": "observed",
+              "evidence_ids": [
+                "L0303",
+                "L0304"
+              ]
+            },
+            {
+              "claim": "의존성 스캔은 변경 없음과 cache hit를 반복 보고하므로, 제공된 범위만으로 dependency 변경이 실패 원인이라고 입증되지 않습니다.",
+              "confidence": "observed",
+              "evidence_ids": [
+                "L0002",
+                "L0153",
+                "L0305"
+              ]
+            },
+            {
+              "claim": "make Error 2와 npm code 1은 상위 수준 종료 상태일 가능성이 높으며, 둘 중 어느 것도 자체로 근본 원인을 설명하지 않습니다.",
+              "confidence": "likely",
+              "evidence_ids": [
+                "L0152",
+                "L0303",
+                "L0304"
+              ]
+            }
+          ],
+          "next_checks": [
+            "잘리기 전 전체 로그에서 L0152와 L0303 이전의 최초 오류를 확인합니다.",
+            "실패한 make build recipe가 실행한 정확한 하위 명령과 그 stderr를 확인합니다.",
+            "npm debug log 또는 build script 출력에서 최초의 비정상 stack trace를 확인합니다.",
+            "동일 commit·환경에서 cache를 유지한 실행과 비운 실행의 결과를 비교합니다.",
+            "CI의 실제 최종 종료 시점과 로그 병합·시간순 정렬 방식을 확인합니다."
+          ],
+          "uncertainties": [
+            "이 캡처는 bounded tail이며 이전 terminal history가 없어 최초 오류가 누락되었을 수 있습니다.",
+            "L0152와 L0303~L0304가 같은 실행·동일 실패 사슬인지 명확하지 않습니다.",
+            "실패한 package, build 단계, 명령, 파일 및 source 위치가 제공되지 않았습니다.",
+            "cache hit 메시지가 실제 compile/build 성공까지 의미하는지는 알 수 없습니다.",
+            "반복 INFO가 실패 후에도 나타나 로그가 병렬 작업에서 병합되었을 가능성을 배제할 수 없습니다."
+          ]
+        },
+        "reportBytes": 2077
+      }
+    ]
+  },
+  "preparedParent": {
+    "result": {
+      "model": "gpt-5.6-sol",
+      "effort": "low",
+      "inputBytes": 1417,
+      "elapsedMs": 15332,
+      "code": 0,
+      "timedOut": false,
+      "processGroupPresent": false,
+      "usage": {
+        "input_tokens": 10278,
+        "cached_input_tokens": 8960,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 387,
+        "reasoning_output_tokens": 0
+      },
+      "envelopeValid": true,
+      "validationErrors": [],
+      "observedToolItems": [],
+      "events": [
+        {
+          "type": "thread.started",
+          "thread_id": "01a0a385-4670-7f20-8c9b-a54f4e3ea59a"
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_0",
+            "type": "error",
+            "message": "Under-development features enabled: skip_host_skill_discovery. Under-development features are incomplete and may behave unpredictably. To suppress this warning, set `suppress_unstable_features_warning = true` in <user-home>/.codex/config.toml."
+          }
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_1",
+            "type": "error",
+            "message": "Code Mode is unavailable because code-mode host is disabled. Code mode will fail closed; enable `features.code_mode_host` and install `codex-code-mode-host`."
+          }
+        },
+        {
+          "type": "turn.started"
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_2",
+            "type": "agent_message",
+            "text": "{\"status\":\"inconclusive\",\"summary\":\"빌드 실패는 관찰되지만, bounded tail에 원인이 되는 하위 명령·오류 메시지·스택이 없어 근본 원인을 특정할 수 없습니다.\",\"findings\":[{\"claim\":\"make의 build 대상이 종료 코드 2로 실패했습니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0152\"]},{\"claim\":\"npm 명령 계층에서 code 1이 기록되었고 전체 빌드 프로세스도 1로 종료되었습니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0303\",\"L0304\"]},{\"claim\":\"반복된 캐시 적중 메시지는 의존성 변경이 없었음을 나타내지만 실패 원인을 입증하지는 않습니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0002\",\"L0151\",\"L0454\"]}],\"next_checks\":[\"생략 구간과 bounded tail 이전을 포함한 최초 오류 메시지를 확인합니다.\",\"make build가 실행한 실제 하위 명령과 해당 종료 코드를 확인합니다.\",\"npm debug 로그에서 code 1 직전의 stderr와 실패한 script 이름을 확인합니다.\",\"캐시를 사용하지 않은 동일 빌드의 전체 로그와 비교합니다.\",\"실패 환경의 runtime·package manager·의존성 버전 정보를 확인합니다.\"],\"uncertainties\":[\"최초 실패 지점이 캡처 범위 밖인지 알 수 없습니다.\",\"make 오류와 npm 오류가 같은 실패 경로인지 알 수 없습니다.\",\"생략된 반복 구간에 비반복 오류가 없는지는 제공 형식만으로 독립 검증할 수 없습니다.\",\"캐시 상태가 실패에 기여했는지 알 수 없습니다.\",\"실패한 소스 파일·패키지·빌드 단계가 제공되지 않았습니다.\"]}"
+          }
+        },
+        {
+          "type": "turn.completed",
+          "usage": {
+            "input_tokens": 10278,
+            "cached_input_tokens": 8960,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 387,
+            "reasoning_output_tokens": 0
+          }
+        }
+      ],
+      "stderr": "",
+      "report": {
+        "status": "inconclusive",
+        "summary": "빌드 실패는 관찰되지만, bounded tail에 원인이 되는 하위 명령·오류 메시지·스택이 없어 근본 원인을 특정할 수 없습니다.",
+        "findings": [
+          {
+            "claim": "make의 build 대상이 종료 코드 2로 실패했습니다.",
+            "confidence": "observed",
+            "evidence_ids": [
+              "L0152"
+            ]
+          },
+          {
+            "claim": "npm 명령 계층에서 code 1이 기록되었고 전체 빌드 프로세스도 1로 종료되었습니다.",
+            "confidence": "observed",
+            "evidence_ids": [
+              "L0303",
+              "L0304"
+            ]
+          },
+          {
+            "claim": "반복된 캐시 적중 메시지는 의존성 변경이 없었음을 나타내지만 실패 원인을 입증하지는 않습니다.",
+            "confidence": "observed",
+            "evidence_ids": [
+              "L0002",
+              "L0151",
+              "L0454"
+            ]
+          }
+        ],
+        "next_checks": [
+          "생략 구간과 bounded tail 이전을 포함한 최초 오류 메시지를 확인합니다.",
+          "make build가 실행한 실제 하위 명령과 해당 종료 코드를 확인합니다.",
+          "npm debug 로그에서 code 1 직전의 stderr와 실패한 script 이름을 확인합니다.",
+          "캐시를 사용하지 않은 동일 빌드의 전체 로그와 비교합니다.",
+          "실패 환경의 runtime·package manager·의존성 버전 정보를 확인합니다."
+        ],
+        "uncertainties": [
+          "최초 실패 지점이 캡처 범위 밖인지 알 수 없습니다.",
+          "make 오류와 npm 오류가 같은 실패 경로인지 알 수 없습니다.",
+          "생략된 반복 구간에 비반복 오류가 없는지는 제공 형식만으로 독립 검증할 수 없습니다.",
+          "캐시 상태가 실패에 기여했는지 알 수 없습니다.",
+          "실패한 소스 파일·패키지·빌드 단계가 제공되지 않았습니다."
+        ]
+      },
+      "reportBytes": 1636
+    },
+    "attempts": [
+      {
+        "model": "gpt-5.6-sol",
+        "effort": "low",
+        "inputBytes": 1417,
+        "elapsedMs": 15332,
+        "code": 0,
+        "timedOut": false,
+        "processGroupPresent": false,
+        "usage": {
+          "input_tokens": 10278,
+          "cached_input_tokens": 8960,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 387,
+          "reasoning_output_tokens": 0
+        },
+        "envelopeValid": true,
+        "validationErrors": [],
+        "observedToolItems": [],
+        "events": [
+          {
+            "type": "thread.started",
+            "thread_id": "01a0a385-4670-7f20-8c9b-a54f4e3ea59a"
+          },
+          {
+            "type": "item.completed",
+            "item": {
+              "id": "item_0",
+              "type": "error",
+              "message": "Under-development features enabled: skip_host_skill_discovery. Under-development features are incomplete and may behave unpredictably. To suppress this warning, set `suppress_unstable_features_warning = true` in <user-home>/.codex/config.toml."
+            }
+          },
+          {
+            "type": "item.completed",
+            "item": {
+              "id": "item_1",
+              "type": "error",
+              "message": "Code Mode is unavailable because code-mode host is disabled. Code mode will fail closed; enable `features.code_mode_host` and install `codex-code-mode-host`."
+            }
+          },
+          {
+            "type": "turn.started"
+          },
+          {
+            "type": "item.completed",
+            "item": {
+              "id": "item_2",
+              "type": "agent_message",
+              "text": "{\"status\":\"inconclusive\",\"summary\":\"빌드 실패는 관찰되지만, bounded tail에 원인이 되는 하위 명령·오류 메시지·스택이 없어 근본 원인을 특정할 수 없습니다.\",\"findings\":[{\"claim\":\"make의 build 대상이 종료 코드 2로 실패했습니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0152\"]},{\"claim\":\"npm 명령 계층에서 code 1이 기록되었고 전체 빌드 프로세스도 1로 종료되었습니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0303\",\"L0304\"]},{\"claim\":\"반복된 캐시 적중 메시지는 의존성 변경이 없었음을 나타내지만 실패 원인을 입증하지는 않습니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0002\",\"L0151\",\"L0454\"]}],\"next_checks\":[\"생략 구간과 bounded tail 이전을 포함한 최초 오류 메시지를 확인합니다.\",\"make build가 실행한 실제 하위 명령과 해당 종료 코드를 확인합니다.\",\"npm debug 로그에서 code 1 직전의 stderr와 실패한 script 이름을 확인합니다.\",\"캐시를 사용하지 않은 동일 빌드의 전체 로그와 비교합니다.\",\"실패 환경의 runtime·package manager·의존성 버전 정보를 확인합니다.\"],\"uncertainties\":[\"최초 실패 지점이 캡처 범위 밖인지 알 수 없습니다.\",\"make 오류와 npm 오류가 같은 실패 경로인지 알 수 없습니다.\",\"생략된 반복 구간에 비반복 오류가 없는지는 제공 형식만으로 독립 검증할 수 없습니다.\",\"캐시 상태가 실패에 기여했는지 알 수 없습니다.\",\"실패한 소스 파일·패키지·빌드 단계가 제공되지 않았습니다.\"]}"
+            }
+          },
+          {
+            "type": "turn.completed",
+            "usage": {
+              "input_tokens": 10278,
+              "cached_input_tokens": 8960,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 387,
+              "reasoning_output_tokens": 0
+            }
+          }
+        ],
+        "stderr": "",
+        "report": {
+          "status": "inconclusive",
+          "summary": "빌드 실패는 관찰되지만, bounded tail에 원인이 되는 하위 명령·오류 메시지·스택이 없어 근본 원인을 특정할 수 없습니다.",
+          "findings": [
+            {
+              "claim": "make의 build 대상이 종료 코드 2로 실패했습니다.",
+              "confidence": "observed",
+              "evidence_ids": [
+                "L0152"
+              ]
+            },
+            {
+              "claim": "npm 명령 계층에서 code 1이 기록되었고 전체 빌드 프로세스도 1로 종료되었습니다.",
+              "confidence": "observed",
+              "evidence_ids": [
+                "L0303",
+                "L0304"
+              ]
+            },
+            {
+              "claim": "반복된 캐시 적중 메시지는 의존성 변경이 없었음을 나타내지만 실패 원인을 입증하지는 않습니다.",
+              "confidence": "observed",
+              "evidence_ids": [
+                "L0002",
+                "L0151",
+                "L0454"
+              ]
+            }
+          ],
+          "next_checks": [
+            "생략 구간과 bounded tail 이전을 포함한 최초 오류 메시지를 확인합니다.",
+            "make build가 실행한 실제 하위 명령과 해당 종료 코드를 확인합니다.",
+            "npm debug 로그에서 code 1 직전의 stderr와 실패한 script 이름을 확인합니다.",
+            "캐시를 사용하지 않은 동일 빌드의 전체 로그와 비교합니다.",
+            "실패 환경의 runtime·package manager·의존성 버전 정보를 확인합니다."
+          ],
+          "uncertainties": [
+            "최초 실패 지점이 캡처 범위 밖인지 알 수 없습니다.",
+            "make 오류와 npm 오류가 같은 실패 경로인지 알 수 없습니다.",
+            "생략된 반복 구간에 비반복 오류가 없는지는 제공 형식만으로 독립 검증할 수 없습니다.",
+            "캐시 상태가 실패에 기여했는지 알 수 없습니다.",
+            "실패한 소스 파일·패키지·빌드 단계가 제공되지 않았습니다."
+          ]
+        },
+        "reportBytes": 1636
+      }
+    ]
+  },
+  "worker": {
+    "result": {
+      "model": "gpt-5.6-luna",
+      "effort": "low",
+      "inputBytes": 1417,
+      "elapsedMs": 10714,
+      "code": 0,
+      "timedOut": false,
+      "processGroupPresent": false,
+      "usage": {
+        "input_tokens": 8163,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 416,
+        "reasoning_output_tokens": 34
+      },
+      "envelopeValid": true,
+      "validationErrors": [],
+      "observedToolItems": [],
+      "events": [
+        {
+          "type": "thread.started",
+          "thread_id": "01a0a385-8257-7c73-b8d0-66d699bbcec7"
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_0",
+            "type": "error",
+            "message": "Under-development features enabled: skip_host_skill_discovery. Under-development features are incomplete and may behave unpredictably. To suppress this warning, set `suppress_unstable_features_warning = true` in <user-home>/.codex/config.toml."
+          }
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_1",
+            "type": "error",
+            "message": "Code Mode is unavailable because code-mode host is disabled. Code mode will fail closed; enable `features.code_mode_host` and install `codex-code-mode-host`."
+          }
+        },
+        {
+          "type": "turn.started"
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_2",
+            "type": "agent_message",
+            "text": "{\"status\":\"inconclusive\",\"summary\":\"빌드 실패는 관찰되지만, 제공된 로그만으로 구체적 근본 원인은 확정할 수 없습니다.\",\"findings\":[{\"claim\":\"빌드 프로세스가 종료 코드 1로 실패했습니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0303\",\"L0304\"]},{\"claim\":\"make의 build 대상이 Error 2로 실패했습니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0152\"]},{\"claim\":\"의존성 스캔은 변경 없이 캐시 적중으로 반복되었으며, 이 정보만으로 실패 원인이라고 볼 수 없습니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0002\",\"L0151\",\"L0454\"]},{\"claim\":\"실패를 유발한 실제 컴파일·테스트·의존성 오류 메시지는 제공된 bounded tail에서 확인되지 않습니다.\",\"confidence\":\"likely\",\"evidence_ids\":[\"L0001\",\"L0152\",\"L0303\"]}],\"next_checks\":[\"전체 빌드 로그에서 L0152 및 L0303 직전의 오류 출력을 확인하십시오.\",\"make build가 실행한 실제 하위 명령과 해당 명령의 종료 상태를 확인하십시오.\",\"npm의 상세 오류 로그 또는 debug log 경로를 확인하십시오.\",\"동일 빌드를 캐시 비활성화 조건에서 재현해 캐시와의 연관성을 비교하십시오.\"],\"uncertainties\":[\"이전 터미널 기록이 없어 실패 직전의 원인 메시지가 누락되었을 수 있습니다.\",\"L0152와 L0303이 동일 실패의 중복 보고인지 별도 실패인지 알 수 없습니다.\",\"캐시 적중 메시지와 실패 사이의 인과관계는 입증되지 않았습니다.\"]}"
+          }
+        },
+        {
+          "type": "turn.completed",
+          "usage": {
+            "input_tokens": 8163,
+            "cached_input_tokens": 0,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 416,
+            "reasoning_output_tokens": 34
+          }
+        }
+      ],
+      "stderr": "",
+      "report": {
+        "status": "inconclusive",
+        "summary": "빌드 실패는 관찰되지만, 제공된 로그만으로 구체적 근본 원인은 확정할 수 없습니다.",
+        "findings": [
+          {
+            "claim": "빌드 프로세스가 종료 코드 1로 실패했습니다.",
+            "confidence": "observed",
+            "evidence_ids": [
+              "L0303",
+              "L0304"
+            ]
+          },
+          {
+            "claim": "make의 build 대상이 Error 2로 실패했습니다.",
+            "confidence": "observed",
+            "evidence_ids": [
+              "L0152"
+            ]
+          },
+          {
+            "claim": "의존성 스캔은 변경 없이 캐시 적중으로 반복되었으며, 이 정보만으로 실패 원인이라고 볼 수 없습니다.",
+            "confidence": "observed",
+            "evidence_ids": [
+              "L0002",
+              "L0151",
+              "L0454"
+            ]
+          },
+          {
+            "claim": "실패를 유발한 실제 컴파일·테스트·의존성 오류 메시지는 제공된 bounded tail에서 확인되지 않습니다.",
+            "confidence": "likely",
+            "evidence_ids": [
+              "L0001",
+              "L0152",
+              "L0303"
+            ]
+          }
+        ],
+        "next_checks": [
+          "전체 빌드 로그에서 L0152 및 L0303 직전의 오류 출력을 확인하십시오.",
+          "make build가 실행한 실제 하위 명령과 해당 명령의 종료 상태를 확인하십시오.",
+          "npm의 상세 오류 로그 또는 debug log 경로를 확인하십시오.",
+          "동일 빌드를 캐시 비활성화 조건에서 재현해 캐시와의 연관성을 비교하십시오."
+        ],
+        "uncertainties": [
+          "이전 터미널 기록이 없어 실패 직전의 원인 메시지가 누락되었을 수 있습니다.",
+          "L0152와 L0303이 동일 실패의 중복 보고인지 별도 실패인지 알 수 없습니다.",
+          "캐시 적중 메시지와 실패 사이의 인과관계는 입증되지 않았습니다."
+        ]
+      },
+      "reportBytes": 1551
+    },
+    "attempts": [
+      {
+        "model": "gpt-5.6-luna",
+        "effort": "low",
+        "inputBytes": 1417,
+        "elapsedMs": 10714,
+        "code": 0,
+        "timedOut": false,
+        "processGroupPresent": false,
+        "usage": {
+          "input_tokens": 8163,
+          "cached_input_tokens": 0,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 416,
+          "reasoning_output_tokens": 34
+        },
+        "envelopeValid": true,
+        "validationErrors": [],
+        "observedToolItems": [],
+        "events": [
+          {
+            "type": "thread.started",
+            "thread_id": "01a0a385-8257-7c73-b8d0-66d699bbcec7"
+          },
+          {
+            "type": "item.completed",
+            "item": {
+              "id": "item_0",
+              "type": "error",
+              "message": "Under-development features enabled: skip_host_skill_discovery. Under-development features are incomplete and may behave unpredictably. To suppress this warning, set `suppress_unstable_features_warning = true` in <user-home>/.codex/config.toml."
+            }
+          },
+          {
+            "type": "item.completed",
+            "item": {
+              "id": "item_1",
+              "type": "error",
+              "message": "Code Mode is unavailable because code-mode host is disabled. Code mode will fail closed; enable `features.code_mode_host` and install `codex-code-mode-host`."
+            }
+          },
+          {
+            "type": "turn.started"
+          },
+          {
+            "type": "item.completed",
+            "item": {
+              "id": "item_2",
+              "type": "agent_message",
+              "text": "{\"status\":\"inconclusive\",\"summary\":\"빌드 실패는 관찰되지만, 제공된 로그만으로 구체적 근본 원인은 확정할 수 없습니다.\",\"findings\":[{\"claim\":\"빌드 프로세스가 종료 코드 1로 실패했습니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0303\",\"L0304\"]},{\"claim\":\"make의 build 대상이 Error 2로 실패했습니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0152\"]},{\"claim\":\"의존성 스캔은 변경 없이 캐시 적중으로 반복되었으며, 이 정보만으로 실패 원인이라고 볼 수 없습니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0002\",\"L0151\",\"L0454\"]},{\"claim\":\"실패를 유발한 실제 컴파일·테스트·의존성 오류 메시지는 제공된 bounded tail에서 확인되지 않습니다.\",\"confidence\":\"likely\",\"evidence_ids\":[\"L0001\",\"L0152\",\"L0303\"]}],\"next_checks\":[\"전체 빌드 로그에서 L0152 및 L0303 직전의 오류 출력을 확인하십시오.\",\"make build가 실행한 실제 하위 명령과 해당 명령의 종료 상태를 확인하십시오.\",\"npm의 상세 오류 로그 또는 debug log 경로를 확인하십시오.\",\"동일 빌드를 캐시 비활성화 조건에서 재현해 캐시와의 연관성을 비교하십시오.\"],\"uncertainties\":[\"이전 터미널 기록이 없어 실패 직전의 원인 메시지가 누락되었을 수 있습니다.\",\"L0152와 L0303이 동일 실패의 중복 보고인지 별도 실패인지 알 수 없습니다.\",\"캐시 적중 메시지와 실패 사이의 인과관계는 입증되지 않았습니다.\"]}"
+            }
+          },
+          {
+            "type": "turn.completed",
+            "usage": {
+              "input_tokens": 8163,
+              "cached_input_tokens": 0,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 416,
+              "reasoning_output_tokens": 34
+            }
+          }
+        ],
+        "stderr": "",
+        "report": {
+          "status": "inconclusive",
+          "summary": "빌드 실패는 관찰되지만, 제공된 로그만으로 구체적 근본 원인은 확정할 수 없습니다.",
+          "findings": [
+            {
+              "claim": "빌드 프로세스가 종료 코드 1로 실패했습니다.",
+              "confidence": "observed",
+              "evidence_ids": [
+                "L0303",
+                "L0304"
+              ]
+            },
+            {
+              "claim": "make의 build 대상이 Error 2로 실패했습니다.",
+              "confidence": "observed",
+              "evidence_ids": [
+                "L0152"
+              ]
+            },
+            {
+              "claim": "의존성 스캔은 변경 없이 캐시 적중으로 반복되었으며, 이 정보만으로 실패 원인이라고 볼 수 없습니다.",
+              "confidence": "observed",
+              "evidence_ids": [
+                "L0002",
+                "L0151",
+                "L0454"
+              ]
+            },
+            {
+              "claim": "실패를 유발한 실제 컴파일·테스트·의존성 오류 메시지는 제공된 bounded tail에서 확인되지 않습니다.",
+              "confidence": "likely",
+              "evidence_ids": [
+                "L0001",
+                "L0152",
+                "L0303"
+              ]
+            }
+          ],
+          "next_checks": [
+            "전체 빌드 로그에서 L0152 및 L0303 직전의 오류 출력을 확인하십시오.",
+            "make build가 실행한 실제 하위 명령과 해당 명령의 종료 상태를 확인하십시오.",
+            "npm의 상세 오류 로그 또는 debug log 경로를 확인하십시오.",
+            "동일 빌드를 캐시 비활성화 조건에서 재현해 캐시와의 연관성을 비교하십시오."
+          ],
+          "uncertainties": [
+            "이전 터미널 기록이 없어 실패 직전의 원인 메시지가 누락되었을 수 있습니다.",
+            "L0152와 L0303이 동일 실패의 중복 보고인지 별도 실패인지 알 수 없습니다.",
+            "캐시 적중 메시지와 실패 사이의 인과관계는 입증되지 않았습니다."
+          ]
+        },
+        "reportBytes": 1551
+      }
+    ]
+  },
+  "delegatedParent": {
+    "result": {
+      "model": "gpt-5.6-sol",
+      "effort": "low",
+      "inputBytes": 2724,
+      "elapsedMs": 13023,
+      "code": 0,
+      "timedOut": false,
+      "processGroupPresent": false,
+      "usage": {
+        "input_tokens": 10579,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 419,
+        "reasoning_output_tokens": 0
+      },
+      "envelopeValid": true,
+      "validationErrors": [],
+      "observedToolItems": [],
+      "events": [
+        {
+          "type": "thread.started",
+          "thread_id": "01a0a385-ac28-7c92-91e8-d5ec506fd0ee"
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_0",
+            "type": "error",
+            "message": "Under-development features enabled: skip_host_skill_discovery. Under-development features are incomplete and may behave unpredictably. To suppress this warning, set `suppress_unstable_features_warning = true` in <user-home>/.codex/config.toml."
+          }
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_1",
+            "type": "error",
+            "message": "Code Mode is unavailable because code-mode host is disabled. Code mode will fail closed; enable `features.code_mode_host` and install `codex-code-mode-host`."
+          }
+        },
+        {
+          "type": "turn.started"
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_2",
+            "type": "agent_message",
+            "text": "{\"status\":\"inconclusive\",\"summary\":\"빌드 실패는 확인되지만, bounded tail에 원인 오류와 하위 명령 정보가 없어 근본 원인은 확정할 수 없습니다.\",\"findings\":[{\"claim\":\"make의 build 대상이 Error 2로 실패했습니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0152\"]},{\"claim\":\"npm이 code 1을 보고했고 빌드 프로세스도 종료 코드 1로 끝났습니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0303\",\"L0304\"]},{\"claim\":\"의존성 스캔은 변경 없이 반복적으로 캐시 적중을 보고했지만, 실패와의 인과관계는 입증되지 않았습니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0002\",\"L0151\",\"L0454\"]},{\"claim\":\"제공된 bounded tail에는 실패를 유발한 구체적인 컴파일·테스트·의존성 오류가 없습니다.\",\"confidence\":\"likely\",\"evidence_ids\":[\"L0001\",\"L0152\",\"L0303\"]}],\"next_checks\":[\"L0152와 L0303 직전의 전체 로그에서 최초 오류 메시지를 확인하십시오.\",\"make build가 실행한 하위 명령과 각 종료 상태를 확인하십시오.\",\"npm 상세 오류 또는 debug log가 있다면 확인하십시오.\",\"L0152와 L0303의 타임스탬프·실행 식별자를 비교해 동일 실패인지 확인하십시오.\",\"캐시 비활성화 조건의 재현 결과와 비교하십시오.\"],\"uncertainties\":[\"이전 터미널 기록 부재로 최초 원인 메시지가 누락됐을 수 있습니다.\",\"L0152와 L0303이 동일 실패의 중복 보고인지 별도 실패인지 알 수 없습니다.\",\"make Error 2와 npm code 1 사이의 호출 관계가 제공되지 않았습니다.\",\"캐시 적중과 실패 사이의 인과관계는 확인되지 않았습니다.\"]}"
+          }
+        },
+        {
+          "type": "turn.completed",
+          "usage": {
+            "input_tokens": 10579,
+            "cached_input_tokens": 0,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 419,
+            "reasoning_output_tokens": 0
+          }
+        }
+      ],
+      "stderr": "",
+      "report": {
+        "status": "inconclusive",
+        "summary": "빌드 실패는 확인되지만, bounded tail에 원인 오류와 하위 명령 정보가 없어 근본 원인은 확정할 수 없습니다.",
+        "findings": [
+          {
+            "claim": "make의 build 대상이 Error 2로 실패했습니다.",
+            "confidence": "observed",
+            "evidence_ids": [
+              "L0152"
+            ]
+          },
+          {
+            "claim": "npm이 code 1을 보고했고 빌드 프로세스도 종료 코드 1로 끝났습니다.",
+            "confidence": "observed",
+            "evidence_ids": [
+              "L0303",
+              "L0304"
+            ]
+          },
+          {
+            "claim": "의존성 스캔은 변경 없이 반복적으로 캐시 적중을 보고했지만, 실패와의 인과관계는 입증되지 않았습니다.",
+            "confidence": "observed",
+            "evidence_ids": [
+              "L0002",
+              "L0151",
+              "L0454"
+            ]
+          },
+          {
+            "claim": "제공된 bounded tail에는 실패를 유발한 구체적인 컴파일·테스트·의존성 오류가 없습니다.",
+            "confidence": "likely",
+            "evidence_ids": [
+              "L0001",
+              "L0152",
+              "L0303"
+            ]
+          }
+        ],
+        "next_checks": [
+          "L0152와 L0303 직전의 전체 로그에서 최초 오류 메시지를 확인하십시오.",
+          "make build가 실행한 하위 명령과 각 종료 상태를 확인하십시오.",
+          "npm 상세 오류 또는 debug log가 있다면 확인하십시오.",
+          "L0152와 L0303의 타임스탬프·실행 식별자를 비교해 동일 실패인지 확인하십시오.",
+          "캐시 비활성화 조건의 재현 결과와 비교하십시오."
+        ],
+        "uncertainties": [
+          "이전 터미널 기록 부재로 최초 원인 메시지가 누락됐을 수 있습니다.",
+          "L0152와 L0303이 동일 실패의 중복 보고인지 별도 실패인지 알 수 없습니다.",
+          "make Error 2와 npm code 1 사이의 호출 관계가 제공되지 않았습니다.",
+          "캐시 적중과 실패 사이의 인과관계는 확인되지 않았습니다."
+        ]
+      },
+      "reportBytes": 1699
+    },
+    "attempts": [
+      {
+        "model": "gpt-5.6-sol",
+        "effort": "low",
+        "inputBytes": 2724,
+        "elapsedMs": 13023,
+        "code": 0,
+        "timedOut": false,
+        "processGroupPresent": false,
+        "usage": {
+          "input_tokens": 10579,
+          "cached_input_tokens": 0,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 419,
+          "reasoning_output_tokens": 0
+        },
+        "envelopeValid": true,
+        "validationErrors": [],
+        "observedToolItems": [],
+        "events": [
+          {
+            "type": "thread.started",
+            "thread_id": "01a0a385-ac28-7c92-91e8-d5ec506fd0ee"
+          },
+          {
+            "type": "item.completed",
+            "item": {
+              "id": "item_0",
+              "type": "error",
+              "message": "Under-development features enabled: skip_host_skill_discovery. Under-development features are incomplete and may behave unpredictably. To suppress this warning, set `suppress_unstable_features_warning = true` in <user-home>/.codex/config.toml."
+            }
+          },
+          {
+            "type": "item.completed",
+            "item": {
+              "id": "item_1",
+              "type": "error",
+              "message": "Code Mode is unavailable because code-mode host is disabled. Code mode will fail closed; enable `features.code_mode_host` and install `codex-code-mode-host`."
+            }
+          },
+          {
+            "type": "turn.started"
+          },
+          {
+            "type": "item.completed",
+            "item": {
+              "id": "item_2",
+              "type": "agent_message",
+              "text": "{\"status\":\"inconclusive\",\"summary\":\"빌드 실패는 확인되지만, bounded tail에 원인 오류와 하위 명령 정보가 없어 근본 원인은 확정할 수 없습니다.\",\"findings\":[{\"claim\":\"make의 build 대상이 Error 2로 실패했습니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0152\"]},{\"claim\":\"npm이 code 1을 보고했고 빌드 프로세스도 종료 코드 1로 끝났습니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0303\",\"L0304\"]},{\"claim\":\"의존성 스캔은 변경 없이 반복적으로 캐시 적중을 보고했지만, 실패와의 인과관계는 입증되지 않았습니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0002\",\"L0151\",\"L0454\"]},{\"claim\":\"제공된 bounded tail에는 실패를 유발한 구체적인 컴파일·테스트·의존성 오류가 없습니다.\",\"confidence\":\"likely\",\"evidence_ids\":[\"L0001\",\"L0152\",\"L0303\"]}],\"next_checks\":[\"L0152와 L0303 직전의 전체 로그에서 최초 오류 메시지를 확인하십시오.\",\"make build가 실행한 하위 명령과 각 종료 상태를 확인하십시오.\",\"npm 상세 오류 또는 debug log가 있다면 확인하십시오.\",\"L0152와 L0303의 타임스탬프·실행 식별자를 비교해 동일 실패인지 확인하십시오.\",\"캐시 비활성화 조건의 재현 결과와 비교하십시오.\"],\"uncertainties\":[\"이전 터미널 기록 부재로 최초 원인 메시지가 누락됐을 수 있습니다.\",\"L0152와 L0303이 동일 실패의 중복 보고인지 별도 실패인지 알 수 없습니다.\",\"make Error 2와 npm code 1 사이의 호출 관계가 제공되지 않았습니다.\",\"캐시 적중과 실패 사이의 인과관계는 확인되지 않았습니다.\"]}"
+            }
+          },
+          {
+            "type": "turn.completed",
+            "usage": {
+              "input_tokens": 10579,
+              "cached_input_tokens": 0,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 419,
+              "reasoning_output_tokens": 0
+            }
+          }
+        ],
+        "stderr": "",
+        "report": {
+          "status": "inconclusive",
+          "summary": "빌드 실패는 확인되지만, bounded tail에 원인 오류와 하위 명령 정보가 없어 근본 원인은 확정할 수 없습니다.",
+          "findings": [
+            {
+              "claim": "make의 build 대상이 Error 2로 실패했습니다.",
+              "confidence": "observed",
+              "evidence_ids": [
+                "L0152"
+              ]
+            },
+            {
+              "claim": "npm이 code 1을 보고했고 빌드 프로세스도 종료 코드 1로 끝났습니다.",
+              "confidence": "observed",
+              "evidence_ids": [
+                "L0303",
+                "L0304"
+              ]
+            },
+            {
+              "claim": "의존성 스캔은 변경 없이 반복적으로 캐시 적중을 보고했지만, 실패와의 인과관계는 입증되지 않았습니다.",
+              "confidence": "observed",
+              "evidence_ids": [
+                "L0002",
+                "L0151",
+                "L0454"
+              ]
+            },
+            {
+              "claim": "제공된 bounded tail에는 실패를 유발한 구체적인 컴파일·테스트·의존성 오류가 없습니다.",
+              "confidence": "likely",
+              "evidence_ids": [
+                "L0001",
+                "L0152",
+                "L0303"
+              ]
+            }
+          ],
+          "next_checks": [
+            "L0152와 L0303 직전의 전체 로그에서 최초 오류 메시지를 확인하십시오.",
+            "make build가 실행한 하위 명령과 각 종료 상태를 확인하십시오.",
+            "npm 상세 오류 또는 debug log가 있다면 확인하십시오.",
+            "L0152와 L0303의 타임스탬프·실행 식별자를 비교해 동일 실패인지 확인하십시오.",
+            "캐시 비활성화 조건의 재현 결과와 비교하십시오."
+          ],
+          "uncertainties": [
+            "이전 터미널 기록 부재로 최초 원인 메시지가 누락됐을 수 있습니다.",
+            "L0152와 L0303이 동일 실패의 중복 보고인지 별도 실패인지 알 수 없습니다.",
+            "make Error 2와 npm code 1 사이의 호출 관계가 제공되지 않았습니다.",
+            "캐시 적중과 실패 사이의 인과관계는 확인되지 않았습니다."
+          ]
+        },
+        "reportBytes": 1699
+      }
+    ]
+  },
+  "initialBrokeredPayload": "Validated Worker report (claims still require evidence review):\n{\"status\":\"inconclusive\",\"summary\":\"빌드 실패는 관찰되지만, 제공된 로그만으로 구체적 근본 원인은 확정할 수 없습니다.\",\"findings\":[{\"claim\":\"빌드 프로세스가 종료 코드 1로 실패했습니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0303\",\"L0304\"]},{\"claim\":\"make의 build 대상이 Error 2로 실패했습니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0152\"]},{\"claim\":\"의존성 스캔은 변경 없이 캐시 적중으로 반복되었으며, 이 정보만으로 실패 원인이라고 볼 수 없습니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0002\",\"L0151\",\"L0454\"]},{\"claim\":\"실패를 유발한 실제 컴파일·테스트·의존성 오류 메시지는 제공된 bounded tail에서 확인되지 않습니다.\",\"confidence\":\"likely\",\"evidence_ids\":[\"L0001\",\"L0152\",\"L0303\"]}],\"next_checks\":[\"전체 빌드 로그에서 L0152 및 L0303 직전의 오류 출력을 확인하십시오.\",\"make build가 실행한 실제 하위 명령과 해당 명령의 종료 상태를 확인하십시오.\",\"npm의 상세 오류 로그 또는 debug log 경로를 확인하십시오.\",\"동일 빌드를 캐시 비활성화 조건에서 재현해 캐시와의 연관성을 비교하십시오.\"],\"uncertainties\":[\"이전 터미널 기록이 없어 실패 직전의 원인 메시지가 누락되었을 수 있습니다.\",\"L0152와 L0303이 동일 실패의 중복 보고인지 별도 실패인지 알 수 없습니다.\",\"캐시 적중 메시지와 실패 사이의 인과관계는 입증되지 않았습니다.\"]}\nBroker-issued source excerpts:\nL0001 capture: previous terminal history is unavailable; this is a bounded tail\nL0002 INFO build cache hit; dependency scan completed with no changes\nL0151 INFO build cache hit; dependency scan completed with no changes\nL0152 make: *** [build] Error 2\nL0303 npm ERR! code 1\nL0304 build process exited 1\nL0454 INFO build cache hit; dependency scan completed with no changes\n\nSource is bounded. Excerpts truncated: false."
+}

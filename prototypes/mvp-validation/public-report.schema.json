@@ -1,0 +1,67 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "summary": {
+      "type": "string",
+      "maxLength": 1200
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "claim": {
+            "type": "string",
+            "maxLength": 600
+          },
+          "confidence": {
+            "type": "string",
+            "enum": [
+              "observed",
+              "likely",
+              "uncertain"
+            ]
+          },
+          "evidence_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "maxItems": 3
+          }
+        },
+        "required": [
+          "claim",
+          "confidence",
+          "evidence_ids"
+        ]
+      },
+      "maxItems": 5
+    },
+    "next_checks": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 600
+      },
+      "maxItems": 5
+    },
+    "uncertainties": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 600
+      },
+      "maxItems": 5
+    }
+  },
+  "required": [
+    "summary",
+    "findings",
+    "next_checks",
+    "uncertainties"
+  ]
+}

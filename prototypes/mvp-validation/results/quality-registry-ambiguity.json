@@ -1,0 +1,1023 @@
+{
+  "fixture": "registry-ambiguity",
+  "expected": "404만으로 package 미존재를 확정하지 않음. 다른 환경의 같은 URL 성공과 auth/version/registry 차이를 보존하고 확인 요청.",
+  "summary": {
+    "fixture": "registry-ambiguity",
+    "rawBytes": 31928,
+    "preparedBytes": 1025,
+    "delegatedParentBytes": 2777,
+    "evidenceBytes": 639,
+    "additionalEvidenceCalls": 0,
+    "repairs": {
+      "raw": 0,
+      "prepared": 0,
+      "worker": 0,
+      "delegated": 0
+    },
+    "rawUsage": {
+      "input_tokens": 16951,
+      "cached_input_tokens": 8960,
+      "output_tokens": 472,
+      "elapsedMs": 22615
+    },
+    "preparedUsage": {
+      "input_tokens": 10339,
+      "cached_input_tokens": 0,
+      "output_tokens": 512,
+      "elapsedMs": 19714
+    },
+    "delegatedUsage": {
+      "input_tokens": 18964,
+      "cached_input_tokens": 0,
+      "output_tokens": 979,
+      "elapsedMs": 30324
+    },
+    "structuralValidity": [
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "rawParent": {
+    "result": {
+      "model": "gpt-5.6-sol",
+      "effort": "low",
+      "inputBytes": 32586,
+      "elapsedMs": 22615,
+      "code": 0,
+      "timedOut": false,
+      "processGroupPresent": false,
+      "usage": {
+        "input_tokens": 16951,
+        "cached_input_tokens": 8960,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 472,
+        "reasoning_output_tokens": 0
+      },
+      "envelopeValid": true,
+      "validationErrors": [],
+      "observedToolItems": [],
+      "events": [
+        {
+          "type": "thread.started",
+          "thread_id": "01a0a383-db47-7683-9b78-57f1c3f0b0bf"
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_0",
+            "type": "error",
+            "message": "Under-development features enabled: skip_host_skill_discovery. Under-development features are incomplete and may behave unpredictably. To suppress this warning, set `suppress_unstable_features_warning = true` in <user-home>/.codex/config.toml."
+          }
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_1",
+            "type": "error",
+            "message": "Code Mode is unavailable because code-mode host is disabled. Code mode will fail closed; enable `features.code_mode_host` and install `codex-code-mode-host`."
+          }
+        },
+        {
+          "type": "turn.started"
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_2",
+            "type": "agent_message",
+            "text": "{\"status\":\"inconclusive\",\"summary\":\"npm ci 실패와 private package tarball 요청의 404는 확인되지만, 실제 패키지 부재인지 실패 머신의 인증·registry 설정 문제인지 확정할 수 없습니다. 정책상 미인증 요청도 404를 반환하며, 다른 머신에서는 같은 URL이 200이었다는 상충 증거가 있습니다.\",\"findings\":[{\"claim\":\"npm ci가 종료 코드 1로 실패했다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0001\",\"L0307\"]},{\"claim\":\"실패 과정에서 @example/private-lib 1.0.0 tarball 요청이 404를 반환했다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0002\"]},{\"claim\":\"실패 머신의 token 권한 또는 registry 설정 차이로 요청이 인증되지 않았을 가능성이 높다.\",\"confidence\":\"likely\",\"evidence_ids\":[\"L0004\",\"L0155\",\"L0156\"]},{\"claim\":\"token이 사용되었다는 기록만으로 유효성이나 필요한 scope 보유 여부는 입증되지 않는다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0003\",\"L0156\"]}],\"next_checks\":[\"실패 머신에서 비밀값을 노출하지 않고 token의 유효기간과 private package read scope를 확인한다.\",\"실패 머신과 성공 머신의 npm registry 및 @example scope 설정을 비교한다.\",\"동일 자격 증명 조건에서 package metadata와 tarball URL의 HTTP 상태를 각각 확인한다.\",\"registry 감사 로그에서 해당 요청의 인증·인가 판정과 404 변환 여부를 확인한다.\",\"package version 1.0.0의 존재 여부와 실패 시점의 배포·삭제 이력을 확인한다.\"],\"uncertainties\":[\"실패 머신 token의 실제 scope와 유효성 정보가 없다.\",\"실패 머신의 registry 및 scope별 npm 설정이 없다.\",\"404가 패키지 부재인지 인증 실패 은닉 응답인지 구분되지 않는다.\",\"다른 머신의 200 응답이 동일 token·설정·네트워크 조건에서 나온 것인지 알 수 없다.\",\"404와 npm ci 종료 코드 1 사이의 전체 오류 문맥이 제공되지 않았다.\"]}"
+          }
+        },
+        {
+          "type": "turn.completed",
+          "usage": {
+            "input_tokens": 16951,
+            "cached_input_tokens": 8960,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 472,
+            "reasoning_output_tokens": 0
+          }
+        }
+      ],
+      "stderr": "",
+      "report": {
+        "status": "inconclusive",
+        "summary": "npm ci 실패와 private package tarball 요청의 404는 확인되지만, 실제 패키지 부재인지 실패 머신의 인증·registry 설정 문제인지 확정할 수 없습니다. 정책상 미인증 요청도 404를 반환하며, 다른 머신에서는 같은 URL이 200이었다는 상충 증거가 있습니다.",
+        "findings": [
+          {
+            "claim": "npm ci가 종료 코드 1로 실패했다.",
+            "confidence": "observed",
+            "evidence_ids": [
+              "L0001",
+              "L0307"
+            ]
+          },
+          {
+            "claim": "실패 과정에서 @example/private-lib 1.0.0 tarball 요청이 404를 반환했다.",
+            "confidence": "observed",
+            "evidence_ids": [
+              "L0002"
+            ]
+          },
+          {
+            "claim": "실패 머신의 token 권한 또는 registry 설정 차이로 요청이 인증되지 않았을 가능성이 높다.",
+            "confidence": "likely",
+            "evidence_ids": [
+              "L0004",
+              "L0155",
+              "L0156"
+            ]
+          },
+          {
+            "claim": "token이 사용되었다는 기록만으로 유효성이나 필요한 scope 보유 여부는 입증되지 않는다.",
+            "confidence": "observed",
+            "evidence_ids": [
+              "L0003",
+              "L0156"
+            ]
+          }
+        ],
+        "next_checks": [
+          "실패 머신에서 비밀값을 노출하지 않고 token의 유효기간과 private package read scope를 확인한다.",
+          "실패 머신과 성공 머신의 npm registry 및 @example scope 설정을 비교한다.",
+          "동일 자격 증명 조건에서 package metadata와 tarball URL의 HTTP 상태를 각각 확인한다.",
+          "registry 감사 로그에서 해당 요청의 인증·인가 판정과 404 변환 여부를 확인한다.",
+          "package version 1.0.0의 존재 여부와 실패 시점의 배포·삭제 이력을 확인한다."
+        ],
+        "uncertainties": [
+          "실패 머신 token의 실제 scope와 유효성 정보가 없다.",
+          "실패 머신의 registry 및 scope별 npm 설정이 없다.",
+          "404가 패키지 부재인지 인증 실패 은닉 응답인지 구분되지 않는다.",
+          "다른 머신의 200 응답이 동일 token·설정·네트워크 조건에서 나온 것인지 알 수 없다.",
+          "404와 npm ci 종료 코드 1 사이의 전체 오류 문맥이 제공되지 않았다."
+        ]
+      },
+      "reportBytes": 2000
+    },
+    "attempts": [
+      {
+        "model": "gpt-5.6-sol",
+        "effort": "low",
+        "inputBytes": 32586,
+        "elapsedMs": 22615,
+        "code": 0,
+        "timedOut": false,
+        "processGroupPresent": false,
+        "usage": {
+          "input_tokens": 16951,
+          "cached_input_tokens": 8960,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 472,
+          "reasoning_output_tokens": 0
+        },
+        "envelopeValid": true,
+        "validationErrors": [],
+        "observedToolItems": [],
+        "events": [
+          {
+            "type": "thread.started",
+            "thread_id": "01a0a383-db47-7683-9b78-57f1c3f0b0bf"
+          },
+          {
+            "type": "item.completed",
+            "item": {
+              "id": "item_0",
+              "type": "error",
+              "message": "Under-development features enabled: skip_host_skill_discovery. Under-development features are incomplete and may behave unpredictably. To suppress this warning, set `suppress_unstable_features_warning = true` in <user-home>/.codex/config.toml."
+            }
+          },
+          {
+            "type": "item.completed",
+            "item": {
+              "id": "item_1",
+              "type": "error",
+              "message": "Code Mode is unavailable because code-mode host is disabled. Code mode will fail closed; enable `features.code_mode_host` and install `codex-code-mode-host`."
+            }
+          },
+          {
+            "type": "turn.started"
+          },
+          {
+            "type": "item.completed",
+            "item": {
+              "id": "item_2",
+              "type": "agent_message",
+              "text": "{\"status\":\"inconclusive\",\"summary\":\"npm ci 실패와 private package tarball 요청의 404는 확인되지만, 실제 패키지 부재인지 실패 머신의 인증·registry 설정 문제인지 확정할 수 없습니다. 정책상 미인증 요청도 404를 반환하며, 다른 머신에서는 같은 URL이 200이었다는 상충 증거가 있습니다.\",\"findings\":[{\"claim\":\"npm ci가 종료 코드 1로 실패했다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0001\",\"L0307\"]},{\"claim\":\"실패 과정에서 @example/private-lib 1.0.0 tarball 요청이 404를 반환했다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0002\"]},{\"claim\":\"실패 머신의 token 권한 또는 registry 설정 차이로 요청이 인증되지 않았을 가능성이 높다.\",\"confidence\":\"likely\",\"evidence_ids\":[\"L0004\",\"L0155\",\"L0156\"]},{\"claim\":\"token이 사용되었다는 기록만으로 유효성이나 필요한 scope 보유 여부는 입증되지 않는다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0003\",\"L0156\"]}],\"next_checks\":[\"실패 머신에서 비밀값을 노출하지 않고 token의 유효기간과 private package read scope를 확인한다.\",\"실패 머신과 성공 머신의 npm registry 및 @example scope 설정을 비교한다.\",\"동일 자격 증명 조건에서 package metadata와 tarball URL의 HTTP 상태를 각각 확인한다.\",\"registry 감사 로그에서 해당 요청의 인증·인가 판정과 404 변환 여부를 확인한다.\",\"package version 1.0.0의 존재 여부와 실패 시점의 배포·삭제 이력을 확인한다.\"],\"uncertainties\":[\"실패 머신 token의 실제 scope와 유효성 정보가 없다.\",\"실패 머신의 registry 및 scope별 npm 설정이 없다.\",\"404가 패키지 부재인지 인증 실패 은닉 응답인지 구분되지 않는다.\",\"다른 머신의 200 응답이 동일 token·설정·네트워크 조건에서 나온 것인지 알 수 없다.\",\"404와 npm ci 종료 코드 1 사이의 전체 오류 문맥이 제공되지 않았다.\"]}"
+            }
+          },
+          {
+            "type": "turn.completed",
+            "usage": {
+              "input_tokens": 16951,
+              "cached_input_tokens": 8960,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 472,
+              "reasoning_output_tokens": 0
+            }
+          }
+        ],
+        "stderr": "",
+        "report": {
+          "status": "inconclusive",
+          "summary": "npm ci 실패와 private package tarball 요청의 404는 확인되지만, 실제 패키지 부재인지 실패 머신의 인증·registry 설정 문제인지 확정할 수 없습니다. 정책상 미인증 요청도 404를 반환하며, 다른 머신에서는 같은 URL이 200이었다는 상충 증거가 있습니다.",
+          "findings": [
+            {
+              "claim": "npm ci가 종료 코드 1로 실패했다.",
+              "confidence": "observed",
+              "evidence_ids": [
+                "L0001",
+                "L0307"
+              ]
+            },
+            {
+              "claim": "실패 과정에서 @example/private-lib 1.0.0 tarball 요청이 404를 반환했다.",
+              "confidence": "observed",
+              "evidence_ids": [
+                "L0002"
+              ]
+            },
+            {
+              "claim": "실패 머신의 token 권한 또는 registry 설정 차이로 요청이 인증되지 않았을 가능성이 높다.",
+              "confidence": "likely",
+              "evidence_ids": [
+                "L0004",
+                "L0155",
+                "L0156"
+              ]
+            },
+            {
+              "claim": "token이 사용되었다는 기록만으로 유효성이나 필요한 scope 보유 여부는 입증되지 않는다.",
+              "confidence": "observed",
+              "evidence_ids": [
+                "L0003",
+                "L0156"
+              ]
+            }
+          ],
+          "next_checks": [
+            "실패 머신에서 비밀값을 노출하지 않고 token의 유효기간과 private package read scope를 확인한다.",
+            "실패 머신과 성공 머신의 npm registry 및 @example scope 설정을 비교한다.",
+            "동일 자격 증명 조건에서 package metadata와 tarball URL의 HTTP 상태를 각각 확인한다.",
+            "registry 감사 로그에서 해당 요청의 인증·인가 판정과 404 변환 여부를 확인한다.",
+            "package version 1.0.0의 존재 여부와 실패 시점의 배포·삭제 이력을 확인한다."
+          ],
+          "uncertainties": [
+            "실패 머신 token의 실제 scope와 유효성 정보가 없다.",
+            "실패 머신의 registry 및 scope별 npm 설정이 없다.",
+            "404가 패키지 부재인지 인증 실패 은닉 응답인지 구분되지 않는다.",
+            "다른 머신의 200 응답이 동일 token·설정·네트워크 조건에서 나온 것인지 알 수 없다.",
+            "404와 npm ci 종료 코드 1 사이의 전체 오류 문맥이 제공되지 않았다."
+          ]
+        },
+        "reportBytes": 2000
+      }
+    ]
+  },
+  "preparedParent": {
+    "result": {
+      "model": "gpt-5.6-sol",
+      "effort": "low",
+      "inputBytes": 1683,
+      "elapsedMs": 19714,
+      "code": 0,
+      "timedOut": false,
+      "processGroupPresent": false,
+      "usage": {
+        "input_tokens": 10339,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 512,
+        "reasoning_output_tokens": 0
+      },
+      "envelopeValid": true,
+      "validationErrors": [],
+      "observedToolItems": [],
+      "events": [
+        {
+          "type": "thread.started",
+          "thread_id": "01a0a384-339c-7493-ba9e-eb71021b38db"
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_0",
+            "type": "error",
+            "message": "Under-development features enabled: skip_host_skill_discovery. Under-development features are incomplete and may behave unpredictably. To suppress this warning, set `suppress_unstable_features_warning = true` in <user-home>/.codex/config.toml."
+          }
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_1",
+            "type": "error",
+            "message": "Code Mode is unavailable because code-mode host is disabled. Code mode will fail closed; enable `features.code_mode_host` and install `codex-code-mode-host`."
+          }
+        },
+        {
+          "type": "turn.started"
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_2",
+            "type": "agent_message",
+            "text": "{\"status\":\"diagnosed\",\"summary\":\"직접 실패는 private-lib tarball 요청의 404로 인한 npm ci 종료다. 다만 패키지 부재보다는 실패 머신의 인증 토큰 scope 또는 registry 설정 문제일 가능성이 높으며, 현재 자료만으로 근본 원인은 확정할 수 없다.\",\"findings\":[{\"claim\":\"npm ci는 @example/private-lib 1.0.0 tarball 요청이 404를 반환한 뒤 exit code 1로 실패했다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0001\",\"L0002\",\"L0307\"]},{\"claim\":\"404는 패키지 부재뿐 아니라 private package 인증 실패를 은폐한 응답일 수 있다.\",\"confidence\":\"likely\",\"evidence_ids\":[\"L0003\",\"L0004\"]},{\"claim\":\"동일 URL이 다른 머신에서 직전에 200을 반환했다는 보고는 전역적인 패키지 부재 가능성을 낮추고 머신별 token scope 또는 registry 설정 차이를 시사한다.\",\"confidence\":\"likely\",\"evidence_ids\":[\"L0155\",\"L0156\"]},{\"claim\":\"cache hit 로그는 반복되지만 의존성 변경 없음만 나타내며, 인증 또는 registry 원인을 입증하거나 배제하지 않는다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0005\",\"L0154\",\"L0457\"]}],\"next_checks\":[\"실패 머신에서 실제 적용된 npm registry 및 scope별 registry 설정을 캡처해 정상 머신과 비교한다.\",\"비밀값을 노출하지 않고 실패 토큰의 유효기간, package read 권한, organization/scope 접근 권한을 확인한다.\",\"동일 토큰과 registry 설정으로 package metadata 및 tarball 접근 결과를 각각 확인한다.\",\"lockfile의 resolved URL과 기대 registry/package/version이 일치하는지 확인한다.\",\"정상 머신과 실패 머신의 npm 버전 및 관련 환경 변수 차이를 비교한다.\"],\"uncertainties\":[\"실패 머신의 token scope와 registry 설정이 제공되지 않았다.\",\"다른 머신의 200 응답이 동일 자격 증명과 동일 설정에서 발생했는지 알 수 없다.\",\"404 응답이 인증 은폐 정책 때문인지 실제 패키지 또는 버전 부재 때문인지 확정할 수 없다.\",\"HTTP 응답 본문·헤더와 npm 상세 오류 로그가 없어 registry 측 사유를 판별할 수 없다.\"]}"
+          }
+        },
+        {
+          "type": "turn.completed",
+          "usage": {
+            "input_tokens": 10339,
+            "cached_input_tokens": 0,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 512,
+            "reasoning_output_tokens": 0
+          }
+        }
+      ],
+      "stderr": "",
+      "report": {
+        "status": "diagnosed",
+        "summary": "직접 실패는 private-lib tarball 요청의 404로 인한 npm ci 종료다. 다만 패키지 부재보다는 실패 머신의 인증 토큰 scope 또는 registry 설정 문제일 가능성이 높으며, 현재 자료만으로 근본 원인은 확정할 수 없다.",
+        "findings": [
+          {
+            "claim": "npm ci는 @example/private-lib 1.0.0 tarball 요청이 404를 반환한 뒤 exit code 1로 실패했다.",
+            "confidence": "observed",
+            "evidence_ids": [
+              "L0001",
+              "L0002",
+              "L0307"
+            ]
+          },
+          {
+            "claim": "404는 패키지 부재뿐 아니라 private package 인증 실패를 은폐한 응답일 수 있다.",
+            "confidence": "likely",
+            "evidence_ids": [
+              "L0003",
+              "L0004"
+            ]
+          },
+          {
+            "claim": "동일 URL이 다른 머신에서 직전에 200을 반환했다는 보고는 전역적인 패키지 부재 가능성을 낮추고 머신별 token scope 또는 registry 설정 차이를 시사한다.",
+            "confidence": "likely",
+            "evidence_ids": [
+              "L0155",
+              "L0156"
+            ]
+          },
+          {
+            "claim": "cache hit 로그는 반복되지만 의존성 변경 없음만 나타내며, 인증 또는 registry 원인을 입증하거나 배제하지 않는다.",
+            "confidence": "observed",
+            "evidence_ids": [
+              "L0005",
+              "L0154",
+              "L0457"
+            ]
+          }
+        ],
+        "next_checks": [
+          "실패 머신에서 실제 적용된 npm registry 및 scope별 registry 설정을 캡처해 정상 머신과 비교한다.",
+          "비밀값을 노출하지 않고 실패 토큰의 유효기간, package read 권한, organization/scope 접근 권한을 확인한다.",
+          "동일 토큰과 registry 설정으로 package metadata 및 tarball 접근 결과를 각각 확인한다.",
+          "lockfile의 resolved URL과 기대 registry/package/version이 일치하는지 확인한다.",
+          "정상 머신과 실패 머신의 npm 버전 및 관련 환경 변수 차이를 비교한다."
+        ],
+        "uncertainties": [
+          "실패 머신의 token scope와 registry 설정이 제공되지 않았다.",
+          "다른 머신의 200 응답이 동일 자격 증명과 동일 설정에서 발생했는지 알 수 없다.",
+          "404 응답이 인증 은폐 정책 때문인지 실제 패키지 또는 버전 부재 때문인지 확정할 수 없다.",
+          "HTTP 응답 본문·헤더와 npm 상세 오류 로그가 없어 registry 측 사유를 판별할 수 없다."
+        ]
+      },
+      "reportBytes": 2175
+    },
+    "attempts": [
+      {
+        "model": "gpt-5.6-sol",
+        "effort": "low",
+        "inputBytes": 1683,
+        "elapsedMs": 19714,
+        "code": 0,
+        "timedOut": false,
+        "processGroupPresent": false,
+        "usage": {
+          "input_tokens": 10339,
+          "cached_input_tokens": 0,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 512,
+          "reasoning_output_tokens": 0
+        },
+        "envelopeValid": true,
+        "validationErrors": [],
+        "observedToolItems": [],
+        "events": [
+          {
+            "type": "thread.started",
+            "thread_id": "01a0a384-339c-7493-ba9e-eb71021b38db"
+          },
+          {
+            "type": "item.completed",
+            "item": {
+              "id": "item_0",
+              "type": "error",
+              "message": "Under-development features enabled: skip_host_skill_discovery. Under-development features are incomplete and may behave unpredictably. To suppress this warning, set `suppress_unstable_features_warning = true` in <user-home>/.codex/config.toml."
+            }
+          },
+          {
+            "type": "item.completed",
+            "item": {
+              "id": "item_1",
+              "type": "error",
+              "message": "Code Mode is unavailable because code-mode host is disabled. Code mode will fail closed; enable `features.code_mode_host` and install `codex-code-mode-host`."
+            }
+          },
+          {
+            "type": "turn.started"
+          },
+          {
+            "type": "item.completed",
+            "item": {
+              "id": "item_2",
+              "type": "agent_message",
+              "text": "{\"status\":\"diagnosed\",\"summary\":\"직접 실패는 private-lib tarball 요청의 404로 인한 npm ci 종료다. 다만 패키지 부재보다는 실패 머신의 인증 토큰 scope 또는 registry 설정 문제일 가능성이 높으며, 현재 자료만으로 근본 원인은 확정할 수 없다.\",\"findings\":[{\"claim\":\"npm ci는 @example/private-lib 1.0.0 tarball 요청이 404를 반환한 뒤 exit code 1로 실패했다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0001\",\"L0002\",\"L0307\"]},{\"claim\":\"404는 패키지 부재뿐 아니라 private package 인증 실패를 은폐한 응답일 수 있다.\",\"confidence\":\"likely\",\"evidence_ids\":[\"L0003\",\"L0004\"]},{\"claim\":\"동일 URL이 다른 머신에서 직전에 200을 반환했다는 보고는 전역적인 패키지 부재 가능성을 낮추고 머신별 token scope 또는 registry 설정 차이를 시사한다.\",\"confidence\":\"likely\",\"evidence_ids\":[\"L0155\",\"L0156\"]},{\"claim\":\"cache hit 로그는 반복되지만 의존성 변경 없음만 나타내며, 인증 또는 registry 원인을 입증하거나 배제하지 않는다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0005\",\"L0154\",\"L0457\"]}],\"next_checks\":[\"실패 머신에서 실제 적용된 npm registry 및 scope별 registry 설정을 캡처해 정상 머신과 비교한다.\",\"비밀값을 노출하지 않고 실패 토큰의 유효기간, package read 권한, organization/scope 접근 권한을 확인한다.\",\"동일 토큰과 registry 설정으로 package metadata 및 tarball 접근 결과를 각각 확인한다.\",\"lockfile의 resolved URL과 기대 registry/package/version이 일치하는지 확인한다.\",\"정상 머신과 실패 머신의 npm 버전 및 관련 환경 변수 차이를 비교한다.\"],\"uncertainties\":[\"실패 머신의 token scope와 registry 설정이 제공되지 않았다.\",\"다른 머신의 200 응답이 동일 자격 증명과 동일 설정에서 발생했는지 알 수 없다.\",\"404 응답이 인증 은폐 정책 때문인지 실제 패키지 또는 버전 부재 때문인지 확정할 수 없다.\",\"HTTP 응답 본문·헤더와 npm 상세 오류 로그가 없어 registry 측 사유를 판별할 수 없다.\"]}"
+            }
+          },
+          {
+            "type": "turn.completed",
+            "usage": {
+              "input_tokens": 10339,
+              "cached_input_tokens": 0,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 512,
+              "reasoning_output_tokens": 0
+            }
+          }
+        ],
+        "stderr": "",
+        "report": {
+          "status": "diagnosed",
+          "summary": "직접 실패는 private-lib tarball 요청의 404로 인한 npm ci 종료다. 다만 패키지 부재보다는 실패 머신의 인증 토큰 scope 또는 registry 설정 문제일 가능성이 높으며, 현재 자료만으로 근본 원인은 확정할 수 없다.",
+          "findings": [
+            {
+              "claim": "npm ci는 @example/private-lib 1.0.0 tarball 요청이 404를 반환한 뒤 exit code 1로 실패했다.",
+              "confidence": "observed",
+              "evidence_ids": [
+                "L0001",
+                "L0002",
+                "L0307"
+              ]
+            },
+            {
+              "claim": "404는 패키지 부재뿐 아니라 private package 인증 실패를 은폐한 응답일 수 있다.",
+              "confidence": "likely",
+              "evidence_ids": [
+                "L0003",
+                "L0004"
+              ]
+            },
+            {
+              "claim": "동일 URL이 다른 머신에서 직전에 200을 반환했다는 보고는 전역적인 패키지 부재 가능성을 낮추고 머신별 token scope 또는 registry 설정 차이를 시사한다.",
+              "confidence": "likely",
+              "evidence_ids": [
+                "L0155",
+                "L0156"
+              ]
+            },
+            {
+              "claim": "cache hit 로그는 반복되지만 의존성 변경 없음만 나타내며, 인증 또는 registry 원인을 입증하거나 배제하지 않는다.",
+              "confidence": "observed",
+              "evidence_ids": [
+                "L0005",
+                "L0154",
+                "L0457"
+              ]
+            }
+          ],
+          "next_checks": [
+            "실패 머신에서 실제 적용된 npm registry 및 scope별 registry 설정을 캡처해 정상 머신과 비교한다.",
+            "비밀값을 노출하지 않고 실패 토큰의 유효기간, package read 권한, organization/scope 접근 권한을 확인한다.",
+            "동일 토큰과 registry 설정으로 package metadata 및 tarball 접근 결과를 각각 확인한다.",
+            "lockfile의 resolved URL과 기대 registry/package/version이 일치하는지 확인한다.",
+            "정상 머신과 실패 머신의 npm 버전 및 관련 환경 변수 차이를 비교한다."
+          ],
+          "uncertainties": [
+            "실패 머신의 token scope와 registry 설정이 제공되지 않았다.",
+            "다른 머신의 200 응답이 동일 자격 증명과 동일 설정에서 발생했는지 알 수 없다.",
+            "404 응답이 인증 은폐 정책 때문인지 실제 패키지 또는 버전 부재 때문인지 확정할 수 없다.",
+            "HTTP 응답 본문·헤더와 npm 상세 오류 로그가 없어 registry 측 사유를 판별할 수 없다."
+          ]
+        },
+        "reportBytes": 2175
+      }
+    ]
+  },
+  "worker": {
+    "result": {
+      "model": "gpt-5.6-luna",
+      "effort": "low",
+      "inputBytes": 1683,
+      "elapsedMs": 15135,
+      "code": 0,
+      "timedOut": false,
+      "processGroupPresent": false,
+      "usage": {
+        "input_tokens": 8224,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 526,
+        "reasoning_output_tokens": 44
+      },
+      "envelopeValid": true,
+      "validationErrors": [],
+      "observedToolItems": [],
+      "events": [
+        {
+          "type": "thread.started",
+          "thread_id": "01a0a384-80a5-7ee2-8ec1-4120e023d169"
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_0",
+            "type": "error",
+            "message": "Under-development features enabled: skip_host_skill_discovery. Under-development features are incomplete and may behave unpredictably. To suppress this warning, set `suppress_unstable_features_warning = true` in <user-home>/.codex/config.toml."
+          }
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_1",
+            "type": "error",
+            "message": "Code Mode is unavailable because code-mode host is disabled. Code mode will fail closed; enable `features.code_mode_host` and install `codex-code-mode-host`."
+          }
+        },
+        {
+          "type": "turn.started"
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_2",
+            "type": "agent_message",
+            "text": "{\"status\":\"diagnosed\",\"summary\":\"npm ci는 private package 요청의 404로 실패했지만, 토큰 scope와 registry config가 없어 단일 근본 원인은 확정할 수 없습니다.\",\"findings\":[{\"claim\":\"실패한 명령은 npm ci이며 종료 코드가 1입니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0001\",\"L0307\"]},{\"claim\":\"private-lib tarball URL 요청이 404를 반환했습니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0002\"]},{\"claim\":\"registry 정책상 인증되지 않은 private package 요청도 404가 될 수 있어, 인증 토큰 scope 또는 registry 설정 문제가 유력합니다.\",\"confidence\":\"likely\",\"evidence_ids\":[\"L0003\",\"L0004\",\"L0156\"]},{\"claim\":\"동일 URL이 다른 머신에서는 5분 전 200을 반환했으므로, 패키지 URL 자체의 전면적 부재만으로는 설명되지 않습니다.\",\"confidence\":\"likely\",\"evidence_ids\":[\"L0002\",\"L0155\",\"L0156\"]},{\"claim\":\"반복된 cache hit 및 변경 없음 로그는 의존성 문제가 해결되었음을 입증하지 않으며, 실패 원인에 대한 추가 정보도 제공하지 않습니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0005\",\"L0154\",\"L0306\"]}],\"next_checks\":[\"실패한 머신의 registry config가 private-lib에 올바른 registry를 지정하는지 확인\",\"실패한 머신 토큰의 package read 권한과 scope를 확인\",\"동일 자격 증명으로 해당 tarball URL을 재요청해 응답을 비교\",\"npm ci가 참조한 lockfile의 resolved URL과 package 접근 정책을 비교\",\"실패 시점의 네트워크 프록시·registry 라우팅 및 상세 npm 로그를 확인\"],\"uncertainties\":[\"실패한 머신의 토큰 scope가 기록되지 않았습니다.\",\"실패한 머신의 registry config가 기록되지 않았습니다.\",\"404가 인증 거부인지 실제 artifact 미존재인지 구분할 상세 응답 정보가 없습니다.\",\"다른 머신의 200 응답이 동일한 자격 증명과 registry 경로를 사용했는지 알 수 없습니다.\"]}"
+          }
+        },
+        {
+          "type": "turn.completed",
+          "usage": {
+            "input_tokens": 8224,
+            "cached_input_tokens": 0,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 526,
+            "reasoning_output_tokens": 44
+          }
+        }
+      ],
+      "stderr": "",
+      "report": {
+        "status": "diagnosed",
+        "summary": "npm ci는 private package 요청의 404로 실패했지만, 토큰 scope와 registry config가 없어 단일 근본 원인은 확정할 수 없습니다.",
+        "findings": [
+          {
+            "claim": "실패한 명령은 npm ci이며 종료 코드가 1입니다.",
+            "confidence": "observed",
+            "evidence_ids": [
+              "L0001",
+              "L0307"
+            ]
+          },
+          {
+            "claim": "private-lib tarball URL 요청이 404를 반환했습니다.",
+            "confidence": "observed",
+            "evidence_ids": [
+              "L0002"
+            ]
+          },
+          {
+            "claim": "registry 정책상 인증되지 않은 private package 요청도 404가 될 수 있어, 인증 토큰 scope 또는 registry 설정 문제가 유력합니다.",
+            "confidence": "likely",
+            "evidence_ids": [
+              "L0003",
+              "L0004",
+              "L0156"
+            ]
+          },
+          {
+            "claim": "동일 URL이 다른 머신에서는 5분 전 200을 반환했으므로, 패키지 URL 자체의 전면적 부재만으로는 설명되지 않습니다.",
+            "confidence": "likely",
+            "evidence_ids": [
+              "L0002",
+              "L0155",
+              "L0156"
+            ]
+          },
+          {
+            "claim": "반복된 cache hit 및 변경 없음 로그는 의존성 문제가 해결되었음을 입증하지 않으며, 실패 원인에 대한 추가 정보도 제공하지 않습니다.",
+            "confidence": "observed",
+            "evidence_ids": [
+              "L0005",
+              "L0154",
+              "L0306"
+            ]
+          }
+        ],
+        "next_checks": [
+          "실패한 머신의 registry config가 private-lib에 올바른 registry를 지정하는지 확인",
+          "실패한 머신 토큰의 package read 권한과 scope를 확인",
+          "동일 자격 증명으로 해당 tarball URL을 재요청해 응답을 비교",
+          "npm ci가 참조한 lockfile의 resolved URL과 package 접근 정책을 비교",
+          "실패 시점의 네트워크 프록시·registry 라우팅 및 상세 npm 로그를 확인"
+        ],
+        "uncertainties": [
+          "실패한 머신의 토큰 scope가 기록되지 않았습니다.",
+          "실패한 머신의 registry config가 기록되지 않았습니다.",
+          "404가 인증 거부인지 실제 artifact 미존재인지 구분할 상세 응답 정보가 없습니다.",
+          "다른 머신의 200 응답이 동일한 자격 증명과 registry 경로를 사용했는지 알 수 없습니다."
+        ]
+      },
+      "reportBytes": 1996
+    },
+    "attempts": [
+      {
+        "model": "gpt-5.6-luna",
+        "effort": "low",
+        "inputBytes": 1683,
+        "elapsedMs": 15135,
+        "code": 0,
+        "timedOut": false,
+        "processGroupPresent": false,
+        "usage": {
+          "input_tokens": 8224,
+          "cached_input_tokens": 0,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 526,
+          "reasoning_output_tokens": 44
+        },
+        "envelopeValid": true,
+        "validationErrors": [],
+        "observedToolItems": [],
+        "events": [
+          {
+            "type": "thread.started",
+            "thread_id": "01a0a384-80a5-7ee2-8ec1-4120e023d169"
+          },
+          {
+            "type": "item.completed",
+            "item": {
+              "id": "item_0",
+              "type": "error",
+              "message": "Under-development features enabled: skip_host_skill_discovery. Under-development features are incomplete and may behave unpredictably. To suppress this warning, set `suppress_unstable_features_warning = true` in <user-home>/.codex/config.toml."
+            }
+          },
+          {
+            "type": "item.completed",
+            "item": {
+              "id": "item_1",
+              "type": "error",
+              "message": "Code Mode is unavailable because code-mode host is disabled. Code mode will fail closed; enable `features.code_mode_host` and install `codex-code-mode-host`."
+            }
+          },
+          {
+            "type": "turn.started"
+          },
+          {
+            "type": "item.completed",
+            "item": {
+              "id": "item_2",
+              "type": "agent_message",
+              "text": "{\"status\":\"diagnosed\",\"summary\":\"npm ci는 private package 요청의 404로 실패했지만, 토큰 scope와 registry config가 없어 단일 근본 원인은 확정할 수 없습니다.\",\"findings\":[{\"claim\":\"실패한 명령은 npm ci이며 종료 코드가 1입니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0001\",\"L0307\"]},{\"claim\":\"private-lib tarball URL 요청이 404를 반환했습니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0002\"]},{\"claim\":\"registry 정책상 인증되지 않은 private package 요청도 404가 될 수 있어, 인증 토큰 scope 또는 registry 설정 문제가 유력합니다.\",\"confidence\":\"likely\",\"evidence_ids\":[\"L0003\",\"L0004\",\"L0156\"]},{\"claim\":\"동일 URL이 다른 머신에서는 5분 전 200을 반환했으므로, 패키지 URL 자체의 전면적 부재만으로는 설명되지 않습니다.\",\"confidence\":\"likely\",\"evidence_ids\":[\"L0002\",\"L0155\",\"L0156\"]},{\"claim\":\"반복된 cache hit 및 변경 없음 로그는 의존성 문제가 해결되었음을 입증하지 않으며, 실패 원인에 대한 추가 정보도 제공하지 않습니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0005\",\"L0154\",\"L0306\"]}],\"next_checks\":[\"실패한 머신의 registry config가 private-lib에 올바른 registry를 지정하는지 확인\",\"실패한 머신 토큰의 package read 권한과 scope를 확인\",\"동일 자격 증명으로 해당 tarball URL을 재요청해 응답을 비교\",\"npm ci가 참조한 lockfile의 resolved URL과 package 접근 정책을 비교\",\"실패 시점의 네트워크 프록시·registry 라우팅 및 상세 npm 로그를 확인\"],\"uncertainties\":[\"실패한 머신의 토큰 scope가 기록되지 않았습니다.\",\"실패한 머신의 registry config가 기록되지 않았습니다.\",\"404가 인증 거부인지 실제 artifact 미존재인지 구분할 상세 응답 정보가 없습니다.\",\"다른 머신의 200 응답이 동일한 자격 증명과 registry 경로를 사용했는지 알 수 없습니다.\"]}"
+            }
+          },
+          {
+            "type": "turn.completed",
+            "usage": {
+              "input_tokens": 8224,
+              "cached_input_tokens": 0,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 526,
+              "reasoning_output_tokens": 44
+            }
+          }
+        ],
+        "stderr": "",
+        "report": {
+          "status": "diagnosed",
+          "summary": "npm ci는 private package 요청의 404로 실패했지만, 토큰 scope와 registry config가 없어 단일 근본 원인은 확정할 수 없습니다.",
+          "findings": [
+            {
+              "claim": "실패한 명령은 npm ci이며 종료 코드가 1입니다.",
+              "confidence": "observed",
+              "evidence_ids": [
+                "L0001",
+                "L0307"
+              ]
+            },
+            {
+              "claim": "private-lib tarball URL 요청이 404를 반환했습니다.",
+              "confidence": "observed",
+              "evidence_ids": [
+                "L0002"
+              ]
+            },
+            {
+              "claim": "registry 정책상 인증되지 않은 private package 요청도 404가 될 수 있어, 인증 토큰 scope 또는 registry 설정 문제가 유력합니다.",
+              "confidence": "likely",
+              "evidence_ids": [
+                "L0003",
+                "L0004",
+                "L0156"
+              ]
+            },
+            {
+              "claim": "동일 URL이 다른 머신에서는 5분 전 200을 반환했으므로, 패키지 URL 자체의 전면적 부재만으로는 설명되지 않습니다.",
+              "confidence": "likely",
+              "evidence_ids": [
+                "L0002",
+                "L0155",
+                "L0156"
+              ]
+            },
+            {
+              "claim": "반복된 cache hit 및 변경 없음 로그는 의존성 문제가 해결되었음을 입증하지 않으며, 실패 원인에 대한 추가 정보도 제공하지 않습니다.",
+              "confidence": "observed",
+              "evidence_ids": [
+                "L0005",
+                "L0154",
+                "L0306"
+              ]
+            }
+          ],
+          "next_checks": [
+            "실패한 머신의 registry config가 private-lib에 올바른 registry를 지정하는지 확인",
+            "실패한 머신 토큰의 package read 권한과 scope를 확인",
+            "동일 자격 증명으로 해당 tarball URL을 재요청해 응답을 비교",
+            "npm ci가 참조한 lockfile의 resolved URL과 package 접근 정책을 비교",
+            "실패 시점의 네트워크 프록시·registry 라우팅 및 상세 npm 로그를 확인"
+          ],
+          "uncertainties": [
+            "실패한 머신의 토큰 scope가 기록되지 않았습니다.",
+            "실패한 머신의 registry config가 기록되지 않았습니다.",
+            "404가 인증 거부인지 실제 artifact 미존재인지 구분할 상세 응답 정보가 없습니다.",
+            "다른 머신의 200 응답이 동일한 자격 증명과 registry 경로를 사용했는지 알 수 없습니다."
+          ]
+        },
+        "reportBytes": 1996
+      }
+    ]
+  },
+  "delegatedParent": {
+    "result": {
+      "model": "gpt-5.6-sol",
+      "effort": "low",
+      "inputBytes": 3435,
+      "elapsedMs": 15189,
+      "code": 0,
+      "timedOut": false,
+      "processGroupPresent": false,
+      "usage": {
+        "input_tokens": 10740,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 453,
+        "reasoning_output_tokens": 0
+      },
+      "envelopeValid": true,
+      "validationErrors": [],
+      "observedToolItems": [],
+      "events": [
+        {
+          "type": "thread.started",
+          "thread_id": "01a0a384-bbc1-7750-91db-e43cbe7051f6"
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_0",
+            "type": "error",
+            "message": "Under-development features enabled: skip_host_skill_discovery. Under-development features are incomplete and may behave unpredictably. To suppress this warning, set `suppress_unstable_features_warning = true` in <user-home>/.codex/config.toml."
+          }
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_1",
+            "type": "error",
+            "message": "Code Mode is unavailable because code-mode host is disabled. Code mode will fail closed; enable `features.code_mode_host` and install `codex-code-mode-host`."
+          }
+        },
+        {
+          "type": "turn.started"
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_2",
+            "type": "agent_message",
+            "text": "{\"status\":\"diagnosed\",\"summary\":\"npm ci가 private-lib tarball 요청의 404로 종료됐습니다. 다만 404는 실제 artifact 부재와 인증·registry 설정 문제 모두 가능해 단일 근본 원인은 확정할 수 없습니다.\",\"findings\":[{\"claim\":\"npm ci가 종료 코드 1로 실패했습니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0001\",\"L0307\"]},{\"claim\":\"private-lib 1.0.0 tarball 요청이 404를 반환했습니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0002\"]},{\"claim\":\"인증되지 않은 private package 요청도 정책상 404가 될 수 있으므로 토큰 권한 또는 registry 설정 문제가 유력하지만 입증되지는 않았습니다.\",\"confidence\":\"likely\",\"evidence_ids\":[\"L0003\",\"L0004\",\"L0156\"]},{\"claim\":\"동일 URL이 다른 머신에서 5분 전 200이었다는 보고는 artifact의 전면적 부재와 충돌하지만, 동일 자격 증명·경로였는지는 불명확합니다.\",\"confidence\":\"likely\",\"evidence_ids\":[\"L0155\",\"L0156\"]},{\"claim\":\"cache hit 및 변경 없음 로그는 의존성 접근 성공이나 실패 원인을 입증하지 않습니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0005\",\"L0154\",\"L0306\"]}],\"next_checks\":[\"실패 머신의 npm registry 및 scope별 registry 설정 확인\",\"실패 머신 토큰의 package read 권한과 scope 확인\",\"동일 자격 증명으로 tarball URL을 재요청하고 상세 응답 비교\",\"lockfile의 resolved URL과 실제 package 접근 정책 비교\",\"실패 시점의 상세 npm 로그와 proxy·registry routing 확인\"],\"uncertainties\":[\"실패 머신의 토큰 scope가 없습니다.\",\"실패 머신의 registry config가 없습니다.\",\"404가 인증 은폐 응답인지 artifact 미존재인지 구분할 상세 응답이 없습니다.\",\"다른 머신의 200 응답이 동일 자격 증명과 registry 경로를 사용했는지 알 수 없습니다.\"]}"
+          }
+        },
+        {
+          "type": "turn.completed",
+          "usage": {
+            "input_tokens": 10740,
+            "cached_input_tokens": 0,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 453,
+            "reasoning_output_tokens": 0
+          }
+        }
+      ],
+      "stderr": "",
+      "report": {
+        "status": "diagnosed",
+        "summary": "npm ci가 private-lib tarball 요청의 404로 종료됐습니다. 다만 404는 실제 artifact 부재와 인증·registry 설정 문제 모두 가능해 단일 근본 원인은 확정할 수 없습니다.",
+        "findings": [
+          {
+            "claim": "npm ci가 종료 코드 1로 실패했습니다.",
+            "confidence": "observed",
+            "evidence_ids": [
+              "L0001",
+              "L0307"
+            ]
+          },
+          {
+            "claim": "private-lib 1.0.0 tarball 요청이 404를 반환했습니다.",
+            "confidence": "observed",
+            "evidence_ids": [
+              "L0002"
+            ]
+          },
+          {
+            "claim": "인증되지 않은 private package 요청도 정책상 404가 될 수 있으므로 토큰 권한 또는 registry 설정 문제가 유력하지만 입증되지는 않았습니다.",
+            "confidence": "likely",
+            "evidence_ids": [
+              "L0003",
+              "L0004",
+              "L0156"
+            ]
+          },
+          {
+            "claim": "동일 URL이 다른 머신에서 5분 전 200이었다는 보고는 artifact의 전면적 부재와 충돌하지만, 동일 자격 증명·경로였는지는 불명확합니다.",
+            "confidence": "likely",
+            "evidence_ids": [
+              "L0155",
+              "L0156"
+            ]
+          },
+          {
+            "claim": "cache hit 및 변경 없음 로그는 의존성 접근 성공이나 실패 원인을 입증하지 않습니다.",
+            "confidence": "observed",
+            "evidence_ids": [
+              "L0005",
+              "L0154",
+              "L0306"
+            ]
+          }
+        ],
+        "next_checks": [
+          "실패 머신의 npm registry 및 scope별 registry 설정 확인",
+          "실패 머신 토큰의 package read 권한과 scope 확인",
+          "동일 자격 증명으로 tarball URL을 재요청하고 상세 응답 비교",
+          "lockfile의 resolved URL과 실제 package 접근 정책 비교",
+          "실패 시점의 상세 npm 로그와 proxy·registry routing 확인"
+        ],
+        "uncertainties": [
+          "실패 머신의 토큰 scope가 없습니다.",
+          "실패 머신의 registry config가 없습니다.",
+          "404가 인증 은폐 응답인지 artifact 미존재인지 구분할 상세 응답이 없습니다.",
+          "다른 머신의 200 응답이 동일 자격 증명과 registry 경로를 사용했는지 알 수 없습니다."
+        ]
+      },
+      "reportBytes": 1885
+    },
+    "attempts": [
+      {
+        "model": "gpt-5.6-sol",
+        "effort": "low",
+        "inputBytes": 3435,
+        "elapsedMs": 15189,
+        "code": 0,
+        "timedOut": false,
+        "processGroupPresent": false,
+        "usage": {
+          "input_tokens": 10740,
+          "cached_input_tokens": 0,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 453,
+          "reasoning_output_tokens": 0
+        },
+        "envelopeValid": true,
+        "validationErrors": [],
+        "observedToolItems": [],
+        "events": [
+          {
+            "type": "thread.started",
+            "thread_id": "01a0a384-bbc1-7750-91db-e43cbe7051f6"
+          },
+          {
+            "type": "item.completed",
+            "item": {
+              "id": "item_0",
+              "type": "error",
+              "message": "Under-development features enabled: skip_host_skill_discovery. Under-development features are incomplete and may behave unpredictably. To suppress this warning, set `suppress_unstable_features_warning = true` in <user-home>/.codex/config.toml."
+            }
+          },
+          {
+            "type": "item.completed",
+            "item": {
+              "id": "item_1",
+              "type": "error",
+              "message": "Code Mode is unavailable because code-mode host is disabled. Code mode will fail closed; enable `features.code_mode_host` and install `codex-code-mode-host`."
+            }
+          },
+          {
+            "type": "turn.started"
+          },
+          {
+            "type": "item.completed",
+            "item": {
+              "id": "item_2",
+              "type": "agent_message",
+              "text": "{\"status\":\"diagnosed\",\"summary\":\"npm ci가 private-lib tarball 요청의 404로 종료됐습니다. 다만 404는 실제 artifact 부재와 인증·registry 설정 문제 모두 가능해 단일 근본 원인은 확정할 수 없습니다.\",\"findings\":[{\"claim\":\"npm ci가 종료 코드 1로 실패했습니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0001\",\"L0307\"]},{\"claim\":\"private-lib 1.0.0 tarball 요청이 404를 반환했습니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0002\"]},{\"claim\":\"인증되지 않은 private package 요청도 정책상 404가 될 수 있으므로 토큰 권한 또는 registry 설정 문제가 유력하지만 입증되지는 않았습니다.\",\"confidence\":\"likely\",\"evidence_ids\":[\"L0003\",\"L0004\",\"L0156\"]},{\"claim\":\"동일 URL이 다른 머신에서 5분 전 200이었다는 보고는 artifact의 전면적 부재와 충돌하지만, 동일 자격 증명·경로였는지는 불명확합니다.\",\"confidence\":\"likely\",\"evidence_ids\":[\"L0155\",\"L0156\"]},{\"claim\":\"cache hit 및 변경 없음 로그는 의존성 접근 성공이나 실패 원인을 입증하지 않습니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0005\",\"L0154\",\"L0306\"]}],\"next_checks\":[\"실패 머신의 npm registry 및 scope별 registry 설정 확인\",\"실패 머신 토큰의 package read 권한과 scope 확인\",\"동일 자격 증명으로 tarball URL을 재요청하고 상세 응답 비교\",\"lockfile의 resolved URL과 실제 package 접근 정책 비교\",\"실패 시점의 상세 npm 로그와 proxy·registry routing 확인\"],\"uncertainties\":[\"실패 머신의 토큰 scope가 없습니다.\",\"실패 머신의 registry config가 없습니다.\",\"404가 인증 은폐 응답인지 artifact 미존재인지 구분할 상세 응답이 없습니다.\",\"다른 머신의 200 응답이 동일 자격 증명과 registry 경로를 사용했는지 알 수 없습니다.\"]}"
+            }
+          },
+          {
+            "type": "turn.completed",
+            "usage": {
+              "input_tokens": 10740,
+              "cached_input_tokens": 0,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 453,
+              "reasoning_output_tokens": 0
+            }
+          }
+        ],
+        "stderr": "",
+        "report": {
+          "status": "diagnosed",
+          "summary": "npm ci가 private-lib tarball 요청의 404로 종료됐습니다. 다만 404는 실제 artifact 부재와 인증·registry 설정 문제 모두 가능해 단일 근본 원인은 확정할 수 없습니다.",
+          "findings": [
+            {
+              "claim": "npm ci가 종료 코드 1로 실패했습니다.",
+              "confidence": "observed",
+              "evidence_ids": [
+                "L0001",
+                "L0307"
+              ]
+            },
+            {
+              "claim": "private-lib 1.0.0 tarball 요청이 404를 반환했습니다.",
+              "confidence": "observed",
+              "evidence_ids": [
+                "L0002"
+              ]
+            },
+            {
+              "claim": "인증되지 않은 private package 요청도 정책상 404가 될 수 있으므로 토큰 권한 또는 registry 설정 문제가 유력하지만 입증되지는 않았습니다.",
+              "confidence": "likely",
+              "evidence_ids": [
+                "L0003",
+                "L0004",
+                "L0156"
+              ]
+            },
+            {
+              "claim": "동일 URL이 다른 머신에서 5분 전 200이었다는 보고는 artifact의 전면적 부재와 충돌하지만, 동일 자격 증명·경로였는지는 불명확합니다.",
+              "confidence": "likely",
+              "evidence_ids": [
+                "L0155",
+                "L0156"
+              ]
+            },
+            {
+              "claim": "cache hit 및 변경 없음 로그는 의존성 접근 성공이나 실패 원인을 입증하지 않습니다.",
+              "confidence": "observed",
+              "evidence_ids": [
+                "L0005",
+                "L0154",
+                "L0306"
+              ]
+            }
+          ],
+          "next_checks": [
+            "실패 머신의 npm registry 및 scope별 registry 설정 확인",
+            "실패 머신 토큰의 package read 권한과 scope 확인",
+            "동일 자격 증명으로 tarball URL을 재요청하고 상세 응답 비교",
+            "lockfile의 resolved URL과 실제 package 접근 정책 비교",
+            "실패 시점의 상세 npm 로그와 proxy·registry routing 확인"
+          ],
+          "uncertainties": [
+            "실패 머신의 토큰 scope가 없습니다.",
+            "실패 머신의 registry config가 없습니다.",
+            "404가 인증 은폐 응답인지 artifact 미존재인지 구분할 상세 응답이 없습니다.",
+            "다른 머신의 200 응답이 동일 자격 증명과 registry 경로를 사용했는지 알 수 없습니다."
+          ]
+        },
+        "reportBytes": 1885
+      }
+    ]
+  },
+  "initialBrokeredPayload": "Validated Worker report (claims still require evidence review):\n{\"status\":\"diagnosed\",\"summary\":\"npm ci는 private package 요청의 404로 실패했지만, 토큰 scope와 registry config가 없어 단일 근본 원인은 확정할 수 없습니다.\",\"findings\":[{\"claim\":\"실패한 명령은 npm ci이며 종료 코드가 1입니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0001\",\"L0307\"]},{\"claim\":\"private-lib tarball URL 요청이 404를 반환했습니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0002\"]},{\"claim\":\"registry 정책상 인증되지 않은 private package 요청도 404가 될 수 있어, 인증 토큰 scope 또는 registry 설정 문제가 유력합니다.\",\"confidence\":\"likely\",\"evidence_ids\":[\"L0003\",\"L0004\",\"L0156\"]},{\"claim\":\"동일 URL이 다른 머신에서는 5분 전 200을 반환했으므로, 패키지 URL 자체의 전면적 부재만으로는 설명되지 않습니다.\",\"confidence\":\"likely\",\"evidence_ids\":[\"L0002\",\"L0155\",\"L0156\"]},{\"claim\":\"반복된 cache hit 및 변경 없음 로그는 의존성 문제가 해결되었음을 입증하지 않으며, 실패 원인에 대한 추가 정보도 제공하지 않습니다.\",\"confidence\":\"observed\",\"evidence_ids\":[\"L0005\",\"L0154\",\"L0306\"]}],\"next_checks\":[\"실패한 머신의 registry config가 private-lib에 올바른 registry를 지정하는지 확인\",\"실패한 머신 토큰의 package read 권한과 scope를 확인\",\"동일 자격 증명으로 해당 tarball URL을 재요청해 응답을 비교\",\"npm ci가 참조한 lockfile의 resolved URL과 package 접근 정책을 비교\",\"실패 시점의 네트워크 프록시·registry 라우팅 및 상세 npm 로그를 확인\"],\"uncertainties\":[\"실패한 머신의 토큰 scope가 기록되지 않았습니다.\",\"실패한 머신의 registry config가 기록되지 않았습니다.\",\"404가 인증 거부인지 실제 artifact 미존재인지 구분할 상세 응답 정보가 없습니다.\",\"다른 머신의 200 응답이 동일한 자격 증명과 registry 경로를 사용했는지 알 수 없습니다.\"]}\nBroker-issued source excerpts:\nL0001 command: npm ci\nL0002 GET https://registry.example.invalid/@example/private-lib/-/private-lib-1.0.0.tgz -> 404\nL0003 request used token: [REDACTED]\nL0004 registry policy: unauthorized private package requests may return 404\nL0005 INFO build cache hit; dependency scan completed with no changes\nL0154 INFO build cache hit; dependency scan completed with no changes\nL0155 Maintainer reports the exact same URL returned 200 from a different machine five minutes ago.\nL0156 The failing machine token scope and registry config were not captured.\nL0306 INFO build cache hit; dependency scan completed with no changes\nL0307 npm ci exited 1\n\nSource is bounded. Excerpts truncated: false."
+}

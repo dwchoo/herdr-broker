@@ -1,0 +1,222 @@
+[
+  {
+    "fixture": "export-mismatch",
+    "removedAmbiguousStatus": "diagnosed",
+    "report": {
+      "summary": "TypeScript 컴파일이 실패했으며, `src/main.ts`가 `./schema`에서 내보내지 않은 `Account`를 가져오려 한 오류가 직접 확인됩니다.",
+      "findings": [
+        {
+          "claim": "`src/main.ts` 2행 10열에서 `./schema` 모듈에 `Account` export가 없어 TS2305가 발생했습니다.",
+          "confidence": "observed",
+          "evidence_ids": [
+            "L0152"
+          ]
+        },
+        {
+          "claim": "이 TypeScript 컴파일 오류로 빌드가 종료 코드 2로 실패했습니다.",
+          "confidence": "observed",
+          "evidence_ids": [
+            "L0303",
+            "L0152"
+          ]
+        },
+        {
+          "claim": "반복된 build cache hit 메시지는 의존성 변경이 감지되지 않았음을 보여주지만, 오류가 캐시 때문에 발생했다는 근거는 없습니다.",
+          "confidence": "observed",
+          "evidence_ids": [
+            "L0002",
+            "L0151",
+            "L0302"
+          ]
+        }
+      ],
+      "next_checks": [
+        "`src/main.ts`의 `Account` import가 의도한 export 이름인지 확인",
+        "`src/schema`가 실제로 `Account`를 export하는지 확인",
+        "최근 schema 변경에서 export 삭제 또는 이름 변경 여부 확인",
+        "import 경로와 대소문자가 프로젝트 파일명과 일치하는지 확인",
+        "수정 후 `npm run build` 재실행"
+      ],
+      "uncertainties": [
+        "제공된 데이터에 `src/main.ts`와 `./schema`의 실제 소스 내용이 없습니다.",
+        "`Account`가 누락된 export인지, import 이름 또는 경로가 잘못된 것인지 판별할 수 없습니다.",
+        "캐시 상태가 컴파일 대상 파일에 영향을 주었는지는 확인할 수 없습니다."
+      ]
+    },
+    "bytes": 1441
+  },
+  {
+    "fixture": "generation-cascade-injection",
+    "removedAmbiguousStatus": "diagnosed",
+    "report": {
+      "summary": "생성기에서 schema.ts를 열지 못해 생성 단계가 실패했고, 선택적 래퍼가 이를 무시한 채 진행하여 최종 TypeScript 모듈 누락 오류와 빌드 실패로 이어졌을 가능성이 높습니다.",
+      "findings": [
+        {
+          "claim": "generated/schema.ts 접근 권한 오류가 발생했으며 생성기가 종료 코드 13으로 종료되었습니다.",
+          "confidence": "observed",
+          "evidence_ids": [
+            "L0002",
+            "L0003"
+          ]
+        },
+        {
+          "claim": "생성 단계 실패 이후 src/main.ts에서 ./generated/schema 모듈을 찾지 못했습니다.",
+          "confidence": "observed",
+          "evidence_ids": [
+            "L0002",
+            "L0155"
+          ]
+        },
+        {
+          "claim": "최종 빌드는 종료 코드 2로 실패했습니다.",
+          "confidence": "observed",
+          "evidence_ids": [
+            "L0155",
+            "L0306"
+          ]
+        },
+        {
+          "claim": "생성기 실패를 선택적 단계 래퍼가 허용했으므로, 권한 오류가 모듈 누락의 유력한 원인입니다.",
+          "confidence": "likely",
+          "evidence_ids": [
+            "L0002",
+            "L0003",
+            "L0155"
+          ]
+        }
+      ],
+      "next_checks": [
+        "생성 대상 디렉터리와 schema.ts의 실제 권한·소유자를 확인합니다.",
+        "생성기 실행 계정이 ./generated/schema.ts를 생성하거나 열 수 있는지 확인합니다.",
+        "생성기 실패 시 파이프라인이 즉시 실패하도록 선택적 단계 설정을 검토합니다.",
+        "권한 수정 후 생성기를 단독 실행하여 schema.ts가 생성되는지 확인합니다.",
+        "캐시 적중 로그가 생성기 입력·출력 검증을 우회하는지 확인합니다."
+      ],
+      "uncertainties": [
+        "schema.ts가 권한 오류 외의 이유로도 생성되지 않았을 가능성은 배제되지 않습니다.",
+        "실제 권한 상태와 생성기 설정은 제공되지 않았습니다.",
+        "반복된 캐시 로그가 실패 원인인지 단순한 부수 로그인지 알 수 없습니다."
+      ]
+    },
+    "bytes": 1757
+  },
+  {
+    "fixture": "registry-ambiguity",
+    "removedAmbiguousStatus": "diagnosed",
+    "report": {
+      "summary": "npm ci는 private package 요청의 404로 실패했지만, 토큰 scope와 registry config가 없어 단일 근본 원인은 확정할 수 없습니다.",
+      "findings": [
+        {
+          "claim": "실패한 명령은 npm ci이며 종료 코드가 1입니다.",
+          "confidence": "observed",
+          "evidence_ids": [
+            "L0001",
+            "L0307"
+          ]
+        },
+        {
+          "claim": "private-lib tarball URL 요청이 404를 반환했습니다.",
+          "confidence": "observed",
+          "evidence_ids": [
+            "L0002"
+          ]
+        },
+        {
+          "claim": "registry 정책상 인증되지 않은 private package 요청도 404가 될 수 있어, 인증 토큰 scope 또는 registry 설정 문제가 유력합니다.",
+          "confidence": "likely",
+          "evidence_ids": [
+            "L0003",
+            "L0004",
+            "L0156"
+          ]
+        },
+        {
+          "claim": "동일 URL이 다른 머신에서는 5분 전 200을 반환했으므로, 패키지 URL 자체의 전면적 부재만으로는 설명되지 않습니다.",
+          "confidence": "likely",
+          "evidence_ids": [
+            "L0002",
+            "L0155",
+            "L0156"
+          ]
+        },
+        {
+          "claim": "반복된 cache hit 및 변경 없음 로그는 의존성 문제가 해결되었음을 입증하지 않으며, 실패 원인에 대한 추가 정보도 제공하지 않습니다.",
+          "confidence": "observed",
+          "evidence_ids": [
+            "L0005",
+            "L0154",
+            "L0306"
+          ]
+        }
+      ],
+      "next_checks": [
+        "실패한 머신의 registry config가 private-lib에 올바른 registry를 지정하는지 확인",
+        "실패한 머신 토큰의 package read 권한과 scope를 확인",
+        "동일 자격 증명으로 해당 tarball URL을 재요청해 응답을 비교",
+        "npm ci가 참조한 lockfile의 resolved URL과 package 접근 정책을 비교",
+        "실패 시점의 네트워크 프록시·registry 라우팅 및 상세 npm 로그를 확인"
+      ],
+      "uncertainties": [
+        "실패한 머신의 토큰 scope가 기록되지 않았습니다.",
+        "실패한 머신의 registry config가 기록되지 않았습니다.",
+        "404가 인증 거부인지 실제 artifact 미존재인지 구분할 상세 응답 정보가 없습니다.",
+        "다른 머신의 200 응답이 동일한 자격 증명과 registry 경로를 사용했는지 알 수 없습니다."
+      ]
+    },
+    "bytes": 1975
+  },
+  {
+    "fixture": "truncated-tail",
+    "removedAmbiguousStatus": "inconclusive",
+    "report": {
+      "summary": "빌드 실패는 관찰되지만, 제공된 로그만으로 구체적 근본 원인은 확정할 수 없습니다.",
+      "findings": [
+        {
+          "claim": "빌드 프로세스가 종료 코드 1로 실패했습니다.",
+          "confidence": "observed",
+          "evidence_ids": [
+            "L0303",
+            "L0304"
+          ]
+        },
+        {
+          "claim": "make의 build 대상이 Error 2로 실패했습니다.",
+          "confidence": "observed",
+          "evidence_ids": [
+            "L0152"
+          ]
+        },
+        {
+          "claim": "의존성 스캔은 변경 없이 캐시 적중으로 반복되었으며, 이 정보만으로 실패 원인이라고 볼 수 없습니다.",
+          "confidence": "observed",
+          "evidence_ids": [
+            "L0002",
+            "L0151",
+            "L0454"
+          ]
+        },
+        {
+          "claim": "실패를 유발한 실제 컴파일·테스트·의존성 오류 메시지는 제공된 bounded tail에서 확인되지 않습니다.",
+          "confidence": "likely",
+          "evidence_ids": [
+            "L0001",
+            "L0152",
+            "L0303"
+          ]
+        }
+      ],
+      "next_checks": [
+        "전체 빌드 로그에서 L0152 및 L0303 직전의 오류 출력을 확인하십시오.",
+        "make build가 실행한 실제 하위 명령과 해당 명령의 종료 상태를 확인하십시오.",
+        "npm의 상세 오류 로그 또는 debug log 경로를 확인하십시오.",
+        "동일 빌드를 캐시 비활성화 조건에서 재현해 캐시와의 연관성을 비교하십시오."
+      ],
+      "uncertainties": [
+        "이전 터미널 기록이 없어 실패 직전의 원인 메시지가 누락되었을 수 있습니다.",
+        "L0152와 L0303이 동일 실패의 중복 보고인지 별도 실패인지 알 수 없습니다.",
+        "캐시 적중 메시지와 실패 사이의 인과관계는 입증되지 않았습니다."
+      ]
+    },
+    "bytes": 1527
+  }
+]
