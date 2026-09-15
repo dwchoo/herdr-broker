@@ -307,7 +307,7 @@ test('Owned-job input failures, Evidence, cursor responses and purge share the e
 });
 
 test('A failed observation cannot mix a new Pane Session with the previous Snapshot or claim an unchanged view', async t => {
-  const h = await harness(t, { text: 'old retained view', core: { memoryLimit: 20000 } });
+  const h = await harness(t, { text: 'old retained view', core: { memoryLimit: 22000 } });
   const client = await h.connect();
   const first = await observe(client);
   h.state.respond = (socket, request, response) => {

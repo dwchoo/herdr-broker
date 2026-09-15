@@ -8,11 +8,11 @@ test('Parent discovers passive tools and describes the exact pane without input'
   assert.equal(client.hello.result.serverInfo.name, 'herdr-broker');
   const tools = await client.request('tools/list', {});
   for (const tool of tools.result.tools) {
-    assert.equal(tool.annotations?.readOnlyHint, ['pane_describe', 'job_status', 'job_wait', 'evidence_get'].includes(tool.name));
+    assert.equal(tool.annotations?.readOnlyHint, ['pane_describe', 'job_status', 'job_wait', 'evidence_get', 'action_status'].includes(tool.name));
     assert.equal(tool.annotations?.destructiveHint, false);
     assert.equal(tool.inputSchema.additionalProperties, false);
   }
-  assert.deepEqual(tools.result.tools.map(tool => tool.name).sort(), ['pane_describe', 'job_start', 'job_status', 'job_wait', 'job_cancel', 'evidence_get'].sort());
+  assert.deepEqual(tools.result.tools.map(tool => tool.name).sort(), ['pane_describe', 'job_start', 'job_status', 'job_wait', 'job_cancel', 'evidence_get', 'action_propose', 'action_status', 'session_lower_mode'].sort());
   const result = await client.call('pane_describe', { pane_id: pane.pane_id });
   assert.deepEqual(result.target, { pane_id: 'ws:pane', terminal_id: 'terminal-1', workspace_id: 'ws', tab_id: 'tab-1' });
   assert.equal(result.context.cwd, '/fixture');
@@ -43,7 +43,7 @@ test('Parent receives immutable prepared context while the observation job remai
   const reads = h.calls.filter(call => call.method === 'pane.read');
   assert.equal(reads.length, 1);
   assert.deepEqual(reads[0].params, { pane_id: 'ws:pane', source: 'recent', lines: 1000, format: 'ansi', strip_ansi: false });
-  assert.ok(h.calls.every(call => ['ping', 'pane.get', 'pane.read'].includes(call.method)));
+  assert.ok(h.calls.every(call => ['ping', 'pane.get', 'pane.read', 'pane.process_info'].includes(call.method)));
 });
 
 test('Snapshot normalizes terminal rows and redacts credentials before preserving evidence', async t => {

@@ -3,6 +3,8 @@ import { Herdr, BrokerError } from './herdr.js';
 import { prepareSnapshot, sanitize, excerpt } from './snapshot.js';
 import { CodexWorker, WorkerFailure, workerProfile, type Report, type Usage } from './worker.js';
 
+import { Sessions, type Scope } from './sessions.js';
+
 type Phase = 'observing' | 'result_ready' | 'failed' | 'cancelled' | 'deadline' | 'budget_exhausted' | 'purged';
 type DataState = 'retained' | 'purged' | 'expired' | 'evicted';
 interface Budget { deadline_ms?: number | undefined; parent_payload_bytes?: number | undefined }
@@ -12,13 +14,14 @@ interface SnapshotRecord {
   report?: Report;
 }
 interface Job {
-  id: string; owner: string; paneId: string; objective: string; session: string;
+  id: string; owner: string; paneId: string; objective: string; objectiveDigest: string; session: string;
   phase: Phase; controller: AbortController; done: Promise<void>;
   created: number; deadline: number; limit: number; used: number; noticeSent: boolean;
   memory: number; dataState: DataState; snapshots: Map<string, SnapshotRecord>; current?: SnapshotRecord;
   binding?: string; sequence: number; observedAt?: number;
   ended?: number; timer?: NodeJS.Timeout;
   error?: string;
+  scope?: Scope; controlMemory: number; bodies: Array<() => void>;
   analysis: string; workerCalls: number; workerUsage: Usage | null; workerKnown: number; workerElapsed: number;
 }
 const ended = (job: Job) => job.ended !== undefined;
@@ -26,16 +29,18 @@ const ended = (job: Job) => job.ended !== undefined;
 export class Jobs {
   private readonly jobs = new Map<string, Job>();
   private readonly maintenance: NodeJS.Timeout;
-  constructor(private readonly herdr: Herdr, private readonly patterns: string[] = [], private readonly now = Date.now, private readonly memoryLimit = 64 * 1024 * 1024, private readonly worker = new CodexWorker()) {
+  constructor(private readonly herdr: Herdr, private readonly patterns: string[] = [], private readonly now = Date.now, private readonly memoryLimit = 64 * 1024 * 1024, private readonly worker = new CodexWorker(), private readonly sessions = new Sessions(herdr)) {
+    this.sessions.setRetentionGuard(bytes => this.reserve(bytes));
     this.maintenance = setInterval(() => this.sweep(), 1000);
     this.maintenance.unref();
   }
-  start(owner: string, paneId: string, objective: string, analysis: string, budget: Budget = {}) {
+  start(owner: string, paneId: string, objective: string, analysis: string, budget: Budget = {}, scope?: Scope) {
     this.sweep();
-    this.reserve(16384);
+    const initialMemory = 16384 + (scope ? 2 * Buffer.byteLength(JSON.stringify(scope)) : 0);
+    this.reserve(initialMemory);
     if ([...this.jobs.values()].filter(job => job.phase === 'observing').length >= 4) throw new BrokerError('observation_busy');
     const created = this.now();
-    const job: Job = { id: randomUUID(), owner, paneId, objective: sanitize(objective, this.patterns).text, session: randomUUID(), phase: 'observing', controller: new AbortController(), done: Promise.resolve(), created, deadline: created + (budget.deadline_ms ?? 300000), limit: budget.parent_payload_bytes ?? 16384, used: 0, noticeSent: false, memory: 16384, dataState: 'retained', snapshots: new Map(), sequence: 0, analysis, workerCalls: 0, workerUsage: null, workerKnown: 0, workerElapsed: 0 };
+    const job: Job = { id: randomUUID(), owner, paneId, objective: sanitize(objective, this.patterns).text, objectiveDigest: createHash('sha256').update(objective).digest('hex'), session: randomUUID(), phase: 'observing', controller: new AbortController(), done: Promise.resolve(), created, deadline: created + (budget.deadline_ms ?? 300000), limit: budget.parent_payload_bytes ?? 16384, used: 0, noticeSent: false, memory: initialMemory, dataState: 'retained', snapshots: new Map(), sequence: 0, controlMemory: 0, bodies: [], ...(scope && { scope }), analysis, workerCalls: 0, workerUsage: null, workerKnown: 0, workerElapsed: 0 };
     this.jobs.set(job.id, job);
     job.timer = setTimeout(() => this.stop(job, 'deadline'), job.deadline - created);
     job.timer.unref();
@@ -66,9 +71,12 @@ export class Jobs {
       record.cursorExpires = 0; record.prepared = false;
     }
     delete job.current;
+    for (const purge of job.bodies) purge();
+    job.bodies = [];
     job.objective = '';
+    delete job.scope;
     job.dataState = reason;
-    job.memory = 2048 + job.snapshots.size * 256;
+    job.memory = 2048 + job.snapshots.size * 256 + job.controlMemory;
   }
   private async observe(job: Job, analysis: string) {
     try {
@@ -81,7 +89,9 @@ export class Jobs {
       if (!this.active(job)) return;
       if (verified.terminal_id !== pane.terminal_id || verified.workspace_id !== pane.workspace_id || verified.tab_id !== pane.tab_id) throw new BrokerError('target_changed');
       const binding = JSON.stringify([pane.terminal_id, pane.workspace_id, pane.tab_id]);
-      const session = job.binding !== undefined && job.binding !== binding ? randomUUID() : job.session;
+      const observedSession = await this.sessions.observe(verified, job.controller.signal, !!job.scope);
+      if (!this.active(job)) return;
+      const session = observedSession.id;
       const sequence = job.sequence + 1;
       const observedAt = this.now();
       const snapshot = prepareSnapshot(read.text, session, read.truncated, this.patterns, observedAt, sequence);
@@ -127,6 +137,25 @@ export class Jobs {
       this.stop(job, 'failed');
     }
   }
+  private actionMode(job: Job) {
+    try { const session = this.sessions.get(job.session); return { action_mode: session.mode, mode_revision: session.revision }; }
+    catch { return { action_mode: null, mode_revision: null }; }
+  }
+  actionContext(owner: string, id: string) {
+    const job = this.owned(owner, id);
+    return { id: job.id, pane_id: job.paneId, objective: job.objective, objectiveDigest: job.objectiveDigest, session: job.session, scope: job.scope, active: this.active(job), signal: job.controller.signal };
+  }
+  retainAction(owner: string, id: string, bytes: number, controlBytes: number, purge: () => void) {
+    const job = this.owned(owner, id);
+    this.reserve(bytes + controlBytes); job.memory += bytes + controlBytes; job.controlMemory += controlBytes; job.bodies.push(purge);
+  }
+  async actionResponse(owner: string, id: string, work: () => object | Promise<object>) {
+    const job = this.owned(owner, id);
+    if (job.noticeSent) return null;
+    let value: object;
+    try { value = await work(); } catch (error) { value = { job_id: id, error: error instanceof BrokerError ? error.code : 'internal_error' }; }
+    return this.deliver(job, false, value);
+  }
   private recordUsage(job: Job, usage: Usage | null) {
     if (!usage) return;
     const before = job.workerUsage;
@@ -139,7 +168,7 @@ export class Jobs {
   }
   private reserve(bytes: number) {
     const limit = Math.min(this.memoryLimit, 64 * 1024 * 1024);
-    const total = () => [...this.jobs.values()].reduce((sum, job) => sum + job.memory, 0);
+    const total = () => this.sessions.memoryBytes() + [...this.jobs.values()].reduce((sum, job) => sum + job.memory, 0);
     for (const job of [...this.jobs.values()].filter(job => ended(job) && job.dataState === 'retained').sort((a, b) => a.ended! - b.ended!)) {
       if (total() + bytes <= limit) break;
       this.clearBodies(job, 'evicted');
@@ -149,9 +178,9 @@ export class Jobs {
   summary() {
     this.sweep();
     return {
-      jobs: [...this.jobs.values()].slice(-32).map(job => ({ job_id: job.id, phase: job.phase, data_state: job.dataState, job_ended: ended(job), result_ready: !job.error && job.phase !== 'observing' && !!(job.current?.prepared || job.current?.report), deadline_remaining_ms: Math.max(0, job.deadline - this.now()), parent_payload_bytes_remaining: job.limit - job.used, ...(job.workerCalls > 0 && { worker: this.workerStatus(job) }), ...(job.ended !== undefined && { ended_at: new Date(job.ended).toISOString(), retention_expires_at: new Date(job.ended + 1800000).toISOString() }), snapshot: job.current?.value?.metadata })),
-      job_count: this.jobs.size, memory_bytes: [...this.jobs.values()].reduce((sum, job) => sum + job.memory, 0), memory_limit_bytes: Math.min(this.memoryLimit, 64 * 1024 * 1024), retention_after_end_ms: 1800000,
-      action_submission: 'unsupported', action_outcome: 'unsupported', action_mode: 'unavailable',
+      jobs: [...this.jobs.values()].slice(-32).map(job => ({ job_id: job.id, phase: job.phase, data_state: job.dataState, job_ended: ended(job), ...this.actionMode(job), result_ready: !job.error && job.phase !== 'observing' && !!(job.current?.prepared || job.current?.report), deadline_remaining_ms: Math.max(0, job.deadline - this.now()), parent_payload_bytes_remaining: job.limit - job.used, ...(job.workerCalls > 0 && { worker: this.workerStatus(job) }), ...(job.ended !== undefined && { ended_at: new Date(job.ended).toISOString(), retention_expires_at: new Date(job.ended + 1800000).toISOString() }), snapshot: job.current?.value?.metadata })),
+      job_count: this.jobs.size, memory_bytes: this.sessions.memoryBytes() + [...this.jobs.values()].reduce((sum, job) => sum + job.memory, 0), memory_limit_bytes: Math.min(this.memoryLimit, 64 * 1024 * 1024), retention_after_end_ms: 1800000,
+      action_submission: 'unsupported', action_outcome: 'unsupported', action_mode: 'per_session',
     };
   }
   purge(id: string) {
@@ -173,7 +202,7 @@ export class Jobs {
     return this.deliver(job, false, { job_id: job.id, error: 'invalid_tool_arguments' });
   }
   private status(job: Job, waitTimedOut = false, cursor?: string) {
-    const base = { job_id: job.id, pane_session_id: job.session, pane_id: job.paneId, phase: job.phase, data_state: job.dataState, result_ready: !job.error && job.phase !== 'observing' && !!(job.current?.prepared || job.current?.report), job_ended: ended(job), action_state: 'unsupported', wait_timed_out: waitTimedOut, ...(job.workerCalls > 0 && { worker: this.workerStatus(job) }), ...(job.error && { error: job.error }) };
+    const base = { job_id: job.id, pane_session_id: job.session, pane_id: job.paneId, phase: job.phase, data_state: job.dataState, result_ready: !job.error && job.phase !== 'observing' && !!(job.current?.prepared || job.current?.report), job_ended: ended(job), ...this.actionMode(job), action_state: 'unsupported', wait_timed_out: waitTimedOut, ...(job.workerCalls > 0 && { worker: this.workerStatus(job) }), ...(job.error && { error: job.error }) };
     const current = job.current;
     if (!current?.value || job.phase === 'observing' || (job.error && (current.prepared || current.report))) return base;
     const baseline = [...job.snapshots.values()].find(record => record.cursor === cursor);

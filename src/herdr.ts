@@ -13,6 +13,10 @@ const paneSchema = z.object({
 });
 export type Pane = z.infer<typeof paneSchema>;
 
+const processSchema = z.object({ pane_id: id, shell_pid: z.number().int().positive().nullable().default(null), foreground_process_group_id: z.number().int().positive().nullable().default(null),
+  foreground_processes: z.array(z.object({ pid: z.number().int().positive(), name: z.string().max(256), argv0: z.string().max(4096).nullable().optional() })).max(256).default([]), tty: z.string().max(4096).nullable().optional() });
+export type ProcessInfo = z.infer<typeof processSchema>;
+
 export class Herdr {
   constructor(private readonly endpoint: string, private readonly verifyAuthority: () => void) {}
   private request(method: string, params: object, signal?: AbortSignal): Promise<unknown> {
@@ -55,6 +59,12 @@ export class Herdr {
         } catch (error) { finish(error instanceof BrokerError ? error : new BrokerError('herdr_invalid_response')); }
       });
     });
+  }
+  async processInfo(paneId: string, signal?: AbortSignal) {
+    const parsed = z.object({ type: z.literal('pane_process_info'), process_info: processSchema }).safeParse(await this.request('pane.process_info', { pane_id: paneId }, signal));
+    if (!parsed.success) throw new BrokerError('herdr_invalid_response');
+    if (parsed.data.process_info.pane_id !== paneId) throw new BrokerError('target_changed');
+    return parsed.data.process_info;
   }
   async capture(pane: Pane, signal?: AbortSignal) {
     const parsed = z.object({ type: z.literal('pane_read'), read: z.object({

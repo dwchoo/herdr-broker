@@ -12,7 +12,7 @@ This package provides local pane context and restricted Codex Worker diagnosis. 
 
 Prepared context is an observation of a bounded terminal snapshot. It is untrusted data, including any instructions printed by the pane. It is not proof that a command completed. Analysis readiness, job termination, and Action completion are separate states.
 
-Auto returns `prepared_context` at most 4 KiB; larger contexts or `analysis: "worker"` use a restricted Codex Worker and return `worker_report` with `contract: "diagnosis.v1"`. An unavailable executable or unverified CLI version returns `worker_unsupported`. There is no pane input or Action tool. Job handles belong to the connection that created them.
+Auto returns `prepared_context` at most 4 KiB; larger contexts or `analysis: "worker"` use a restricted Codex Worker and return `worker_report` with `contract: "diagnosis.v1"`. An unavailable executable or unverified CLI version returns `worker_unsupported`. Action proposals and policy review are available; pane input and submission are still unavailable. Job handles belong to the connection that created them.
 
 ## Local state
 
@@ -79,7 +79,7 @@ The console accepts `status`, `purge <job_id>`, `purge all`, `help`, and `quit`.
 
 This is a same-OS-user coordination boundary. It does not isolate a malicious process running as that OS user from direct Herdr access. Redaction covers known credential patterns and configured literals, not every possible secret.
 
-For a read-oriented interactive setup, `default_tools_approval_mode = "writes"` asks for approval of `job_start` and `job_cancel`. The four lookup tools advertise `readOnlyHint: true`; job creation/cancellation advertise `readOnlyHint: false`. For noninteractive acceptance runs, use a configured approval reviewer to review those state changes. Setting the CLI's approval policy to `never` can prevent them from running; do not relabel state-changing tools as read-only to avoid approval.
+For a read-oriented interactive setup, `default_tools_approval_mode = "writes"` asks for approval of `job_start` and `job_cancel`. The five lookup tools advertise `readOnlyHint: true`; job creation/cancellation, proposals and mode changes advertise `readOnlyHint: false`. For noninteractive acceptance runs, use a configured approval reviewer to review those state changes. Setting the CLI's approval policy to `never` can prevent them from running; do not relabel state-changing tools as read-only to avoid approval.
 
 ## Repeated observations and Evidence
 
@@ -98,3 +98,17 @@ The Worker receives the entire bounded redacted Snapshot, objective, and immutab
 One structurally invalid result can be repaired once on the same Snapshot. Both attempts count toward four calls per job; output overflow, timeout, cancellation, and profile violations do not trigger repair. One Worker runs at a time, for at most 60 seconds, bounded to 256 KiB stdout and 64 KiB per JSONL event. Observed input plus output usage reaching 100,000 tokens blocks the next call; cached input is not added twice. This is an observed-use limit, not an exact billing cap. Missing usage and unobserved model identity remain `null`.
 
 The fixed profile disables shell, MCP, plugins, apps, host skills, and further agents, uses read-only sandbox and approval never, and ignores user configuration. CLI authentication uses the existing OS account without reading or copying credentials. Only an allowlisted environment reaches the process. Job termination kills the owned process group; this does not prove provider computation or storage has stopped. Broker reports follow the existing memory lifetime. Codex ephemeral database/WAL behavior does not establish complete no-store behavior.
+
+## Action proposals and console review
+
+An optional `action_scope` on `job_start` enables proposal preparation: `{ "profile": "local_posix", "cwd": "/absolute/project", "paths": ["/absolute/project"], "trusted": true }`. It declares the cooperative shell, working directory, affected path boundaries, and whether its output is trusted for later automatic chaining. Every observed Pane Session starts in mode 2; subsequent jobs in that session share its mode while retaining separate objectives and budgets.
+
+`action_propose` requires `job_id`, exact `target` (pane/terminal/workspace/tab IDs), the same `objective`, `operation: "execute"`, `command`, explicit `cwd` and `env`, `affected_paths`, and optional `risk`. Broker fixes the whole shell wrapper, nonce and Enter and returns a digest. `action_status` accepts only job/proposal IDs. There is no payload editing or caller-supplied approval authority.
+
+A risk review contains `classification` (`read`, `bounded_change`, `high`, `unknown`), `inspected` boolean, nonempty `impact` and `recovery`, `uncertainties` strings, and high-risk `categories` (destructive, privilege, system_package, driver, kernel, disk, network, account, permissions, reboot, shutdown). In mode 2, only inspected read/bounded changes without uncertainty or high-risk categories qualify for automatic permission. Missing or invalid review needs approval. This structure validates the Parent's declared assessment, not arbitrary shell-script semantics.
+
+`session_lower_mode` accepts a job ID and mode 0/1/2/3, and permits only reductions; 0 stops input eligibility. The interactive console alone can select a higher mode. Changing mode increments its revision and invalidates existing proposals/approvals, so the Parent must create a fresh proposal.
+
+In the terminal that runs `serve`, use `review <proposal_id>` to see exact target, objective, escaped full payload, risk and revision, then `approve <proposal_id>` or `reject <proposal_id>`. `revoke <proposal_id>` withdraws permission. `mode <session_id> <1|2|3>` selects the session policy. Approval lasts at most five minutes, bounded earlier by the job deadline, cancellation, purge, session/mode changes or revocation. Pipe input, `--yes`, RPC assertions and approval tokens cannot grant this authority. Control and direction-changing characters are escaped in console output.
+
+At this stage every proposal remains `not_submitted`/`not_started`; automatic eligibility also sends zero input. Scope declarations and process metadata do not authenticate a remote host or isolate another process running as the same OS user. SSH and interrupt execution remain unsupported.

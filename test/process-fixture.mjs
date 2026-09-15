@@ -1,10 +1,11 @@
 // Test-only construction seam; never included in the installed package.
+import { readFileSync } from 'node:fs';
 import { startCore } from '../dist/core.js';
 import { startConsole, connectFacade } from '../dist/runtime.js';
-const [mode, endpoint, stateRoot] = process.argv.slice(2);
+const [mode, endpoint, stateRoot, clockPath] = process.argv.slice(2);
 try {
   if (mode === 'serve') {
-    const core = await startCore({ endpoint, stateRoot });
+    const core = await startCore({ endpoint, stateRoot, ...(clockPath && { now: () => Number(readFileSync(clockPath, 'utf8')) }) });
     startConsole(core, process.stdin, process.stdout);
     process.once('SIGTERM', () => void core.close());
   } else await connectFacade(endpoint, process.stdin, process.stdout);

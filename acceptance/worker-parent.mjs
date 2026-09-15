@@ -31,5 +31,5 @@ test('Actual Codex Parent delegates through MCP to the restricted actual Worker'
   assert.ok(ready, JSON.stringify({ tools: record.tools, messages: events.filter(event => event.item?.type === 'agent_message') }));
   assert.ok(calls.some(call => call.tool === 'evidence_get'));
   assert.ok(calls.some(call => call.tool === 'job_cancel'));
-  assert.ok(h.calls.every(call => ['ping', 'pane.get', 'pane.read'].includes(call.method)));
+  assert.ok(h.calls.every(call => ['ping', 'pane.get', 'pane.read', 'pane.process_info'].includes(call.method)));
 });
