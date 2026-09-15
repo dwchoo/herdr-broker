@@ -1,0 +1,348 @@
+{
+  "at": "2026-09-15T05:11:05.715Z",
+  "cases": [
+    {
+      "scenario": "two jobs; fixed proposal dedup and terminal serialization",
+      "evidence": "in-memory scheduler fixture",
+      "first": "submitted",
+      "duplicate": "same receipt",
+      "changed": "payload mismatch",
+      "waiting": "queued without sending",
+      "resumed": "submitted",
+      "sends": 2
+    },
+    {
+      "scenario": "before-intent",
+      "evidence": "fault process; fsync journal then injected exit; wire is a local fixture",
+      "exit": 72,
+      "restored": "not_submitted",
+      "externalAttemptsKnownOnlyToHarness": 0,
+      "replayCount": 0,
+      "terminalHeld": false
+    },
+    {
+      "scenario": "after-intent",
+      "evidence": "fault process; fsync journal then injected exit; wire is a local fixture",
+      "exit": 73,
+      "restored": "unknown",
+      "externalAttemptsKnownOnlyToHarness": 0,
+      "replayCount": 0,
+      "terminalHeld": true
+    },
+    {
+      "scenario": "after-send",
+      "evidence": "fault process; fsync journal then injected exit; wire is a local fixture",
+      "exit": 74,
+      "restored": "unknown",
+      "externalAttemptsKnownOnlyToHarness": 1,
+      "replayCount": 0,
+      "terminalHeld": true
+    },
+    {
+      "scenario": "duplicate submit",
+      "evidence": "pure state fixture; not a live Herdr fault",
+      "steps": [
+        {
+          "event": "submit",
+          "state": {
+            "submission": "dispatching",
+            "observation": "observing",
+            "attempts": 1,
+            "held": true,
+            "session": 1,
+            "proposalSession": 1,
+            "message": "전송 의도를 기록했습니다. 이 제안은 다시 보내지 않습니다."
+          }
+        },
+        {
+          "event": "submit",
+          "state": {
+            "submission": "dispatching",
+            "observation": "observing",
+            "attempts": 1,
+            "held": true,
+            "session": 1,
+            "proposalSession": 1,
+            "message": "제출을 보류했습니다. 기존 receipt를 확인하거나 새 대상에 제안을 다시 만드세요."
+          }
+        },
+        {
+          "event": "ack",
+          "state": {
+            "submission": "accepted",
+            "observation": "observing",
+            "attempts": 1,
+            "held": true,
+            "session": 1,
+            "proposalSession": 1,
+            "message": "Herdr가 입력을 받았습니다. 종료 결과는 아직 모릅니다."
+          }
+        },
+        {
+          "event": "complete",
+          "state": {
+            "submission": "accepted",
+            "observation": "completion_observed",
+            "attempts": 1,
+            "held": false,
+            "session": 1,
+            "proposalSession": 1,
+            "message": "현재 Action의 종료 표식을 관찰했습니다. 출력의 주장이며 신뢰된 실행 증명은 아닙니다."
+          }
+        },
+        {
+          "event": "submit",
+          "state": {
+            "submission": "accepted",
+            "observation": "completion_observed",
+            "attempts": 1,
+            "held": false,
+            "session": 1,
+            "proposalSession": 1,
+            "message": "제출을 보류했습니다. 기존 receipt를 확인하거나 새 대상에 제안을 다시 만드세요."
+          }
+        }
+      ]
+    },
+    {
+      "scenario": "ACK loss then observed exit",
+      "evidence": "pure state fixture; not a live Herdr fault",
+      "steps": [
+        {
+          "event": "submit",
+          "state": {
+            "submission": "dispatching",
+            "observation": "observing",
+            "attempts": 1,
+            "held": true,
+            "session": 1,
+            "proposalSession": 1,
+            "message": "전송 의도를 기록했습니다. 이 제안은 다시 보내지 않습니다."
+          }
+        },
+        {
+          "event": "lost",
+          "state": {
+            "submission": "unknown",
+            "observation": "observing",
+            "attempts": 1,
+            "held": true,
+            "session": 1,
+            "proposalSession": 1,
+            "message": "응답이 유실됐습니다. 자동 재전송하지 않습니다."
+          }
+        },
+        {
+          "event": "submit",
+          "state": {
+            "submission": "unknown",
+            "observation": "observing",
+            "attempts": 1,
+            "held": true,
+            "session": 1,
+            "proposalSession": 1,
+            "message": "제출을 보류했습니다. 기존 receipt를 확인하거나 새 대상에 제안을 다시 만드세요."
+          }
+        },
+        {
+          "event": "complete",
+          "state": {
+            "submission": "unknown",
+            "observation": "completion_observed",
+            "attempts": 1,
+            "held": false,
+            "session": 1,
+            "proposalSession": 1,
+            "message": "현재 Action의 종료 표식을 관찰했습니다. 출력의 주장이며 신뢰된 실행 증명은 아닙니다."
+          }
+        }
+      ]
+    },
+    {
+      "scenario": "accepted then partial-write/lost-marker fixture",
+      "evidence": "pure state fixture; not a live Herdr fault",
+      "steps": [
+        {
+          "event": "submit",
+          "state": {
+            "submission": "dispatching",
+            "observation": "observing",
+            "attempts": 1,
+            "held": true,
+            "session": 1,
+            "proposalSession": 1,
+            "message": "전송 의도를 기록했습니다. 이 제안은 다시 보내지 않습니다."
+          }
+        },
+        {
+          "event": "ack",
+          "state": {
+            "submission": "accepted",
+            "observation": "observing",
+            "attempts": 1,
+            "held": true,
+            "session": 1,
+            "proposalSession": 1,
+            "message": "Herdr가 입력을 받았습니다. 종료 결과는 아직 모릅니다."
+          }
+        },
+        {
+          "event": "timeout",
+          "state": {
+            "submission": "accepted",
+            "observation": "outcome_unknown",
+            "attempts": 1,
+            "held": true,
+            "session": 1,
+            "proposalSession": 1,
+            "message": "종료 여부를 확인하지 못했습니다. 다음 일반 입력을 보류합니다."
+          }
+        },
+        {
+          "event": "submit",
+          "state": {
+            "submission": "accepted",
+            "observation": "outcome_unknown",
+            "attempts": 1,
+            "held": true,
+            "session": 1,
+            "proposalSession": 1,
+            "message": "제출을 보류했습니다. 기존 receipt를 확인하거나 새 대상에 제안을 다시 만드세요."
+          }
+        }
+      ]
+    },
+    {
+      "scenario": "restart with intent",
+      "evidence": "pure state fixture; not a live Herdr fault",
+      "steps": [
+        {
+          "event": "submit",
+          "state": {
+            "submission": "dispatching",
+            "observation": "observing",
+            "attempts": 1,
+            "held": true,
+            "session": 1,
+            "proposalSession": 1,
+            "message": "전송 의도를 기록했습니다. 이 제안은 다시 보내지 않습니다."
+          }
+        },
+        {
+          "event": "restart",
+          "state": {
+            "submission": "unknown",
+            "observation": "observing",
+            "attempts": 1,
+            "held": true,
+            "session": 1,
+            "proposalSession": 1,
+            "message": "재시작 전의 전송 의도를 복구했습니다. 실행 여부를 추정하지 않습니다."
+          }
+        },
+        {
+          "event": "submit",
+          "state": {
+            "submission": "unknown",
+            "observation": "observing",
+            "attempts": 1,
+            "held": true,
+            "session": 1,
+            "proposalSession": 1,
+            "message": "제출을 보류했습니다. 기존 receipt를 확인하거나 새 대상에 제안을 다시 만드세요."
+          }
+        }
+      ]
+    },
+    {
+      "scenario": "session changes before submit",
+      "evidence": "pure state fixture; not a live Herdr fault",
+      "steps": [
+        {
+          "event": "session",
+          "state": {
+            "submission": "not_submitted",
+            "observation": "not_started",
+            "attempts": 0,
+            "held": true,
+            "session": 2,
+            "proposalSession": 1,
+            "message": "Pane Session이 바뀌었습니다. 기존 제안과 승인을 무효화합니다."
+          }
+        },
+        {
+          "event": "submit",
+          "state": {
+            "submission": "not_submitted",
+            "observation": "not_started",
+            "attempts": 0,
+            "held": true,
+            "session": 2,
+            "proposalSession": 1,
+            "message": "제출을 보류했습니다. 기존 receipt를 확인하거나 새 대상에 제안을 다시 만드세요."
+          }
+        }
+      ]
+    },
+    {
+      "scenario": "job cancellation after acceptance",
+      "evidence": "pure state fixture; not a live Herdr fault",
+      "steps": [
+        {
+          "event": "submit",
+          "state": {
+            "submission": "dispatching",
+            "observation": "observing",
+            "attempts": 1,
+            "held": true,
+            "session": 1,
+            "proposalSession": 1,
+            "message": "전송 의도를 기록했습니다. 이 제안은 다시 보내지 않습니다."
+          }
+        },
+        {
+          "event": "ack",
+          "state": {
+            "submission": "accepted",
+            "observation": "observing",
+            "attempts": 1,
+            "held": true,
+            "session": 1,
+            "proposalSession": 1,
+            "message": "Herdr가 입력을 받았습니다. 종료 결과는 아직 모릅니다."
+          }
+        },
+        {
+          "event": "cancel",
+          "state": {
+            "submission": "accepted",
+            "observation": "observing",
+            "attempts": 1,
+            "held": true,
+            "session": 1,
+            "proposalSession": 1,
+            "message": "후속 작업을 취소했습니다. 이미 전송된 명령은 별도 interrupt가 필요합니다."
+          }
+        }
+      ]
+    },
+    {
+      "scenario": "CLI success is insufficient",
+      "cliCode": 0,
+      "errors": [
+        "required/additional properties",
+        "status",
+        "summary",
+        "findings",
+        "next_checks",
+        "uncertainties"
+      ]
+    },
+    {
+      "scenario": "unknown evidence rejected",
+      "errors": [
+        "unknown/missing evidence"
+      ]
+    }
+  ]
+}

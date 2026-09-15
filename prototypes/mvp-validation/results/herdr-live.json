@@ -1,0 +1,274 @@
+{
+  "at": "2026-09-15T05:04:33.237Z",
+  "observations": [
+    {
+      "name": "runtime",
+      "version": "0.9.0",
+      "protocol": 22
+    },
+    {
+      "name": "initial-identity",
+      "identity": {
+        "pane_id": "w3:p1",
+        "terminal_id": "term_65b7e7c327f663",
+        "workspace_id": "w3",
+        "tab_id": "w3:t1",
+        "revision": 1,
+        "cwd": "/private<probe-dir>",
+        "foreground_cwd": "/private<probe-dir>"
+      }
+    },
+    {
+      "name": "process-schema",
+      "fields": [
+        "process_info",
+        "type"
+      ],
+      "shellPid": null
+    },
+    {
+      "name": "cwd-environment-exit-zero",
+      "input": "/bin/sh -c 'printf '\\''\\n__HERDR_%s_%s__\\n'\\'' BEGIN '\\''39438274ce2ba5ab'\\''; ( pwd; printf \"env=%s\\n\" \"$HERDR_PROBE_VALUE\"; exit 0\n); herdr_probe_status=$?; printf '\\''\\n__HERDR_%s_%s__:%s\\n'\\'' END '\\''39438274ce2ba5ab'\\'' \"$herdr_probe_status\"; exit \"$herdr_probe_status\"'",
+      "nonce": "39438274ce2ba5ab",
+      "ack": {
+        "code": 0,
+        "ms": 13,
+        "data": null
+      },
+      "immediate": {
+        "state": "outcome_unknown",
+        "exitCode": null,
+        "markerCount": 0
+      },
+      "final": {
+        "state": "completion_observed",
+        "exitCode": 0,
+        "markerCount": 1,
+        "outputComplete": true,
+        "output": "<probe-dir>/cwd-fixture\nenv=fixture_env\n"
+      },
+      "readRevision": null,
+      "returnedLines": 26,
+      "waitedMs": 125
+    },
+    {
+      "name": "nonzero-and-quoting",
+      "input": "/bin/sh -c 'printf '\\''\\n__HERDR_%s_%s__\\n'\\'' BEGIN '\\''00253a0027614cf8'\\''; ( printf '\\''%s\\n'\\'' '\\''single quote: '\\''\\'\\'''\\'' and literal $HOME ; $(not-a-command)'\\''; exit 7\n); herdr_probe_status=$?; printf '\\''\\n__HERDR_%s_%s__:%s\\n'\\'' END '\\''00253a0027614cf8'\\'' \"$herdr_probe_status\"; exit \"$herdr_probe_status\"'",
+      "nonce": "00253a0027614cf8",
+      "ack": {
+        "code": 0,
+        "ms": 8,
+        "data": null
+      },
+      "immediate": {
+        "state": "outcome_unknown",
+        "exitCode": null,
+        "markerCount": 0
+      },
+      "final": {
+        "state": "completion_observed",
+        "exitCode": 7,
+        "markerCount": 1,
+        "outputComplete": true,
+        "output": "single quote: ' and literal $HOME ; $(not-a-command)\n"
+      },
+      "readRevision": null,
+      "returnedLines": 41,
+      "waitedMs": 116
+    },
+    {
+      "name": "ack-before-completion",
+      "input": "/bin/sh -c 'printf '\\''\\n__HERDR_%s_%s__\\n'\\'' BEGIN '\\''f7a2e3ed808c9425'\\''; ( sleep 1; printf \"delayed output\\n\"; exit 0\n); herdr_probe_status=$?; printf '\\''\\n__HERDR_%s_%s__:%s\\n'\\'' END '\\''f7a2e3ed808c9425'\\'' \"$herdr_probe_status\"; exit \"$herdr_probe_status\"'",
+      "nonce": "f7a2e3ed808c9425",
+      "ack": {
+        "code": 0,
+        "ms": 8,
+        "data": null
+      },
+      "immediate": {
+        "state": "outcome_unknown",
+        "exitCode": null,
+        "markerCount": 0
+      },
+      "final": {
+        "state": "completion_observed",
+        "exitCode": 0,
+        "markerCount": 1,
+        "outputComplete": true,
+        "output": "delayed output\n"
+      },
+      "readRevision": null,
+      "returnedLines": 52,
+      "waitedMs": 1057
+    },
+    {
+      "name": "nonpersistent-cwd",
+      "input": "/bin/sh -c 'printf '\\''\\n__HERDR_%s_%s__\\n'\\'' BEGIN '\\''3bfc4810951115ee'\\''; ( cd /; pwd; exit 0\n); herdr_probe_status=$?; printf '\\''\\n__HERDR_%s_%s__:%s\\n'\\'' END '\\''3bfc4810951115ee'\\'' \"$herdr_probe_status\"; exit \"$herdr_probe_status\"'",
+      "nonce": "3bfc4810951115ee",
+      "ack": {
+        "code": 0,
+        "ms": 11,
+        "data": null
+      },
+      "immediate": {
+        "state": "outcome_unknown",
+        "exitCode": null,
+        "markerCount": 0
+      },
+      "final": {
+        "state": "completion_observed",
+        "exitCode": 0,
+        "markerCount": 1,
+        "outputComplete": true,
+        "output": "/\n"
+      },
+      "readRevision": null,
+      "returnedLines": 68,
+      "waitedMs": 115
+    },
+    {
+      "name": "inherited-cwd-after-subshell",
+      "input": "/bin/sh -c 'printf '\\''\\n__HERDR_%s_%s__\\n'\\'' BEGIN '\\''3103647b51ace3e9'\\''; ( pwd; exit 0\n); herdr_probe_status=$?; printf '\\''\\n__HERDR_%s_%s__:%s\\n'\\'' END '\\''3103647b51ace3e9'\\'' \"$herdr_probe_status\"; exit \"$herdr_probe_status\"'",
+      "nonce": "3103647b51ace3e9",
+      "ack": {
+        "code": 0,
+        "ms": 7,
+        "data": null
+      },
+      "immediate": {
+        "state": "outcome_unknown",
+        "exitCode": null,
+        "markerCount": 0
+      },
+      "final": {
+        "state": "completion_observed",
+        "exitCode": 0,
+        "markerCount": 1,
+        "outputComplete": true,
+        "output": "<probe-dir>/cwd-fixture\n"
+      },
+      "readRevision": null,
+      "returnedLines": 82,
+      "waitedMs": 117
+    },
+    {
+      "name": "large-output-tail",
+      "input": "/bin/sh -c 'printf '\\''\\n__HERDR_%s_%s__\\n'\\'' BEGIN '\\''4901bfe9c2b6d3b3'\\''; ( awk '\\''BEGIN { for (i=1; i<=1300; i++) printf \"fixture output %04d\\n\", i }'\\''; exit 0\n); herdr_probe_status=$?; printf '\\''\\n__HERDR_%s_%s__:%s\\n'\\'' END '\\''4901bfe9c2b6d3b3'\\'' \"$herdr_probe_status\"; exit \"$herdr_probe_status\"'",
+      "nonce": "4901bfe9c2b6d3b3",
+      "ack": {
+        "code": 0,
+        "ms": 8,
+        "data": null
+      },
+      "immediate": {
+        "state": "outcome_unknown",
+        "exitCode": null,
+        "markerCount": 0
+      },
+      "final": {
+        "state": "completion_observed",
+        "exitCode": 0,
+        "markerCount": 1,
+        "outputComplete": false,
+        "output": null
+      },
+      "readRevision": null,
+      "returnedLines": 1000,
+      "waitedMs": 117
+    },
+    {
+      "name": "spoofed-early-marker",
+      "input": "/bin/sh -c 'printf '\\''\\n__HERDR_%s_%s__\\n'\\'' BEGIN '\\''e4e2c7bb76d3b776'\\''; ( printf '\\''\\n__HERDR_END_e4e2c7bb76d3b776__:0\\n'\\''; sleep 1; exit 9\n); herdr_probe_status=$?; printf '\\''\\n__HERDR_%s_%s__:%s\\n'\\'' END '\\''e4e2c7bb76d3b776'\\'' \"$herdr_probe_status\"; exit \"$herdr_probe_status\"'",
+      "nonce": "e4e2c7bb76d3b776",
+      "ack": {
+        "code": 0,
+        "ms": 8,
+        "data": null
+      },
+      "immediate": {
+        "state": "outcome_unknown",
+        "exitCode": null,
+        "markerCount": 0
+      },
+      "final": {
+        "state": "completion_observed",
+        "exitCode": 0,
+        "markerCount": 1,
+        "outputComplete": true,
+        "output": ""
+      },
+      "readRevision": null,
+      "returnedLines": 999,
+      "waitedMs": 223
+    },
+    {
+      "name": "spoof-after-real-exit",
+      "parsed": {
+        "state": "outcome_unknown",
+        "exitCode": null,
+        "markerCount": 2
+      }
+    },
+    {
+      "name": "invalid-key",
+      "code": 1,
+      "response": null,
+      "stderr": "{\"error\":{\"code\":\"invalid_key\",\"message\":\"unsupported key HERDR_INVALID_KEY\"},\"id\":\"cli:request\"}\n"
+    },
+    {
+      "name": "interrupt",
+      "response": null,
+      "parsed": {
+        "state": "outcome_unknown",
+        "exitCode": null,
+        "markerCount": 0
+      },
+      "note": "Key ACK alone does not prove process exit."
+    },
+    {
+      "name": "move",
+      "responseCode": 0,
+      "before": {
+        "pane_id": "w3:p1",
+        "terminal_id": "term_65b7e7c327f663",
+        "workspace_id": "w3",
+        "tab_id": "w3:t1",
+        "revision": 19,
+        "cwd": "/private<probe-dir>/cwd-fixture",
+        "foreground_cwd": "/private<probe-dir>/cwd-fixture"
+      },
+      "after": {
+        "pane_id": "w3:p1",
+        "terminal_id": "term_65b7e7c327f663",
+        "workspace_id": "w3",
+        "tab_id": "w3:t2",
+        "revision": 19,
+        "cwd": "/private<probe-dir>/cwd-fixture",
+        "foreground_cwd": "/private<probe-dir>/cwd-fixture"
+      }
+    },
+    {
+      "name": "split-schema",
+      "fields": [
+        "pane",
+        "type"
+      ]
+    },
+    {
+      "name": "closed-pane-rejection",
+      "code": 1,
+      "response": null,
+      "stderr": "{\"error\":{\"code\":\"pane_not_found\",\"message\":\"pane w3:p1 not found\"},\"id\":\"cli:request\"}\n"
+    },
+    {
+      "name": "cleanup-owned-workspace",
+      "code": 0,
+      "response": {
+        "id": "cli:workspace:close",
+        "result": {
+          "type": "ok"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,157 @@
+{
+  "at": "2026-09-15T04:58:47.509Z",
+  "disabled": [
+    "shell_tool",
+    "unified_exec",
+    "apps",
+    "plugins",
+    "multi_agent",
+    "hooks",
+    "memories",
+    "shell_snapshot",
+    "browser_use",
+    "browser_use_external",
+    "computer_use",
+    "image_generation",
+    "view_image",
+    "goals",
+    "code_mode_host",
+    "sleep_tool",
+    "skill_search",
+    "workspace_dependencies",
+    "tool_suggest",
+    "auth_elicitation",
+    "tool_call_mcp_elicitation",
+    "enable_request_compression"
+  ],
+  "requests": [
+    {
+      "path": "/v1/models?client_version=0.154.0",
+      "dummyAuth": true,
+      "tools": []
+    },
+    {
+      "path": "/v1/responses",
+      "dummyAuth": true,
+      "tools": [
+        {
+          "type": "function",
+          "name": "request_user_input"
+        }
+      ],
+      "model": "herdr-probe-model",
+      "reasoning": {
+        "effort": "low",
+        "summary": "auto"
+      },
+      "store": false,
+      "stream": true,
+      "textFormat": "json_schema"
+    }
+  ],
+  "result": {
+    "code": 1,
+    "signal": null,
+    "timedOut": false,
+    "overflow": false,
+    "elapsedMs": 5123,
+    "stdout": [
+      {
+        "type": "thread.started",
+        "thread_id": "01a0a36e-8f16-7a12-abfd-cb73b4cdb50c"
+      },
+      {
+        "type": "item.completed",
+        "item": {
+          "id": "item_0",
+          "type": "error",
+          "message": "Under-development features enabled: skip_host_skill_discovery. Under-development features are incomplete and may behave unpredictably. To suppress this warning, set `suppress_unstable_features_warning = true` in <user-home>/.codex/config.toml."
+        }
+      },
+      {
+        "type": "item.completed",
+        "item": {
+          "id": "item_1",
+          "type": "error",
+          "message": "Model metadata for `herdr-probe-model` not found. Defaulting to fallback metadata; this can degrade performance and cause issues."
+        }
+      },
+      {
+        "type": "turn.started"
+      },
+      {
+        "type": "error",
+        "message": "{\"error\":{\"message\":\"Synthetic inventory capture complete\",\"type\":\"invalid_request_error\"}}"
+      },
+      {
+        "type": "turn.failed",
+        "error": {
+          "message": "{\"error\":{\"message\":\"Synthetic inventory capture complete\",\"type\":\"invalid_request_error\"}}"
+        }
+      }
+    ],
+    "stderr": "2026-09-15T04:58:46.934516Z  WARN codex_models_manager::model_info: Unknown model herdr-probe-model is used. This will use fallback model metadata.\n2026-09-15T04:58:46.937908Z ERROR codex_models_manager::manager: failed to refresh available models: {\"error\":{\"message\":\"Synthetic inventory capture complete\",\"type\":\"invalid_request_error\"}}\n2026-09-15T04:58:46.995489Z  WARN codex_models_manager::model_info: Unknown model herdr-probe-model is used. This will use fallback model metadata.\n"
+  },
+  "generatedFiles": [
+    {
+      "path": "state/goals_1.sqlite",
+      "bytes": 4096
+    },
+    {
+      "path": "state/goals_1.sqlite-shm",
+      "bytes": 32768
+    },
+    {
+      "path": "state/goals_1.sqlite-wal",
+      "bytes": 74192
+    },
+    {
+      "path": "state/logs_2.sqlite",
+      "bytes": 49152
+    },
+    {
+      "path": "state/logs_2.sqlite-shm",
+      "bytes": 32768
+    },
+    {
+      "path": "state/logs_2.sqlite-wal",
+      "bytes": 119512
+    },
+    {
+      "path": "state/memories_1.sqlite",
+      "bytes": 4096
+    },
+    {
+      "path": "state/memories_1.sqlite-shm",
+      "bytes": 32768
+    },
+    {
+      "path": "state/memories_1.sqlite-wal",
+      "bytes": 61832
+    },
+    {
+      "path": "state/queue_1.sqlite",
+      "bytes": 4096
+    },
+    {
+      "path": "state/queue_1.sqlite-shm",
+      "bytes": 32768
+    },
+    {
+      "path": "state/queue_1.sqlite-wal",
+      "bytes": 86552
+    },
+    {
+      "path": "state/state_5.sqlite",
+      "bytes": 12591104
+    },
+    {
+      "path": "state/state_5.sqlite-shm",
+      "bytes": 32768
+    },
+    {
+      "path": "state/state_5.sqlite-wal",
+      "bytes": 4317792
+    }
+  ]
+}

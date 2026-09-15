@@ -1,0 +1,140 @@
+{
+  "at": "2026-09-15T05:05:10.767Z",
+  "disabled": [
+    "shell_tool",
+    "unified_exec",
+    "apps",
+    "plugins",
+    "multi_agent",
+    "hooks",
+    "memories",
+    "shell_snapshot",
+    "browser_use",
+    "browser_use_external",
+    "computer_use",
+    "image_generation",
+    "view_image",
+    "goals",
+    "code_mode_host",
+    "sleep_tool",
+    "skill_search",
+    "workspace_dependencies",
+    "tool_suggest",
+    "auth_elicitation",
+    "tool_call_mcp_elicitation",
+    "enable_request_compression"
+  ],
+  "requests": [
+    {
+      "path": "/v1/models?client_version=0.154.0",
+      "dummyAuth": true,
+      "tools": [],
+      "functionResults": []
+    },
+    {
+      "path": "/v1/responses",
+      "dummyAuth": true,
+      "tools": [],
+      "model": "gpt-5.6-luna",
+      "reasoning": {
+        "effort": "low",
+        "context": "all_turns"
+      },
+      "store": false,
+      "stream": true,
+      "textFormat": "json_schema",
+      "functionResults": []
+    }
+  ],
+  "result": {
+    "code": 0,
+    "signal": null,
+    "timedOut": false,
+    "overflow": false,
+    "processGroupPresent": false,
+    "elapsedMs": 5267,
+    "stdout": [
+      {
+        "type": "thread.started",
+        "thread_id": "01a0a374-6743-71d0-ad91-2d71de5189c5"
+      },
+      {
+        "type": "item.completed",
+        "item": {
+          "id": "item_0",
+          "type": "error",
+          "message": "Under-development features enabled: skip_host_skill_discovery. Under-development features are incomplete and may behave unpredictably. To suppress this warning, set `suppress_unstable_features_warning = true` in <user-home>/.codex/config.toml."
+        }
+      },
+      {
+        "type": "item.completed",
+        "item": {
+          "id": "item_1",
+          "type": "error",
+          "message": "Code Mode is unavailable because code-mode host is disabled. Code mode will fail closed; enable `features.code_mode_host` and install `codex-code-mode-host`."
+        }
+      },
+      {
+        "type": "turn.started"
+      },
+      {
+        "type": "item.completed",
+        "item": {
+          "id": "item_2",
+          "type": "agent_message",
+          "text": "{\"not_a_report\":true}"
+        }
+      },
+      {
+        "type": "turn.completed",
+        "usage": {
+          "input_tokens": 1,
+          "cached_input_tokens": 0,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 1,
+          "reasoning_output_tokens": 0
+        }
+      }
+    ],
+    "stderr": ""
+  },
+  "final": "{\"not_a_report\":true}",
+  "generatedFiles": [
+    {
+      "path": "canary.txt",
+      "bytes": 25
+    },
+    {
+      "path": "malformed.json",
+      "bytes": 21
+    },
+    {
+      "path": "state/goals_1.sqlite",
+      "bytes": 32768
+    },
+    {
+      "path": "state/logs_2.sqlite",
+      "bytes": 49152
+    },
+    {
+      "path": "state/memories_1.sqlite",
+      "bytes": 40960
+    },
+    {
+      "path": "state/queue_1.sqlite",
+      "bytes": 40960
+    },
+    {
+      "path": "state/state_5.sqlite",
+      "bytes": 12591104
+    },
+    {
+      "path": "state/state_5.sqlite-shm",
+      "bytes": 32768
+    },
+    {
+      "path": "state/state_5.sqlite-wal",
+      "bytes": 4317792
+    }
+  ]
+}

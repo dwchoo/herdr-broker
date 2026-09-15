@@ -1,0 +1,101 @@
+{
+  "at": "2026-09-15T05:08:23.957Z",
+  "observations": [
+    {
+      "name": "read-metadata",
+      "keys": [
+        "pane_id",
+        "workspace_id",
+        "tab_id",
+        "source",
+        "format",
+        "text",
+        "revision",
+        "truncated"
+      ],
+      "revision": 0,
+      "format": "ansi",
+      "source": "recent"
+    },
+    {
+      "name": "matching-ack-before-completion",
+      "ack": {
+        "id": "probe-delayed",
+        "result": {
+          "type": "ok"
+        }
+      },
+      "immediateStandaloneMarker": false,
+      "laterStandaloneMarker": true
+    },
+    {
+      "name": "herdr-id-is-not-idempotency",
+      "responses": [
+        {
+          "id": "same-request-id",
+          "result": {
+            "type": "ok"
+          }
+        },
+        {
+          "id": "same-request-id",
+          "result": {
+            "type": "ok"
+          }
+        }
+      ],
+      "executionCount": 2
+    },
+    {
+      "name": "injected-ack-loss-after-live-send",
+      "receipt": {
+        "injected": "discarded live ACK",
+        "submission_state": "unknown"
+      },
+      "executionCount": 1,
+      "autoResends": 0
+    },
+    {
+      "name": "no-global-input-lock",
+      "secondInputAck": {
+        "id": "outside-broker",
+        "result": {
+          "type": "ok"
+        }
+      },
+      "output": "long done\nexternal accepted\n"
+    },
+    {
+      "name": "read-row-limit",
+      "ack": {
+        "id": "large-output",
+        "result": {
+          "type": "ok"
+        }
+      },
+      "revision": 0,
+      "format": "ansi",
+      "lineCount": null,
+      "returnedLines": 1000
+    },
+    {
+      "name": "pre-enqueue-rejection",
+      "response": {
+        "id": "invalid-key",
+        "error": {
+          "code": "invalid_key",
+          "message": "unsupported key HERDR_INVALID_KEY"
+        }
+      }
+    },
+    {
+      "name": "cleanup-owned-workspace",
+      "response": {
+        "id": "cli:workspace:close",
+        "result": {
+          "type": "ok"
+        }
+      }
+    }
+  ]
+}

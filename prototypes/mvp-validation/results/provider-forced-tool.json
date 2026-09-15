@@ -1,0 +1,148 @@
+{
+  "at": "2026-09-15T05:00:54.747Z",
+  "disabled": [
+    "shell_tool",
+    "unified_exec",
+    "apps",
+    "plugins",
+    "multi_agent",
+    "hooks",
+    "memories",
+    "shell_snapshot",
+    "browser_use",
+    "browser_use_external",
+    "computer_use",
+    "image_generation",
+    "view_image",
+    "goals",
+    "code_mode_host",
+    "sleep_tool",
+    "skill_search",
+    "workspace_dependencies",
+    "tool_suggest",
+    "auth_elicitation",
+    "tool_call_mcp_elicitation",
+    "enable_request_compression"
+  ],
+  "requests": [
+    {
+      "path": "/v1/models?client_version=0.154.0",
+      "dummyAuth": true,
+      "tools": [],
+      "functionResults": []
+    },
+    {
+      "path": "/v1/responses",
+      "dummyAuth": true,
+      "tools": [],
+      "model": "gpt-5.6-luna",
+      "reasoning": {
+        "effort": "low",
+        "context": "all_turns"
+      },
+      "store": false,
+      "stream": true,
+      "textFormat": "json_schema",
+      "functionResults": []
+    },
+    {
+      "path": "/v1/responses",
+      "dummyAuth": true,
+      "tools": [],
+      "model": "gpt-5.6-luna",
+      "reasoning": {
+        "effort": "low",
+        "context": "all_turns"
+      },
+      "store": false,
+      "stream": true,
+      "textFormat": "json_schema",
+      "functionResults": [
+        "unsupported call: exec_command"
+      ]
+    }
+  ],
+  "result": {
+    "code": 0,
+    "signal": null,
+    "timedOut": false,
+    "overflow": false,
+    "processGroupPresent": false,
+    "elapsedMs": 5441,
+    "stdout": [
+      {
+        "type": "thread.started",
+        "thread_id": "01a0a370-7f44-76c3-bdd4-2f0dde7bacfb"
+      },
+      {
+        "type": "item.completed",
+        "item": {
+          "id": "item_0",
+          "type": "error",
+          "message": "Under-development features enabled: skip_host_skill_discovery. Under-development features are incomplete and may behave unpredictably. To suppress this warning, set `suppress_unstable_features_warning = true` in <user-home>/.codex/config.toml."
+        }
+      },
+      {
+        "type": "item.completed",
+        "item": {
+          "id": "item_1",
+          "type": "error",
+          "message": "Code Mode is unavailable because code-mode host is disabled. Code mode will fail closed; enable `features.code_mode_host` and install `codex-code-mode-host`."
+        }
+      },
+      {
+        "type": "turn.started"
+      },
+      {
+        "type": "item.completed",
+        "item": {
+          "id": "item_2",
+          "type": "agent_message",
+          "text": "{\"status\":\"inconclusive\",\"summary\":\"Synthetic tool dispatch probe\",\"findings\":[],\"next_checks\":[],\"uncertainties\":[\"No file read tool\"]}"
+        }
+      },
+      {
+        "type": "turn.completed",
+        "usage": {
+          "input_tokens": 2,
+          "cached_input_tokens": 0,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 2,
+          "reasoning_output_tokens": 0
+        }
+      }
+    ],
+    "stderr": "2026-09-15T05:00:54.304069Z ERROR codex_core::tools::router: error=unsupported call: exec_command\n"
+  },
+  "final": "{\"status\":\"inconclusive\",\"summary\":\"Synthetic tool dispatch probe\",\"findings\":[],\"next_checks\":[],\"uncertainties\":[\"No file read tool\"]}",
+  "generatedFiles": [
+    {
+      "path": "canary.txt",
+      "bytes": 25
+    },
+    {
+      "path": "forced-tool.json",
+      "bytes": 136
+    },
+    {
+      "path": "state/goals_1.sqlite",
+      "bytes": 32768
+    },
+    {
+      "path": "state/logs_2.sqlite",
+      "bytes": 49152
+    },
+    {
+      "path": "state/memories_1.sqlite",
+      "bytes": 40960
+    },
+    {
+      "path": "state/queue_1.sqlite",
+      "bytes": 40960
+    },
+    {
+      "path": "state/state_5.sqlite",
+      "bytes": 13103104
+    }
+  ]
+}

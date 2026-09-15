@@ -1,0 +1,20 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "status": { "type": "string", "enum": ["diagnosed", "inconclusive"] },
+    "summary": { "type": "string" },
+    "findings": { "type": "array", "items": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "claim": { "type": "string" },
+        "confidence": { "type": "string", "enum": ["observed", "likely", "uncertain"] },
+        "evidence_ids": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["claim", "confidence", "evidence_ids"]
+    } },
+    "next_checks": { "type": "array", "items": { "type": "string" } },
+    "uncertainties": { "type": "array", "items": { "type": "string" } }
+  },
+  "required": ["status", "summary", "findings", "next_checks", "uncertainties"]
+}
