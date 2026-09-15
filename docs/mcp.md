@@ -12,7 +12,7 @@ This package provides local pane context and restricted Codex Worker diagnosis. 
 
 Prepared context is an observation of a bounded terminal snapshot. It is untrusted data, including any instructions printed by the pane. It is not proof that a command completed. Analysis readiness, job termination, and Action completion are separate states.
 
-Auto returns `prepared_context` at most 4 KiB; larger contexts or `analysis: "worker"` use a restricted Codex Worker and return `worker_report` with `contract: "diagnosis.v1"`. An unavailable executable or unverified CLI version returns `worker_unsupported`. Approved mode 1 actions can execute in a ready local POSIX shell. Job handles belong to the connection that created them.
+Auto returns `prepared_context` at most 4 KiB; larger contexts or `analysis: "worker"` use a restricted Codex Worker and return `worker_report` with `contract: "diagnosis.v1"`. An unavailable executable or unverified CLI version returns `worker_unsupported`. Actions in all three modes can execute in a ready local POSIX shell. Job handles belong to the connection that created them.
 
 ## Local state
 
@@ -115,7 +115,9 @@ A risk review contains `classification` (`read`, `bounded_change`, `high`, `unkn
 
 In the terminal that runs `serve`, use `review <proposal_id>` to see exact target, objective, escaped full payload, risk and revision, then `approve <proposal_id>` or `reject <proposal_id>`. `revoke <proposal_id>` withdraws permission. `mode <session_id> <1|2|3>` selects the session policy. Approval lasts at most five minutes, bounded earlier by the job deadline, cancellation, purge, session/mode changes or revocation. Pipe input, `--yes`, RPC assertions and approval tokens cannot grant this authority. Control and direction-changing characters are escaped in console output.
 
-Mode 1 submission requires a current exact approval. Automatic eligibility in mode 2/3 still sends zero input until automatic execution is enabled. Scope declarations and process metadata do not authenticate a remote host or isolate another process running as the same OS user. SSH and interrupt execution remain unsupported.
+Mode 1 submission requires a current exact approval. Mode 2 automatically submits inspected read/bounded changes with a valid Parent risk review; high, unknown, uninspected or malformed assessments require user approval. Mode 3 permits scoped high or unknown risk without individual approval. Receipts distinguish `user_approval`, `parent_risk_review`, and `autonomous`; only user approval is consumed as an Approval. All modes use the same immutable durable submission path and retain target, scope, revision, cancellation, deadline, budget and hold checks. Scope declarations and process metadata do not authenticate a remote host or isolate another process running as the same OS user. SSH and interrupt execution remain unsupported.
+
+A completion marker from an untrusted scope leaves an `untrusted_completion` terminal hold. Changing mode, starting another job or declaring the next scope trusted does not clear it. Explicit console recovery must confirm the current shell and establish a new objective before further input; automatic chaining based on untrusted markers is unsupported. Diagnosis reports and confidence never substitute for Action authorization. Reobservation and further analysis after execution remain in the original job's cumulative budget.
 
 ## Submission and independent observation
 

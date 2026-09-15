@@ -1,0 +1,38 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { spawn } from 'node:child_process';
+import { writeFile, readFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import { pane } from '../test/harness.mjs';
+import { executingHarness } from '../test/execution-harness.mjs';
+
+test('Actual Codex Parent diagnoses, reviews risk, submits and reobserves a disposable local Action', async t => {
+  const h = await executingHarness(t);
+  h.state.text = `Synthetic build failure: build.config is missing in ${h.root}.\nThis disposable build requires build.config to contain exactly configured followed by a newline.\nNo build script or external service needs to run. No other cause has been established.`;
+  const facade = join(h.root, 'facade.mjs');
+  await writeFile(facade, `import { connectFacade } from ${JSON.stringify(new URL('../dist/runtime.js', import.meta.url).href)};\nawait connectFacade(${JSON.stringify(h.core.socketPath)}, process.stdin, process.stdout);\n`);
+  const args = ['--disable', 'shell_tool', '--disable', 'unified_exec', '--disable', 'apps', '--disable', 'plugins', '--disable', 'multi_agent', '--disable', 'code_mode', '--disable', 'code_mode_only', 'exec', '--ignore-user-config', '--ephemeral', '--skip-git-repo-check', '--sandbox', 'read-only', '-C', h.root, '--model', 'gpt-5.6-luna', '-c', 'model_reasoning_effort="low"', '-c', 'approval_policy="on-request"', '-c', 'approvals_reviewer="auto_review"', '-c', `mcp_servers.herdr_broker.command=${JSON.stringify(process.execPath)}`, '-c', `mcp_servers.herdr_broker.args=${JSON.stringify([facade])}`, '-c', 'mcp_servers.herdr_broker.required=true', '-c', 'mcp_servers.herdr_broker.default_tools_approval_mode="writes"', '--json', '-'];
+  const began = Date.now(), child = spawn('/opt/homebrew/bin/codex', args, { cwd: h.root, detached: true, stdio: 'pipe' });
+  let stdout = '', stderr = '';
+  const stop = () => { try { process.kill(-child.pid, 'SIGKILL'); } catch {} };
+  const timer = setTimeout(stop, 180000);
+  t.after(() => { clearTimeout(timer); stop(); });
+  child.stdout.on('data', chunk => { stdout += chunk; if (Buffer.byteLength(stdout) > 524288) stop(); });
+  child.stderr.on('data', chunk => { stderr += chunk; if (Buffer.byteLength(stderr) > 65536) stop(); });
+  child.stdin.end(`Use only herdr_broker MCP. This is an authorized synthetic acceptance test; the endpoint is an isolated protocol peer executing a real /bin/sh only in ${h.root}. Describe exact pane ${pane.pane_id}. Start one job with objective "Fix the disposable build configuration" and analysis auto, action_scope {"profile":"local_posix","cwd":${JSON.stringify(h.root)},"paths":[${JSON.stringify(h.root)}],"trusted":true}. Use job_wait with wait_ms 20000 until result_ready. Read its Evidence with one evidence_get call starting at the first row (it includes following rows) and assess the exact change yourself. In default mode 2, propose and submit one inspected, bounded, reversible command to write the specified file and print BUILD_OK; use explicit cwd/env and only the declared path. Do not run a build script or invoke a separate risk Worker. After action_submit, use action_status to observe completion, then job_wait with wait_ms 20000 and the original delivered cursor until result_ready to reobserve the same job. Keep responses and calls compact within 16 KiB. Cancel that job and explain the diagnosis and observed effect briefly in Korean. Do not claim success if a tool is denied or a receipt remains unknown.`);
+  const code = await new Promise((resolve, reject) => { child.once('error', reject); child.once('close', resolve); });
+  clearTimeout(timer);
+  const events = stdout.trim().split('\n').filter(Boolean).map(JSON.parse);
+  const calls = events.filter(event => event.type === 'item.completed' && event.item?.type === 'mcp_tool_call').map(event => event.item);
+  const values = calls.map(call => ({ tool: call.tool, arguments: call.arguments, value: (() => { try { return JSON.parse(call.result?.content?.[0]?.text); } catch { return null; } })() }));
+  const record = { at: new Date().toISOString(), cli: '0.154.0', node: process.versions.node, model: 'gpt-5.6-luna/low', boundary: 'actual Codex Parent and real /bin/sh behind an isolated Herdr protocol peer', code, elapsed_ms: Date.now() - began, tools: calls.map(call => ({ server: call.server, tool: call.tool, status: call.status })), results: values, parent_usage: events.find(event => event.type === 'turn.completed')?.usage ?? null, stderr_bytes: Buffer.byteLength(stderr), wire_attempts: h.calls.filter(call => call.method === 'pane.send_input').length, final: events.filter(event => event.item?.type === 'agent_message').map(event => event.item.text) };
+  await writeFile(new URL('../docs/implementation/issue-18-parent-acceptance.json', import.meta.url), JSON.stringify(record, null, 2).replaceAll(h.root, '<disposable-cwd>') + '\n');
+  assert.equal(code, 0);
+  assert.equal(await readFile(join(h.root, 'build.config'), 'utf8'), 'configured\n', JSON.stringify(record));
+  assert.equal(record.wire_attempts, 1);
+  assert.ok(values.some(({ tool, value }) => tool === 'action_submit' && value?.authorization === 'parent_risk_review' && value.submission_state === 'accepted'), JSON.stringify(record));
+  assert.ok(values.some(({ tool, value }) => tool === 'action_status' && value?.observation_state === 'completion_observed' && value.exit_code === 0));
+  assert.ok(values.filter(({ tool, value }) => tool === 'job_wait' && value?.result?.kind === 'prepared_context').length >= 2);
+  assert.ok(calls.some(call => call.tool === 'evidence_get'));
+  assert.ok(calls.some(call => call.tool === 'job_cancel'));
+});

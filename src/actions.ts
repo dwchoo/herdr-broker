@@ -10,7 +10,8 @@ import { Sessions, targetSchema, targetOf, sameTarget, type Target } from './ses
 
 const text = z.string().min(1).max(1024);
 const riskSchema = z.strictObject({ classification: z.enum(['read', 'bounded_change', 'high', 'unknown']), inspected: z.boolean(), impact: text, recovery: text, uncertainties: z.array(text).max(5), categories: z.array(z.enum(['destructive', 'privilege', 'system_package', 'driver', 'kernel', 'disk', 'network', 'account', 'permissions', 'reboot', 'shutdown'])).max(12) });
-export const proposalSchema = z.strictObject({ job_id: z.string().uuid(), target: targetSchema, objective: z.string().min(1).max(4096), operation: z.enum(['execute', 'interrupt']), command: z.string().min(1).max(4096).refine(value => !value.includes('\0')).optional(), original_proposal_id: z.string().uuid().optional(), cwd: z.string().min(1).max(4096), env: z.record(z.string().regex(/^[A-Za-z_][A-Za-z0-9_]{0,63}$/), z.string().max(1024).refine(value => !value.includes('\0'))).refine(value => Object.keys(value).length <= 16), affected_paths: z.array(z.string().min(1).max(4096)).min(1).max(16), risk: z.unknown().optional() });
+const declaredRisk = z.union([riskSchema, z.unknown()]).describe('Use the structured Parent assessment: classification, inspected, impact, recovery, uncertainties, categories. Invalid or missing assessments require user approval in mode 2.');
+export const proposalSchema = z.strictObject({ job_id: z.string().uuid(), target: targetSchema, objective: z.string().min(1).max(4096), operation: z.enum(['execute', 'interrupt']), command: z.string().min(1).max(4096).refine(value => !value.includes('\0')).optional(), original_proposal_id: z.string().uuid().optional(), cwd: z.string().min(1).max(4096), env: z.record(z.string().regex(/^[A-Za-z_][A-Za-z0-9_]{0,63}$/), z.string().max(1024).refine(value => !value.includes('\0'))).refine(value => Object.keys(value).length <= 16), affected_paths: z.array(z.string().min(1).max(4096)).min(1).max(16), risk: declaredRisk.optional() });
 type ProposalInput = z.infer<typeof proposalSchema>;
 interface Body { objective: string; payload: { text: string; keys: string[] }; risk: z.infer<typeof riskSchema> | null; affected_paths: string[]; cwd: string; env: Record<string, string> }
 interface Proposal { id: string; job: string; owner: string; session: string; revision: number; target: Target; operation: string; digest: string; nonce: string; body?: Body; approval?: { issued: number; expires: number; revision: number; digest: string }; rejected: boolean; receipt?: Control; controlReserved?: boolean; submittedAt?: number; evidence?: ReturnType<typeof excerpt>; observation?: { method: string; truncated: boolean; baseline_digest: string } }
@@ -98,8 +99,7 @@ export class Actions {
       this.options.verifyAuthority();
       if (this.stop.signal.aborted || !this.jobs.actionContext(proposal.owner, proposal.job).active) throw new BrokerError('job_ended');
       const decision = this.decision(proposal);
-      if (decision.authorization !== 'user_approval') throw new BrokerError(decision.reason ?? 'approval_required');
-      if (this.sessions.get(proposal.session).mode !== 1) throw new BrokerError('automatic_modes_unavailable');
+      if (!['user_approval', 'parent_risk_review', 'autonomous'].includes(decision.authorization)) throw new BrokerError(decision.reason ?? 'approval_required');
     };
     allowed();
     const pane = await this.herdr.describe(proposal.target.pane_id, job.signal);
@@ -118,7 +118,8 @@ export class Actions {
       proposal.controlReserved = true;
     }
     const created = this.now();
-    const receipt: Control = { proposal_id: proposal.id, job_id: proposal.job, pane_session_id: proposal.session, terminal_id: proposal.target.terminal_id, payload_digest: proposal.digest, mode_revision: proposal.revision, operation: 'execute', authorization: 'user_approval', approval_expires: proposal.approval!.expires, approval_consumed: true, submission_state: 'dispatching', observation_state: 'observing', exit_code: null, created_at: created, updated_at: created, hold_reason: 'awaiting_outcome', recovery: null };
+    const authorization = this.decision(proposal).authorization;
+    const receipt: Control = { proposal_id: proposal.id, job_id: proposal.job, pane_session_id: proposal.session, terminal_id: proposal.target.terminal_id, payload_digest: proposal.digest, mode_revision: proposal.revision, operation: 'execute', authorization, approval_expires: proposal.approval?.expires ?? null, approval_consumed: authorization === 'user_approval', submission_state: 'dispatching', observation_state: 'observing', exit_code: null, created_at: created, updated_at: created, hold_reason: 'awaiting_outcome', recovery: null };
     const intent = this.options.ledger.intent(receipt);
     proposal.receipt = intent.control;
     if (!intent.fresh) return this.view(proposal);
@@ -135,9 +136,10 @@ export class Actions {
         this.options.ledger.verify();
         if (this.stop.signal.aborted || !this.jobs.actionContext(proposal.owner, proposal.job).active) throw new BrokerError('job_ended');
         const current = this.sessions.get(proposal.session);
-        if (current.revision !== receipt.mode_revision || current.mode !== 1) throw new BrokerError('mode_changed');
+        if (current.revision !== receipt.mode_revision || current.mode === 0) throw new BrokerError('mode_changed');
         if (!proposal.body || proposal.rejected) throw new BrokerError('proposal_invalid');
-        if (receipt.approval_expires! <= this.now()) throw new BrokerError('approval_expired');
+        if (receipt.authorization === 'user_approval' && receipt.approval_expires! <= this.now()) throw new BrokerError('approval_expired');
+        if (receipt.authorization !== 'user_approval' && this.decision(proposal).authorization !== receipt.authorization) throw new BrokerError('authorization_changed');
       });
       await sent;
       receipt.submission_state = 'accepted';
@@ -153,13 +155,13 @@ export class Actions {
     catch { receipt.hold_reason = 'ledger_write_failed'; receipt.observation_state = 'outcome_unknown'; return this.view(proposal); }
     this.options.fault?.('after_ack_record');
     if (receipt.submission_state !== 'rejected') {
-      const observing = this.observe(proposal);
+      const observing = this.observe(proposal, job.scope?.trusted === true);
       this.observers.add(observing);
       void observing.finally(() => this.observers.delete(observing));
     }
     return this.view(proposal);
   }
-  private async observe(proposal: Proposal) {
+  private async observe(proposal: Proposal, trusted: boolean) {
     const receipt = proposal.receipt!;
     const signal = AbortSignal.any([this.stop.signal, AbortSignal.timeout(Math.max(1, Math.min(this.options.observationMs ?? 60000, 60000) - (Date.now() - proposal.submittedAt!)))]);
     try {
@@ -183,9 +185,9 @@ export class Actions {
             this.jobs.retainAction(proposal.owner, proposal.job, 4096, 0, () => { delete proposal.evidence; });
             proposal.evidence = excerpt(retained.metadata.snapshot_id, retained.rows, 0, 0, [matches[0]!.index]);
           }
-          receipt.observation_state = 'completion_observed'; receipt.exit_code = matches[0]!.exit; receipt.hold_reason = null;
+          receipt.observation_state = 'completion_observed'; receipt.exit_code = matches[0]!.exit; receipt.hold_reason = trusted ? null : 'untrusted_completion';
           receipt.updated_at = this.now();
-          this.options.ledger.update(receipt, true);
+          this.options.ledger.update(receipt, trusted);
           return;
         }
         await delay(100, undefined, { signal });

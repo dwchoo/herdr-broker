@@ -1,0 +1,683 @@
+{
+  "at": "2026-09-15T11:39:24.628Z",
+  "cli": "0.154.0",
+  "node": "24.19.0",
+  "model": "gpt-5.6-luna/low",
+  "boundary": "actual Codex Parent and real /bin/sh behind an isolated Herdr protocol peer",
+  "code": 0,
+  "elapsed_ms": 62482,
+  "tools": [
+    {
+      "server": "herdr_broker",
+      "tool": "pane_describe",
+      "status": "completed"
+    },
+    {
+      "server": "herdr_broker",
+      "tool": "job_start",
+      "status": "completed"
+    },
+    {
+      "server": "herdr_broker",
+      "tool": "job_wait",
+      "status": "completed"
+    },
+    {
+      "server": "herdr_broker",
+      "tool": "evidence_get",
+      "status": "completed"
+    },
+    {
+      "server": "herdr_broker",
+      "tool": "action_propose",
+      "status": "completed"
+    },
+    {
+      "server": "herdr_broker",
+      "tool": "action_submit",
+      "status": "completed"
+    },
+    {
+      "server": "herdr_broker",
+      "tool": "action_status",
+      "status": "completed"
+    },
+    {
+      "server": "herdr_broker",
+      "tool": "job_wait",
+      "status": "completed"
+    },
+    {
+      "server": "herdr_broker",
+      "tool": "job_cancel",
+      "status": "completed"
+    }
+  ],
+  "results": [
+    {
+      "tool": "pane_describe",
+      "arguments": {
+        "pane_id": "ws:pane"
+      },
+      "value": {
+        "target": {
+          "pane_id": "ws:pane",
+          "terminal_id": "terminal-1",
+          "workspace_id": "ws",
+          "tab_id": "tab-1"
+        },
+        "context": {
+          "cwd": "/fixture",
+          "agent_status": "unknown"
+        },
+        "supported_profiles": [
+          "passive",
+          "local_posix"
+        ],
+        "action_supported": true,
+        "automatic_modes_supported": true
+      }
+    },
+    {
+      "tool": "job_start",
+      "arguments": {
+        "pane_id": "ws:pane",
+        "objective": "Fix the disposable build configuration",
+        "analysis": "auto",
+        "action_scope": {
+          "profile": "local_posix",
+          "cwd": "<disposable-cwd>",
+          "paths": [
+            "<disposable-cwd>"
+          ],
+          "trusted": true
+        }
+      },
+      "value": {
+        "job_id": "b471be71-b23b-4d29-a987-9474de60d61b",
+        "pane_session_id": "610cff82-3994-475b-8e74-864c3959d01c",
+        "pane_id": "ws:pane",
+        "phase": "observing",
+        "data_state": "retained",
+        "result_ready": false,
+        "job_ended": false,
+        "action_mode": null,
+        "mode_revision": null,
+        "action_state": "available",
+        "wait_timed_out": false,
+        "budget": {
+          "deadline_ms": 300000,
+          "deadline_remaining_ms": 299999,
+          "parent_payload_bytes_limit": 16384,
+          "parent_payload_bytes_used": 468,
+          "parent_payload_bytes_remaining": 15916
+        }
+      }
+    },
+    {
+      "tool": "job_wait",
+      "arguments": {
+        "job_id": "b471be71-b23b-4d29-a987-9474de60d61b",
+        "wait_ms": 20000
+      },
+      "value": {
+        "job_id": "b471be71-b23b-4d29-a987-9474de60d61b",
+        "pane_session_id": "36b30dc4-5811-4326-b3a8-96757f10af24",
+        "pane_id": "ws:pane",
+        "phase": "result_ready",
+        "data_state": "retained",
+        "result_ready": true,
+        "job_ended": false,
+        "action_mode": 2,
+        "mode_revision": 1,
+        "action_state": "available",
+        "wait_timed_out": false,
+        "cursor": "6a9fac9b-06bf-43cc-8a38-db94264290cb",
+        "cursor_expires_at": "2026-09-15T11:39:39.060Z",
+        "observation": {
+          "sequence": 1,
+          "observed_at": "2026-09-15T11:38:39.058Z"
+        },
+        "delta": {
+          "kind": "replace",
+          "history_complete": false
+        },
+        "snapshot": {
+          "snapshot_id": "1ecaee0c-9e6b-4bea-b6d4-fe2f878d94b2",
+          "pane_session_id": "36b30dc4-5811-4326-b3a8-96757f10af24",
+          "capture_sequence": 1,
+          "captured_at": "2026-09-15T11:38:39.058Z",
+          "source": "recent",
+          "format": "ansi",
+          "physical_rows": 3,
+          "utf8_bytes": 264,
+          "truncated": false,
+          "gaps": [
+            "history_unobserved"
+          ],
+          "history_complete": false,
+          "row_mapping": {
+            "normalized_to_physical": "one_to_one",
+            "first_physical_row": 1,
+            "last_physical_row": 3,
+            "first_row_partial": false
+          },
+          "redaction": {
+            "version": "basic-v1",
+            "pattern_digest": "4f53cda18c2baa0c",
+            "count": 0,
+            "rules": []
+          }
+        },
+        "result": {
+          "kind": "prepared_context",
+          "text": "1ecaee0c-9e6b-4bea-b6d4-fe2f878d94b2:L0001 Synthetic build failure: build.config is missing in <disposable-cwd>.\n1ecaee0c-9e6b-4bea-b6d4-fe2f878d94b2:L0002 This disposable build requires build.config to contain exactly configured followed by a newline.\n1ecaee0c-9e6b-4bea-b6d4-fe2f878d94b2:L0003 No build script or external service needs to run. No other cause has been established."
+        },
+        "evidence": {
+          "items": [
+            {
+              "evidence_id": "1ecaee0c-9e6b-4bea-b6d4-fe2f878d94b2:L0001",
+              "text": "Synthetic build failure: build.config is missing in <disposable-cwd>.",
+              "offset_bytes": 0
+            },
+            {
+              "evidence_id": "1ecaee0c-9e6b-4bea-b6d4-fe2f878d94b2:L0002",
+              "text": "This disposable build requires build.config to contain exactly configured followed by a newline.",
+              "offset_bytes": 0
+            },
+            {
+              "evidence_id": "1ecaee0c-9e6b-4bea-b6d4-fe2f878d94b2:L0003",
+              "text": "No build script or external service needs to run. No other cause has been established.",
+              "offset_bytes": 0
+            }
+          ],
+          "truncated": false,
+          "next": null
+        },
+        "budget": {
+          "deadline_ms": 300000,
+          "deadline_remaining_ms": 297231,
+          "parent_payload_bytes_limit": 16384,
+          "parent_payload_bytes_used": 2715,
+          "parent_payload_bytes_remaining": 13669
+        }
+      }
+    },
+    {
+      "tool": "evidence_get",
+      "arguments": {
+        "job_id": "b471be71-b23b-4d29-a987-9474de60d61b",
+        "evidence_id": "1ecaee0c-9e6b-4bea-b6d4-fe2f878d94b2:L0001",
+        "offset_bytes": 0
+      },
+      "value": {
+        "job_id": "b471be71-b23b-4d29-a987-9474de60d61b",
+        "evidence": {
+          "items": [
+            {
+              "evidence_id": "1ecaee0c-9e6b-4bea-b6d4-fe2f878d94b2:L0001",
+              "text": "Synthetic build failure: build.config is missing in <disposable-cwd>.",
+              "offset_bytes": 0
+            },
+            {
+              "evidence_id": "1ecaee0c-9e6b-4bea-b6d4-fe2f878d94b2:L0002",
+              "text": "This disposable build requires build.config to contain exactly configured followed by a newline.",
+              "offset_bytes": 0
+            },
+            {
+              "evidence_id": "1ecaee0c-9e6b-4bea-b6d4-fe2f878d94b2:L0003",
+              "text": "No build script or external service needs to run. No other cause has been established.",
+              "offset_bytes": 0
+            }
+          ],
+          "truncated": false,
+          "next": null
+        },
+        "budget": {
+          "deadline_ms": 300000,
+          "deadline_remaining_ms": 289896,
+          "parent_payload_bytes_limit": 16384,
+          "parent_payload_bytes_used": 3513,
+          "parent_payload_bytes_remaining": 12871
+        }
+      }
+    },
+    {
+      "tool": "action_propose",
+      "arguments": {
+        "job_id": "b471be71-b23b-4d29-a987-9474de60d61b",
+        "objective": "Fix the disposable build configuration",
+        "operation": "execute",
+        "target": {
+          "pane_id": "ws:pane",
+          "terminal_id": "terminal-1",
+          "workspace_id": "ws",
+          "tab_id": "tab-1"
+        },
+        "cwd": "<disposable-cwd>",
+        "env": {
+          "LC_ALL": "C"
+        },
+        "affected_paths": [
+          "<disposable-cwd>/build.config"
+        ],
+        "command": "printf '%s\\n' configured > <disposable-cwd>/build.config && printf '%s\\n' BUILD_OK",
+        "risk": {
+          "classification": "bounded_change",
+          "inspected": true,
+          "impact": "Creates the missing declared build.config with exactly configured followed by a newline, then prints BUILD_OK; no build script or external service is invoked.",
+          "recovery": "The single created file is disposable and can be removed or replaced to revert.",
+          "uncertainties": [],
+          "categories": []
+        }
+      },
+      "value": {
+        "job_id": "b471be71-b23b-4d29-a987-9474de60d61b",
+        "proposal_id": "c2aec088-6097-43e5-a427-c2dd078848e5",
+        "pane_session_id": "36b30dc4-5811-4326-b3a8-96757f10af24",
+        "target": {
+          "pane_id": "ws:pane",
+          "terminal_id": "terminal-1",
+          "workspace_id": "ws",
+          "tab_id": "tab-1"
+        },
+        "mode_revision": 1,
+        "operation": "execute",
+        "payload_digest": "73aec2aa1bd797356d4ccf5292864d1f2cc6e5a295ac05ae05618cdbc010c6d6",
+        "contract": "action.v1",
+        "submission_state": "not_submitted",
+        "observation_state": "not_started",
+        "exit_code": null,
+        "authorization": "parent_risk_review",
+        "reason": null,
+        "approval_expires_at": null,
+        "payload": {
+          "text": "/bin/sh -c 'printf '\\''\\n__HERDR_%s_%s__\\n'\\'' BEGIN '\\''2311618d7a4e7c95cd24febbe1bd4313'\\''; ( cd '\\''<disposable-cwd>'\\'' && /usr/bin/env -i PATH=/usr/bin:/bin:/usr/sbin:/sbin '\\''LC_ALL=C'\\'' /bin/sh -c '\\''printf '\\''\\'\\'''\\''%s\\n'\\''\\'\\'''\\'' configured > <disposable-cwd>/build.config && printf '\\''\\'\\'''\\''%s\\n'\\''\\'\\'''\\'' BUILD_OK'\\''\n); herdr_broker_exit=$?; printf '\\''\\n__HERDR_%s_%s__:%s\\n'\\'' END '\\''2311618d7a4e7c95cd24febbe1bd4313'\\'' \"$herdr_broker_exit\"; exit \"$herdr_broker_exit\"'",
+          "keys": [
+            "Enter"
+          ]
+        },
+        "budget": {
+          "deadline_ms": 300000,
+          "deadline_remaining_ms": 278719,
+          "parent_payload_bytes_limit": 16384,
+          "parent_payload_bytes_used": 4852,
+          "parent_payload_bytes_remaining": 11532
+        }
+      }
+    },
+    {
+      "tool": "action_submit",
+      "arguments": {
+        "proposal_id": "c2aec088-6097-43e5-a427-c2dd078848e5"
+      },
+      "value": {
+        "proposal_id": "c2aec088-6097-43e5-a427-c2dd078848e5",
+        "job_id": "b471be71-b23b-4d29-a987-9474de60d61b",
+        "pane_session_id": "36b30dc4-5811-4326-b3a8-96757f10af24",
+        "terminal_id": "terminal-1",
+        "payload_digest": "73aec2aa1bd797356d4ccf5292864d1f2cc6e5a295ac05ae05618cdbc010c6d6",
+        "mode_revision": 1,
+        "operation": "execute",
+        "authorization": "parent_risk_review",
+        "approval_expires": null,
+        "approval_consumed": false,
+        "submission_state": "accepted",
+        "observation_state": "observing",
+        "exit_code": null,
+        "created_at": 1789472348103,
+        "updated_at": 1789472348109,
+        "hold_reason": "awaiting_outcome",
+        "recovery": null,
+        "target": {
+          "pane_id": "ws:pane",
+          "terminal_id": "terminal-1",
+          "workspace_id": "ws",
+          "tab_id": "tab-1"
+        },
+        "contract": "action.v1",
+        "evidence": null,
+        "observation": {
+          "method": "bounded_passive_marker",
+          "truncated": false,
+          "baseline_digest": "9e5a1194da3cf5a4244acdcb9195f67ae95422ae048e2d3fd4358c4fadc9d2bd"
+        },
+        "budget": {
+          "deadline_ms": 300000,
+          "deadline_remaining_ms": 270937,
+          "parent_payload_bytes_limit": 16384,
+          "parent_payload_bytes_used": 6481,
+          "parent_payload_bytes_remaining": 9903
+        }
+      }
+    },
+    {
+      "tool": "action_status",
+      "arguments": {
+        "job_id": "b471be71-b23b-4d29-a987-9474de60d61b",
+        "proposal_id": "c2aec088-6097-43e5-a427-c2dd078848e5"
+      },
+      "value": {
+        "proposal_id": "c2aec088-6097-43e5-a427-c2dd078848e5",
+        "job_id": "b471be71-b23b-4d29-a987-9474de60d61b",
+        "pane_session_id": "36b30dc4-5811-4326-b3a8-96757f10af24",
+        "terminal_id": "terminal-1",
+        "payload_digest": "73aec2aa1bd797356d4ccf5292864d1f2cc6e5a295ac05ae05618cdbc010c6d6",
+        "mode_revision": 1,
+        "operation": "execute",
+        "authorization": "parent_risk_review",
+        "approval_expires": null,
+        "approval_consumed": false,
+        "submission_state": "accepted",
+        "observation_state": "completion_observed",
+        "exit_code": 0,
+        "created_at": 1789472348103,
+        "updated_at": 1789472348225,
+        "hold_reason": null,
+        "recovery": null,
+        "target": {
+          "pane_id": "ws:pane",
+          "terminal_id": "terminal-1",
+          "workspace_id": "ws",
+          "tab_id": "tab-1"
+        },
+        "contract": "action.v1",
+        "evidence": {
+          "items": [
+            {
+              "evidence_id": "88d388f4-bbe5-489b-b323-43ecaa73ec0c:L0010",
+              "text": "__HERDR_END_2311618d7a4e7c95cd24febbe1bd4313__:0",
+              "offset_bytes": 0
+            }
+          ],
+          "truncated": false,
+          "next": null
+        },
+        "observation": {
+          "method": "bounded_passive_marker",
+          "truncated": false,
+          "baseline_digest": "9e5a1194da3cf5a4244acdcb9195f67ae95422ae048e2d3fd4358c4fadc9d2bd"
+        },
+        "budget": {
+          "deadline_ms": 300000,
+          "deadline_remaining_ms": 268000,
+          "parent_payload_bytes_limit": 16384,
+          "parent_payload_bytes_used": 7682,
+          "parent_payload_bytes_remaining": 8702
+        }
+      }
+    },
+    {
+      "tool": "job_wait",
+      "arguments": {
+        "job_id": "b471be71-b23b-4d29-a987-9474de60d61b",
+        "cursor": "6a9fac9b-06bf-43cc-8a38-db94264290cb",
+        "wait_ms": 20000
+      },
+      "value": {
+        "job_id": "b471be71-b23b-4d29-a987-9474de60d61b",
+        "pane_session_id": "36b30dc4-5811-4326-b3a8-96757f10af24",
+        "pane_id": "ws:pane",
+        "phase": "result_ready",
+        "data_state": "retained",
+        "result_ready": true,
+        "job_ended": false,
+        "action_mode": 2,
+        "mode_revision": 1,
+        "action_state": "available",
+        "wait_timed_out": false,
+        "cursor": "c2e1c021-d337-453b-8295-0805807946bc",
+        "cursor_expires_at": "2026-09-15T11:40:14.653Z",
+        "observation": {
+          "sequence": 2,
+          "observed_at": "2026-09-15T11:39:14.653Z"
+        },
+        "delta": {
+          "kind": "replace",
+          "history_complete": false
+        },
+        "snapshot": {
+          "snapshot_id": "fc4f6707-08c2-4e29-ad11-6bd7f0edd216",
+          "pane_session_id": "36b30dc4-5811-4326-b3a8-96757f10af24",
+          "capture_sequence": 2,
+          "captured_at": "2026-09-15T11:39:14.653Z",
+          "source": "recent",
+          "format": "ansi",
+          "physical_rows": 11,
+          "utf8_bytes": 376,
+          "truncated": false,
+          "gaps": [
+            "history_unobserved"
+          ],
+          "history_complete": false,
+          "row_mapping": {
+            "normalized_to_physical": "one_to_one",
+            "first_physical_row": 1,
+            "last_physical_row": 11,
+            "first_row_partial": false
+          },
+          "redaction": {
+            "version": "basic-v1",
+            "pattern_digest": "4f53cda18c2baa0c",
+            "count": 0,
+            "rules": []
+          }
+        },
+        "result": {
+          "kind": "prepared_context",
+          "text": "fc4f6707-08c2-4e29-ad11-6bd7f0edd216:L0001 Synthetic build failure: build.config is missing in <disposable-cwd>.\nfc4f6707-08c2-4e29-ad11-6bd7f0edd216:L0002 This disposable build requires build.config to contain exactly configured followed by a newline.\nfc4f6707-08c2-4e29-ad11-6bd7f0edd216:L0003 No build script or external service needs to run. No other cause has been established.\nfc4f6707-08c2-4e29-ad11-6bd7f0edd216:L0004 \nfc4f6707-08c2-4e29-ad11-6bd7f0edd216:L0005 __HERDR_BEGIN_2311618d7a4e7c95cd24febbe1bd4313__\nfc4f6707-08c2-4e29-ad11-6bd7f0edd216:L0006 \nfc4f6707-08c2-4e29-ad11-6bd7f0edd216:L0007 BUILD_OK\nfc4f6707-08c2-4e29-ad11-6bd7f0edd216:L0008..fc4f6707-08c2-4e29-ad11-6bd7f0edd216:L0009 [count=2 omitted=1] \nfc4f6707-08c2-4e29-ad11-6bd7f0edd216:L0010 __HERDR_END_2311618d7a4e7c95cd24febbe1bd4313__:0\nfc4f6707-08c2-4e29-ad11-6bd7f0edd216:L0011 "
+        },
+        "evidence": {
+          "items": [
+            {
+              "evidence_id": "fc4f6707-08c2-4e29-ad11-6bd7f0edd216:L0001",
+              "text": "Synthetic build failure: build.config is missing in <disposable-cwd>.",
+              "offset_bytes": 0
+            },
+            {
+              "evidence_id": "fc4f6707-08c2-4e29-ad11-6bd7f0edd216:L0002",
+              "text": "This disposable build requires build.config to contain exactly configured followed by a newline.",
+              "offset_bytes": 0
+            },
+            {
+              "evidence_id": "fc4f6707-08c2-4e29-ad11-6bd7f0edd216:L0003",
+              "text": "No build script or external service needs to run. No other cause has been established.",
+              "offset_bytes": 0
+            },
+            {
+              "evidence_id": "fc4f6707-08c2-4e29-ad11-6bd7f0edd216:L0004",
+              "text": "",
+              "offset_bytes": 0
+            },
+            {
+              "evidence_id": "fc4f6707-08c2-4e29-ad11-6bd7f0edd216:L0005",
+              "text": "__HERDR_BEGIN_2311618d7a4e7c95cd24febbe1bd4313__",
+              "offset_bytes": 0
+            },
+            {
+              "evidence_id": "fc4f6707-08c2-4e29-ad11-6bd7f0edd216:L0006",
+              "text": "",
+              "offset_bytes": 0
+            },
+            {
+              "evidence_id": "fc4f6707-08c2-4e29-ad11-6bd7f0edd216:L0007",
+              "text": "BUILD_OK",
+              "offset_bytes": 0
+            },
+            {
+              "evidence_id": "fc4f6707-08c2-4e29-ad11-6bd7f0edd216:L0008",
+              "text": "",
+              "offset_bytes": 0
+            },
+            {
+              "evidence_id": "fc4f6707-08c2-4e29-ad11-6bd7f0edd216:L0009",
+              "text": "",
+              "offset_bytes": 0
+            },
+            {
+              "evidence_id": "fc4f6707-08c2-4e29-ad11-6bd7f0edd216:L0010",
+              "text": "__HERDR_END_2311618d7a4e7c95cd24febbe1bd4313__:0",
+              "offset_bytes": 0
+            },
+            {
+              "evidence_id": "fc4f6707-08c2-4e29-ad11-6bd7f0edd216:L0011",
+              "text": "",
+              "offset_bytes": 0
+            }
+          ],
+          "truncated": false,
+          "next": null
+        },
+        "budget": {
+          "deadline_ms": 300000,
+          "deadline_remaining_ms": 264395,
+          "parent_payload_bytes_limit": 16384,
+          "parent_payload_bytes_used": 11222,
+          "parent_payload_bytes_remaining": 5162
+        }
+      }
+    },
+    {
+      "tool": "job_cancel",
+      "arguments": {
+        "job_id": "b471be71-b23b-4d29-a987-9474de60d61b"
+      },
+      "value": {
+        "job_id": "b471be71-b23b-4d29-a987-9474de60d61b",
+        "pane_session_id": "36b30dc4-5811-4326-b3a8-96757f10af24",
+        "pane_id": "ws:pane",
+        "phase": "cancelled",
+        "data_state": "retained",
+        "result_ready": true,
+        "job_ended": true,
+        "action_mode": 2,
+        "mode_revision": 1,
+        "action_state": "available",
+        "wait_timed_out": false,
+        "cursor": "c2e1c021-d337-453b-8295-0805807946bc",
+        "cursor_expires_at": "2026-09-15T11:40:14.653Z",
+        "observation": {
+          "sequence": 2,
+          "observed_at": "2026-09-15T11:39:14.653Z"
+        },
+        "delta": {
+          "kind": "replace",
+          "history_complete": false
+        },
+        "snapshot": {
+          "snapshot_id": "fc4f6707-08c2-4e29-ad11-6bd7f0edd216",
+          "pane_session_id": "36b30dc4-5811-4326-b3a8-96757f10af24",
+          "capture_sequence": 2,
+          "captured_at": "2026-09-15T11:39:14.653Z",
+          "source": "recent",
+          "format": "ansi",
+          "physical_rows": 11,
+          "utf8_bytes": 376,
+          "truncated": false,
+          "gaps": [
+            "history_unobserved"
+          ],
+          "history_complete": false,
+          "row_mapping": {
+            "normalized_to_physical": "one_to_one",
+            "first_physical_row": 1,
+            "last_physical_row": 11,
+            "first_row_partial": false
+          },
+          "redaction": {
+            "version": "basic-v1",
+            "pattern_digest": "4f53cda18c2baa0c",
+            "count": 0,
+            "rules": []
+          }
+        },
+        "result": {
+          "kind": "prepared_context",
+          "text": "fc4f6707-08c2-4e29-ad11-6bd7f0edd216:L0001 Synthetic build failure: build.config is missing in <disposable-cwd>.\nfc4f6707-08c2-4e29-ad11-6bd7f0edd216:L0002 This disposable build requires build.config to contain exactly configured followed by a newline.\nfc4f6707-08c2-4e29-ad11-6bd7f0edd216:L0003 No build script or external service needs to run. No other cause has been established.\nfc4f6707-08c2-4e29-ad11-6bd7f0edd216:L0004 \nfc4f6707-08c2-4e29-ad11-6bd7f0edd216:L0005 __HERDR_BEGIN_2311618d7a4e7c95cd24febbe1bd4313__\nfc4f6707-08c2-4e29-ad11-6bd7f0edd216:L0006 \nfc4f6707-08c2-4e29-ad11-6bd7f0edd216:L0007 BUILD_OK\nfc4f6707-08c2-4e29-ad11-6bd7f0edd216:L0008..fc4f6707-08c2-4e29-ad11-6bd7f0edd216:L0009 [count=2 omitted=1] \nfc4f6707-08c2-4e29-ad11-6bd7f0edd216:L0010 __HERDR_END_2311618d7a4e7c95cd24febbe1bd4313__:0\nfc4f6707-08c2-4e29-ad11-6bd7f0edd216:L0011 "
+        },
+        "evidence": {
+          "items": [
+            {
+              "evidence_id": "fc4f6707-08c2-4e29-ad11-6bd7f0edd216:L0001",
+              "text": "Synthetic build failure: build.config is missing in <disposable-cwd>.",
+              "offset_bytes": 0
+            },
+            {
+              "evidence_id": "fc4f6707-08c2-4e29-ad11-6bd7f0edd216:L0002",
+              "text": "This disposable build requires build.config to contain exactly configured followed by a newline.",
+              "offset_bytes": 0
+            },
+            {
+              "evidence_id": "fc4f6707-08c2-4e29-ad11-6bd7f0edd216:L0003",
+              "text": "No build script or external service needs to run. No other cause has been established.",
+              "offset_bytes": 0
+            },
+            {
+              "evidence_id": "fc4f6707-08c2-4e29-ad11-6bd7f0edd216:L0004",
+              "text": "",
+              "offset_bytes": 0
+            },
+            {
+              "evidence_id": "fc4f6707-08c2-4e29-ad11-6bd7f0edd216:L0005",
+              "text": "__HERDR_BEGIN_2311618d7a4e7c95cd24febbe1bd4313__",
+              "offset_bytes": 0
+            },
+            {
+              "evidence_id": "fc4f6707-08c2-4e29-ad11-6bd7f0edd216:L0006",
+              "text": "",
+              "offset_bytes": 0
+            },
+            {
+              "evidence_id": "fc4f6707-08c2-4e29-ad11-6bd7f0edd216:L0007",
+              "text": "BUILD_OK",
+              "offset_bytes": 0
+            },
+            {
+              "evidence_id": "fc4f6707-08c2-4e29-ad11-6bd7f0edd216:L0008",
+              "text": "",
+              "offset_bytes": 0
+            },
+            {
+              "evidence_id": "fc4f6707-08c2-4e29-ad11-6bd7f0edd216:L0009",
+              "text": "",
+              "offset_bytes": 0
+            },
+            {
+              "evidence_id": "fc4f6707-08c2-4e29-ad11-6bd7f0edd216:L0010",
+              "text": "__HERDR_END_2311618d7a4e7c95cd24febbe1bd4313__:0",
+              "offset_bytes": 0
+            },
+            {
+              "evidence_id": "fc4f6707-08c2-4e29-ad11-6bd7f0edd216:L0011",
+              "text": "",
+              "offset_bytes": 0
+            }
+          ],
+          "truncated": false,
+          "next": null
+        },
+        "budget": {
+          "deadline_ms": 300000,
+          "deadline_remaining_ms": 257735,
+          "parent_payload_bytes_limit": 16384,
+          "parent_payload_bytes_used": 14758,
+          "parent_payload_bytes_remaining": 1626
+        }
+      }
+    }
+  ],
+  "parent_usage": {
+    "input_tokens": 193643,
+    "cached_input_tokens": 147968,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 1325,
+    "reasoning_output_tokens": 243
+  },
+  "stderr_bytes": 2482,
+  "wire_attempts": 1,
+  "final": [
+    "`herdr_broker` MCP만 사용해 `ws:pane`의 작업을 진단하고, 허용된 경로 안에서 검토 가능한 단일 수정 명령을 제출한 뒤 재관찰·취소하겠습니다. 결과가 거부되거나 receipt가 unknown이면 성공으로 단정하지 않겠습니다.",
+    "진단 결과는 `build.config` 누락이며, 요구 내용은 정확히 `configured\\n`입니다. 외부 서비스나 build script 실행은 필요 없다는 Evidence를 확인하고, 선언된 경로의 파일 하나만 쓰고 `BUILD_OK`를 출력하는 bounded change로 평가하겠습니다.",
+    "진단 및 조치를 완료했습니다.\n\n- 대상 pane: `ws:pane`\n- 원인: `<disposable-cwd>/build.config` 누락\n- 변경: 파일에 정확히 `configured\\n` 기록\n- 관찰 결과: `BUILD_OK`, 종료 코드 `0`\n- 별도 build script·risk Worker는 실행하지 않음\n- 작업은 최종적으로 `cancelled` 처리됨"
+  ]
+}
