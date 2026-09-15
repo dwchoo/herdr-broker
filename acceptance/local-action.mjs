@@ -1,55 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
-import { createServer, createConnection } from 'node:net';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
-import { startCore } from '../dist/core.js';
+import { writeFile } from 'node:fs/promises';
+import { liveHarness } from './live-harness.mjs';
 import { connect } from '../test/harness.mjs';
 import { consoleProcess } from '../test/console-harness.mjs';
 
-const exec = promisify(execFile);
 test('Actual disposable Herdr POSIX shell through public Broker and interactive console', async t => {
-  const root = await mkdtemp('/private/tmp/hb-live-local-');
-  let core, workspace;
-  const peerSockets = new Set(), calls = [], evidence = [], captures = [];
-  const endpoint = join(root, 'herdr.sock');
-  const proxy = createServer(socket => {
-    const upstream = createConnection('/Users/dwchoo/.config/herdr/herdr.sock');
-    peerSockets.add(socket); peerSockets.add(upstream);
-    let buffer = '';
-    let received = '';
-    upstream.on('data', chunk => {
-      received += chunk;
-      let end;
-      while ((end = received.indexOf('\n')) >= 0) {
-        const response = JSON.parse(received.slice(0, end)); received = received.slice(end + 1);
-        if (response.result?.type === 'pane_read') captures.push(response.result.read.text);
-      }
-    });
-    socket.on('data', chunk => {
-      buffer += chunk;
-      let end;
-      while ((end = buffer.indexOf('\n')) >= 0) { calls.push(JSON.parse(buffer.slice(0, end))); buffer = buffer.slice(end + 1); }
-    });
-    for (const connection of [socket, upstream]) connection.on('error', () => {});
-    socket.on('close', () => { upstream.destroy(); peerSockets.delete(socket); });
-    upstream.on('close', () => { socket.destroy(); peerSockets.delete(upstream); });
-    socket.pipe(upstream); upstream.pipe(socket);
-  });
-  t.after(async () => {
-    await core?.close();
-    for (const socket of peerSockets) socket.destroy();
-    if (proxy.listening) await new Promise(resolve => proxy.close(resolve));
-    if (workspace) await exec('herdr', ['workspace', 'close', workspace]);
-    await rm(root, { recursive: true, force: true });
-  });
-  const created = JSON.parse((await exec('herdr', ['workspace', 'create', '--cwd', root, '--label', 'broker-local-acceptance', '--env', `ZDOTDIR=${root}`, '--env', 'HISTFILE=/dev/null', '--no-focus'])).stdout).result;
-  workspace = created.workspace.workspace_id;
-  const pane = created.root_pane;
-  await new Promise(resolve => proxy.listen(endpoint, resolve));
-  core = await startCore({ endpoint, stateRoot: join(root, 'state') });
+  const { root, endpoint, core, pane, calls, captures } = await liveHarness(t);
+  const evidence = [];
   const console = await consoleProcess(t, { root, endpoint, core }), client = await connect(console.ready.socket, t);
   const described = await client.call('pane_describe', { pane_id: pane.pane_id });
   assert.equal(described.action_supported, true);

@@ -10,6 +10,7 @@ export type Observation = 'not_started' | 'observing' | 'completion_observed' | 
 export interface Control {
   proposal_id: string; job_id: string; pane_session_id: string; terminal_id: string;
   payload_digest: string; mode_revision: number; operation: 'execute' | 'interrupt';
+  original_proposal_id: string | null;
   authorization: string; approval_expires: number | null; approval_consumed: boolean;
   submission_state: Submission; observation_state: Observation; exit_code: number | null;
   created_at: number; updated_at: number; hold_reason: string | null; recovery: string | null;
@@ -120,6 +121,11 @@ export class Ledger {
     return (this.db.prepare('SELECT proposal FROM holds WHERE terminal = ?').get(terminal) as { proposal: string } | undefined)?.proposal;
   }
   count(job: string, operation: string) { return (this.db.prepare('SELECT count(*) AS n FROM intents WHERE job = ? AND operation = ?').get(job, operation) as { n: number }).n; }
+  requireInterruptTarget(id: string | undefined, terminal: string, session: string) {
+    const original = id ? this.get(id) : undefined;
+    if (!original || original.operation !== 'execute' || original.terminal_id !== terminal || original.pane_session_id !== session || this.held(terminal) !== id || !['observing', 'outcome_unknown'].includes(original.observation_state)) throw new BrokerError('original_action_unavailable');
+    return original;
+  }
   intent(control: Control) {
     this.verify(); this.fault('before_intent');
     try {
@@ -131,6 +137,7 @@ export class Ledger {
         }
         if (this.db.prepare('SELECT id FROM consumed WHERE id = ?').get(control.proposal_id)) throw new BrokerError('proposal_consumed');
         if (control.operation === 'execute' && this.held(control.terminal_id)) throw new BrokerError('terminal_held');
+        if (control.operation === 'interrupt') this.requireInterruptTarget(control.original_proposal_id ?? undefined, control.terminal_id, control.pane_session_id);
         if (this.count(control.job_id, control.operation) >= (control.operation === 'execute' ? 3 : 1)) throw new BrokerError('action_budget_exhausted');
         this.db.prepare('INSERT INTO intents VALUES (?, ?, ?, ?, ?, ?)').run(control.proposal_id, control.job_id, control.terminal_id, control.operation, control.updated_at, JSON.stringify(control));
         this.db.prepare('INSERT INTO consumed VALUES (?, ?)').run(control.proposal_id, control.payload_digest);
@@ -145,13 +152,28 @@ export class Ledger {
   update(control: Control, release = false) {
     this.verify();
     try { this.commit(() => {
+      if (release && !control.recovery && control.operation === 'execute') {
+        const pending = (this.db.prepare('SELECT control FROM intents WHERE terminal = ? AND operation = ?').all(control.terminal_id, 'interrupt') as Array<{ control: string }>).some(row => {
+          const interrupt: Control = JSON.parse(row.control);
+          return interrupt.original_proposal_id === control.proposal_id && ['dispatching', 'unknown'].includes(interrupt.submission_state);
+        });
+        if (pending) { release = false; control.hold_reason = 'interrupt_unconfirmed'; }
+      }
       this.db.prepare('UPDATE intents SET updated = ?, control = ? WHERE id = ?').run(control.updated_at, JSON.stringify(control), control.proposal_id);
       if (release) this.db.prepare('DELETE FROM holds WHERE terminal = ? AND proposal = ?').run(control.terminal_id, control.proposal_id);
     }); } catch { throw new BrokerError('ledger_commit_failed'); }
   }
+  recover(id: string, terminal: string) {
+    const receipt = this.get(id);
+    if (!receipt || this.held(terminal) !== id || receipt.terminal_id !== terminal) throw new BrokerError('hold_changed');
+    receipt.recovery = 'user_verified_ready_shell'; receipt.hold_reason = null; receipt.updated_at = this.now();
+    if (receipt.observation_state === 'observing') receipt.observation_state = 'outcome_unknown';
+    this.update(receipt, true);
+    return receipt;
+  }
   summary() {
     this.verify();
-    this.commit(() => this.db.prepare('DELETE FROM intents WHERE updated < ? AND id NOT IN (SELECT proposal FROM holds)').run(this.now() - 7 * 86400000));
+    this.commit(() => this.db.prepare("DELETE FROM intents WHERE updated < ? AND id NOT IN (SELECT proposal FROM holds) AND (operation != 'interrupt' OR json_extract(control, '$.original_proposal_id') NOT IN (SELECT proposal FROM holds))").run(this.now() - 7 * 86400000));
     const counts = this.db.prepare('SELECT (SELECT count(*) FROM intents) AS control_record_count, (SELECT count(*) FROM consumed) AS consumed_proposal_count, (SELECT count(*) FROM holds) AS held_terminal_count').get() as { control_record_count: number; consumed_proposal_count: number; held_terminal_count: number };
     return { ...counts, receipts: (this.db.prepare('SELECT control FROM intents ORDER BY updated DESC LIMIT 32').all() as Array<{ control: string }>).map(row => JSON.parse(row.control)), held_terminals: this.db.prepare('SELECT h.terminal, h.proposal FROM holds h JOIN intents i ON i.id = h.proposal ORDER BY i.updated DESC, h.terminal LIMIT 32').all(), held_terminals_truncated: counts.held_terminal_count > 32, tombstone_days: 7 };
   }

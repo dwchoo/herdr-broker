@@ -1,0 +1,192 @@
+{
+  "at": "2026-09-15T12:33:00.718Z",
+  "node": "24.19.0",
+  "herdr": "0.9.0",
+  "protocol": 22,
+  "target": {
+    "pane_id": "wA:p1",
+    "terminal_id": "term_65b84c002bf79b",
+    "workspace_id": "wA",
+    "tab_id": "wA:t1"
+  },
+  "boundary": "actual disposable Herdr POSIX shell, actual interactive Broker console, public MCP; observing proxy",
+  "busy": {
+    "target": {
+      "pane_id": "wA:p1",
+      "terminal_id": "term_65b84c002bf79b",
+      "workspace_id": "wA",
+      "tab_id": "wA:t1"
+    },
+    "pane_session_id": "2c2b50a0-8610-429e-b645-39bbfd38765c",
+    "mode_revision": 1,
+    "action_mode": 2,
+    "shell_ready": false,
+    "shell_pid": 93460,
+    "foreground_process_group_id": 93477,
+    "held_proposal_id": "ce2fe940-2201-4811-bfe5-59c6afb42f9e"
+  },
+  "interrupt": {
+    "proposal_id": "725dc752-7539-4c14-9a61-76787ffcf1f3",
+    "job_id": "80985a70-ae6f-4bfa-a65a-6994a6e53012",
+    "pane_session_id": "2c2b50a0-8610-429e-b645-39bbfd38765c",
+    "terminal_id": "term_65b84c002bf79b",
+    "payload_digest": "27d9765ee1663ce2755535b30984fa84e126548b772cacedcb3fac282d5cafb3",
+    "mode_revision": 1,
+    "operation": "interrupt",
+    "original_proposal_id": "ce2fe940-2201-4811-bfe5-59c6afb42f9e",
+    "authorization": "parent_risk_review",
+    "approval_expires": null,
+    "approval_consumed": false,
+    "submission_state": "accepted",
+    "observation_state": "not_applicable",
+    "exit_code": null,
+    "created_at": 1789475578428,
+    "updated_at": 1789475578439,
+    "hold_reason": null,
+    "recovery": null,
+    "target": {
+      "pane_id": "wA:p1",
+      "terminal_id": "term_65b84c002bf79b",
+      "workspace_id": "wA",
+      "tab_id": "wA:t1"
+    },
+    "contract": "action.v1",
+    "evidence": null,
+    "observation": null,
+    "budget": {
+      "deadline_ms": 300000,
+      "deadline_remaining_ms": 297666,
+      "parent_payload_bytes_limit": 16384,
+      "parent_payload_bytes_used": 6601,
+      "parent_payload_bytes_remaining": 9783
+    }
+  },
+  "original": {
+    "proposal_id": "ce2fe940-2201-4811-bfe5-59c6afb42f9e",
+    "job_id": "80985a70-ae6f-4bfa-a65a-6994a6e53012",
+    "pane_session_id": "2c2b50a0-8610-429e-b645-39bbfd38765c",
+    "terminal_id": "term_65b84c002bf79b",
+    "payload_digest": "a6d21d987a2af224c12f83b7b0a1fe857ec75d16d068f73abe8a7be35e04d5e1",
+    "mode_revision": 1,
+    "operation": "execute",
+    "original_proposal_id": null,
+    "authorization": "parent_risk_review",
+    "approval_expires": null,
+    "approval_consumed": false,
+    "submission_state": "accepted",
+    "observation_state": "outcome_unknown",
+    "exit_code": null,
+    "created_at": 1789475577400,
+    "updated_at": 1789475578911,
+    "hold_reason": "observation_deadline",
+    "recovery": null,
+    "target": {
+      "pane_id": "wA:p1",
+      "terminal_id": "term_65b84c002bf79b",
+      "workspace_id": "wA",
+      "tab_id": "wA:t1"
+    },
+    "contract": "action.v1",
+    "evidence": null,
+    "observation": {
+      "method": "bounded_passive_marker",
+      "truncated": false,
+      "baseline_digest": "0072bc9ebe89d5808456524856f1cad01eabd6cdf150525cc5412a3c10004f6a"
+    },
+    "budget": {
+      "deadline_ms": 300000,
+      "deadline_remaining_ms": 296064,
+      "parent_payload_bytes_limit": 16384,
+      "parent_payload_bytes_used": 7690,
+      "parent_payload_bytes_remaining": 8694
+    }
+  },
+  "ready": {
+    "target": {
+      "pane_id": "wA:p1",
+      "terminal_id": "term_65b84c002bf79b",
+      "workspace_id": "wA",
+      "tab_id": "wA:t1"
+    },
+    "pane_session_id": "2c2b50a0-8610-429e-b645-39bbfd38765c",
+    "mode_revision": 1,
+    "action_mode": 2,
+    "shell_ready": true,
+    "shell_pid": 93460,
+    "foreground_process_group_id": 93460,
+    "held_proposal_id": "ce2fe940-2201-4811-bfe5-59c6afb42f9e"
+  },
+  "recovered": {
+    "proposal_id": "ce2fe940-2201-4811-bfe5-59c6afb42f9e",
+    "job_id": "80985a70-ae6f-4bfa-a65a-6994a6e53012",
+    "pane_session_id": "2c2b50a0-8610-429e-b645-39bbfd38765c",
+    "terminal_id": "term_65b84c002bf79b",
+    "payload_digest": "a6d21d987a2af224c12f83b7b0a1fe857ec75d16d068f73abe8a7be35e04d5e1",
+    "mode_revision": 2,
+    "operation": "execute",
+    "original_proposal_id": null,
+    "authorization": "parent_risk_review",
+    "approval_expires": null,
+    "approval_consumed": false,
+    "submission_state": "accepted",
+    "observation_state": "outcome_unknown",
+    "exit_code": null,
+    "created_at": 1789475577400,
+    "updated_at": 1789475580262,
+    "hold_reason": null,
+    "recovery": "user_verified_ready_shell",
+    "new_job_required": true
+  },
+  "final": {
+    "proposal_id": "bdecacb8-14a4-4adb-901b-35906a85fa82",
+    "job_id": "d0b5ed49-0a45-4e04-92f3-cdd4c2752fac",
+    "pane_session_id": "2c2b50a0-8610-429e-b645-39bbfd38765c",
+    "terminal_id": "term_65b84c002bf79b",
+    "payload_digest": "52877204772f58ac67ce448d6ea8a51344db4fbbef344c570ea3dfdcab1da575",
+    "mode_revision": 2,
+    "operation": "execute",
+    "original_proposal_id": null,
+    "authorization": "parent_risk_review",
+    "approval_expires": null,
+    "approval_consumed": false,
+    "submission_state": "accepted",
+    "observation_state": "completion_observed",
+    "exit_code": 0,
+    "created_at": 1789475580401,
+    "updated_at": 1789475580531,
+    "hold_reason": null,
+    "recovery": null,
+    "target": {
+      "pane_id": "wA:p1",
+      "terminal_id": "term_65b84c002bf79b",
+      "workspace_id": "wA",
+      "tab_id": "wA:t1"
+    },
+    "contract": "action.v1",
+    "evidence": {
+      "items": [
+        {
+          "evidence_id": "4e5c8c5c-7fd3-4a52-9d92-92316dc73630:L0024",
+          "text": "__HERDR_END_5b16fc55f49ccd06e3b4e8aebb7715d5__:0",
+          "offset_bytes": 0
+        }
+      ],
+      "truncated": false,
+      "next": null
+    },
+    "observation": {
+      "method": "bounded_passive_marker",
+      "truncated": false,
+      "baseline_digest": "5a98a6f714157060b8850fbf6094e9b32ca2ee42dfd89351e2e3d46925db56c8"
+    },
+    "budget": {
+      "deadline_ms": 300000,
+      "deadline_remaining_ms": 299557,
+      "parent_payload_bytes_limit": 16384,
+      "parent_payload_bytes_used": 8516,
+      "parent_payload_bytes_remaining": 7868
+    }
+  },
+  "wire_attempts": 3,
+  "automatic_ctrl_c": 0
+}

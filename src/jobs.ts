@@ -92,6 +92,10 @@ export class Jobs {
       const observedSession = await this.sessions.observe(verified, job.controller.signal, !!job.scope);
       if (!this.active(job)) return;
       const session = observedSession.id;
+      if (observedSession.recoveryObjective) {
+        if (observedSession.recoveryObjective !== job.objectiveDigest) throw new BrokerError('recovery_objective_required');
+        delete observedSession.recoveryObjective;
+      }
       const sequence = job.sequence + 1;
       const observedAt = this.now();
       const snapshot = prepareSnapshot(read.text, session, read.truncated, this.patterns, observedAt, sequence);
@@ -144,6 +148,9 @@ export class Jobs {
   actionContext(owner: string, id: string) {
     const job = this.owned(owner, id);
     return { id: job.id, pane_id: job.paneId, objective: job.objective, objectiveDigest: job.objectiveDigest, session: job.session, scope: job.scope, active: this.active(job), signal: job.controller.signal };
+  }
+  stopPane(paneId: string) {
+    for (const job of this.jobs.values()) if (job.paneId === paneId) this.stop(job, 'cancelled');
   }
   retainAction(owner: string, id: string, bytes: number, controlBytes: number, purge: () => void) {
     const job = this.owned(owner, id);

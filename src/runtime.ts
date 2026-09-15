@@ -8,9 +8,11 @@ const encodeConsole = (value: unknown) => JSON.stringify(value).replace(/[\u007f
 
 interface ConsoleCore { socketPath: string; close(): Promise<void>; summary(): object; purge(id: string): object; actions?: Actions }
 export function startConsole(core: ConsoleCore, input: Readable, output: Writable) {
-  const commands = ['status', 'purge <job_id>', 'purge all', 'review <proposal_id>', 'approve <proposal_id>', 'reject <proposal_id>', 'revoke <proposal_id>', 'mode <session_id> <1|2|3>', 'help', 'quit'];
+  const commands = ['status', 'purge <job_id>', 'purge all', 'review <proposal_id>', 'approve <proposal_id>', 'reject <proposal_id>', 'revoke <proposal_id>', 'mode <session_id> <1|2|3>', 'inspect <pane_id>', 'recover <original_proposal_id> <new objective>', 'help', 'quit'];
   let buffer = '';
   let reviewed: { id: string; digest: string } | undefined;
+  let inspected: Awaited<ReturnType<Actions['inspect']>> | undefined;
+  let pending = Promise.resolve();
   const interactive = input === process.stdin && output === process.stdout && isatty(0) && isatty(1);
   let closing = false;
   const close = async () => {
@@ -20,16 +22,25 @@ export function startConsole(core: ConsoleCore, input: Readable, output: Writabl
     input.destroy();
     await core.close();
   };
-  const onData = (chunk: Buffer | string) => {
-    buffer += chunk.toString();
-    if (buffer.length > 1024) { buffer = ''; output.write('{"error":"console_input_too_large"}\n'); return; }
-    let end;
-    while ((end = buffer.indexOf('\n')) >= 0) {
-      const command = buffer.slice(0, end).trim();
-      buffer = buffer.slice(end + 1);
-      if (command === 'quit') { void close(); return; }
+  const run = async (command: string) => {
+      if (closing) return;
+      if (command === 'quit') { await close(); return; }
       const purge = /^purge (all|[0-9a-f-]{36})$/.exec(command);
       try {
+        const inspect = /^inspect (\S{1,256})$/.exec(command);
+        const recover = /^recover ([0-9a-f-]{36}) (.+)$/.exec(command);
+        if (inspect || recover) {
+          if (!interactive || !core.actions) throw new BrokerError('interactive_console_required');
+          let response;
+          if (inspect) { inspected = await core.actions.inspect(inspect[1]!); response = inspected; }
+          else {
+            if (!inspected) throw new BrokerError('inspect_required');
+            const previous = inspected; inspected = undefined; reviewed = undefined;
+            response = await core.actions.recover(previous, recover![1]!, recover![2]!);
+          }
+          output.write(encodeConsole(response) + '\n');
+          return;
+        }
         const action = /^(review|approve|reject|revoke|mode) ([0-9a-f-]{36})(?: ([123]))?$/.exec(command);
         if (action) {
           if (!interactive || !core.actions) throw new BrokerError('interactive_console_required');
@@ -41,14 +52,23 @@ export function startConsole(core: ConsoleCore, input: Readable, output: Writabl
           else if (['approve', 'reject'].includes(operation!) && reviewed && reviewed.id === id) { response = core.actions.approve(id!, reviewed.digest, operation === 'reject'); reviewed = undefined; }
           else throw new BrokerError('review_required');
           output.write(encodeConsole(response) + '\n');
-          continue;
+          return;
         }
         output.write(encodeConsole(command === 'status' ? core.summary() : purge ? core.purge(purge[1]!) : { commands, action_supported: false }) + '\n');
       } catch (error) { output.write(encodeConsole({ error: error instanceof BrokerError ? error.code : 'internal_error' }) + '\n'); }
+  };
+  const onData = (chunk: Buffer | string) => {
+    buffer += chunk.toString();
+    if (buffer.length > 1024) { buffer = ''; output.write('{"error":"console_input_too_large"}\n'); return; }
+    let end;
+    while ((end = buffer.indexOf('\n')) >= 0) {
+      const command = buffer.slice(0, end).trim();
+      buffer = buffer.slice(end + 1);
+      pending = pending.then(() => run(command));
     }
   };
   input.on('data', onData);
-  input.once('end', () => void close());
+  input.once('end', () => void pending.then(close));
   input.once('error', () => void close());
   output.write(encodeConsole({ status: 'ready', socket: core.socketPath, commands }) + '\n');
   return close;

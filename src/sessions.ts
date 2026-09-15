@@ -8,7 +8,7 @@ export const scopeSchema = z.strictObject({ profile: z.literal('local_posix'), c
 export type Scope = z.infer<typeof scopeSchema>;
 export const targetSchema = z.strictObject({ pane_id: z.string().min(1).max(256), terminal_id: z.string().min(1).max(256), workspace_id: z.string().min(1).max(256), tab_id: z.string().min(1).max(256) });
 export type Target = z.infer<typeof targetSchema>;
-export interface Session { id: string; target: Target; process: ProcessInfo; fingerprint: string; mode: number; revision: number; active: boolean; bytes: number }
+export interface Session { id: string; target: Target; process: ProcessInfo; fingerprint: string; mode: number; revision: number; active: boolean; bytes: number; recoveryObjective?: string }
 export const targetOf = (pane: Pane): Target => ({ pane_id: pane.pane_id, terminal_id: pane.terminal_id, workspace_id: pane.workspace_id, tab_id: pane.tab_id });
 export const sameTarget = (a: Target, b: Target) => JSON.stringify(a) === JSON.stringify(b);
 export class Sessions {
