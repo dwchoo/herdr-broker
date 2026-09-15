@@ -1,5 +1,7 @@
 # Issue 24: 실제 SSH 통합과 최종 MVP 검증
 
+이 문서의 설치 acceptance와 tarball 재현 절차는 #24 완료 시점 `ae7e0f5` 및 [당시 artifact receipt](final-artifact.json)에 대한 기록이다. 이후 Herdr 내부 실행 제한이 추가됐다. 기존 `installed-harness`는 설정만 proxy endpoint로 바꾸므로 현재 checkout의 `installed-operations`·`ssh-installed` 실행은 새 문맥 검사에서 거부된다. 현재 checkout은 [project skill의 검증 절차와 결과](project-skill-herdr-context.md)를 사용하며, 아래 과거 설치 결과를 새 tarball의 통과 근거로 삼지 않는다.
+
 ## 구현 전 계약
 
 실행 환경은 이 Mac의 disposable localhost OpenSSH endpoint `127.0.0.1:65345`, OS 사용자 `dwchoo`, key-only 인증, 새 Herdr workspace의 SSH `-tt` POSIX `/bin/sh`다. host/client key와 known_hosts는 소유 임시 directory에만 두고 기존 SSH 설정·authorized_keys를 변경하지 않는다. 원격 cwd는 테스트가 만든 임시 directory다. 원격에는 AI runtime이나 AI credential을 설치하지 않는다. 이 localhost 검증이 임의 Linux host·네트워크 장애 조합을 보장하지는 않는다.

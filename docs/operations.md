@@ -2,11 +2,27 @@
 
 ## 필요한 환경
 
-검증 기준은 macOS arm64, Node 24, Herdr 0.9.0/protocol 22, Codex CLI 0.154.0이다. Worker는 `gpt-5.6-luna`/low를 사용하며 로컬 Codex 계정의 기존 인증으로 실행한다. 원격에 AI runtime이나 credential을 설치하지 않는다. SSH 실행은 사용자 준비 확인이 필요한 `ssh_posix` profile로 제공한다. 검증 범위는 [SSH acceptance](implementation/issue-24-ssh-acceptance.md)에서 확인한다.
+검증 기준은 macOS arm64, Node 24, Herdr 0.9.0/protocol 22, Codex CLI 0.154.0이다. Worker는 `gpt-5.6-luna`/low를 사용하며 로컬 Codex 계정의 기존 인증으로 실행한다. 원격에 AI runtime이나 credential을 설치하지 않는다. SSH 실행은 사용자 준비 확인이 필요한 `ssh_posix` profile로 제공한다. [SSH acceptance](implementation/issue-24-ssh-acceptance.md)는 #24 artifact의 기록이며, 현재 checkout의 실행 문맥과 검증 절차는 [project skill 검증](implementation/project-skill-herdr-context.md)을 따른다.
+
+## Herdr 안의 기본 배치
+
+사용자는 **Herdr의 Parent Pane에서 Codex와 대화하고, 다른 Target Pane의 SSH 또는 로컬 shell을 진단·조작**한다. Broker console도 같은 로컬 Herdr의 별도 pane이나 tab에서 실행한다.
+
+| 위치 | 실행할 것 |
+| --- | --- |
+| Parent Pane | Broker MCP에 연결한 Codex CLI |
+| Target Pane | SSH 또는 로컬 shell |
+| Broker console pane/tab | `herdr-broker serve`, 승인·모드 변경·복구 |
+
+Worker는 Broker가 필요할 때 실행하는 로컬 child process다. 별도 Worker Pane을 수동으로 열 필요는 없다.
 
 ## 설치·기동
 
-Node 24를 PATH에 놓고 package tarball을 별도 설치 영역에 설치한다.
+이 저장소의 checkout에서는 `.agents/skills/herdr-broker/`의 project skill을 기본 진입점으로 사용한다. Node 24로 `node .agents/skills/herdr-broker/scripts/run.mjs check`를 실행해 Herdr 문맥을 확인한다. 같은 helper의 `serve`는 Broker console, `parent`는 이번 실행에만 MCP를 연결한 Codex를 시작한다. helper는 이 프로젝트 안의 cwd와 실제 Herdr pane을 요구한다.
+
+Parent helper는 이번 Codex 실행에 `on-request` 승인 정책을 적용하고 기존 승인 검토기 설정을 사용한다. Codex의 도구 승인과 Broker의 Action Mode는 각각 적용된다. `approval_policy=never`에서는 승인이 필요한 MCP 변경 도구가 실행 전에 거부된다.
+
+tarball을 별도로 설치하는 경우에는 Herdr의 로컬 shell에서 Node 24를 PATH에 놓고 다음을 실행한다. 아래 `serve`는 Broker console로 사용할 pane/tab에서 실행한다.
 
 ```sh
 npm install --prefix /absolute/install /absolute/herdr-broker-0.1.0.tgz
@@ -14,7 +30,16 @@ npm install --prefix /absolute/install /absolute/herdr-broker-0.1.0.tgz
 /absolute/install/node_modules/.bin/herdr-broker serve
 ```
 
-`serve` terminal을 열어 두고 다른 terminal의 Codex를 MCP에 연결한다. MCP 설정의 command는 설치한 executable의 절대 경로, args는 `["mcp"]`다. `mcp`는 실행 중인 core에 연결하며 자체 core를 만들지 않는다. Node 26은 거부한다. Docker는 사용하지 않는다.
+Broker console을 열어 두고 **같은 로컬 Herdr의 Parent Pane**에서 Codex를 MCP에 연결한다. Parent Pane에도 Node 24를 PATH에 놓는다. 다음 인자는 이번 Codex 실행에만 MCP 설정을 적용한다.
+
+```sh
+codex -a on-request \
+  -c 'mcp_servers.herdr_broker.command="/absolute/install/node_modules/.bin/herdr-broker"' \
+  -c 'mcp_servers.herdr_broker.args=["mcp"]' \
+  -c 'mcp_servers.herdr_broker.env_vars=["HERDR_ENV","HERDR_PANE_ID","HERDR_WORKSPACE_ID","HERDR_TAB_ID","HERDR_SOCKET_PATH"]'
+```
+
+MCP 설정의 command는 설치한 executable의 절대 경로, args는 `["mcp"]`다. Herdr가 주입한 환경변수를 MCP child에 전달하고, child는 실제 pane과 process 계층을 재검증한다. `mcp`는 실행 중인 core에 연결하며 자체 core를 만들지 않는다. Node 26은 거부한다. Docker는 사용하지 않는다.
 
 기본 설정 파일은 OS 계정 home의 `~/.config/herdr-broker/config.json`이며 없어도 기본 경로를 사용한다. 사용자 소유 regular file, mode 0600이어야 한다.
 
@@ -101,6 +126,8 @@ purge는 Snapshot·report·Evidence·pending payload를 제거한다. 제거된 
 | 오류 | 확인할 내용 |
 | --- | --- |
 | `node_24_required` | Node 24로 설치한 executable 실행 |
+| `herdr_context_required` / `herdr_context_mismatch` | 이 프로젝트의 로컬 Herdr pane에서 시작. 환경변수를 수동으로 지정하지 않고 현재 pane의 문맥으로 Parent를 다시 실행 |
+| `project_context_required` | project skill이 있는 저장소 안의 cwd에서 helper 실행 |
 | `herdr_unsupported` / `worker_unsupported` | pinned Herdr/Codex version과 binary 경로 |
 | `core_unavailable` / `authority_busy` | 같은 endpoint의 `serve` terminal과 기존 core |
 | `config_invalid` / `state_permissions` | 소유권·regular file·권한·strict 설정 field |

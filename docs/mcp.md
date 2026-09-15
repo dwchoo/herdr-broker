@@ -1,6 +1,8 @@
 # Herdr Broker MCP
 
-This package provides local pane context and restricted Codex Worker diagnosis. Start `herdr-broker serve` in a user terminal, then connect Codex to `herdr-broker mcp` over stdio. The facade requires an existing core and never starts one automatically.
+This package provides local pane context and restricted Codex Worker diagnosis. Run the Parent and Broker console in local Herdr panes. The project's `herdr-broker` skill starts a console and connects its Parent over stdio. The facade requires an existing core and never starts one automatically.
+
+Production `serve`, `mcp`, and `doctor` verify the injected Herdr context against the configured canonical socket, live pane mapping, and OS process ancestry. An outside caller is rejected even if it copies a real pane's environment. The project helper also requires a cwd within its own project. These entrypoint checks do not provide OS isolation against a same-user process deliberately bypassing the CLI and writing the internal socket protocol directly.
 
 ## Supported workflow
 
@@ -22,15 +24,12 @@ Snapshot limits are 1,000 physical rows and 64 KiB. Jobs last at most 300 second
 
 ## Install and connect
 
-Use Node 24 on macOS arm64 and a running Herdr 0.9.0 server (protocol 22):
+Use Node 24 on macOS arm64 and a running Herdr 0.9.0 server (protocol 22). From this repository checkout, in a local Herdr console pane:
 
 ```sh
 npm ci
-npm run typecheck
-npm test
-npm pack
-npm install --global ./herdr-broker-0.1.0.tgz
-herdr-broker serve
+npm run build
+node .agents/skills/herdr-broker/scripts/run.mjs serve
 ```
 
 The default endpoint is the OS account's `~/.config/herdr/herdr.sock`. An optional owner-only configuration file (mode 0600) can select another endpoint and literal redaction patterns:
@@ -44,13 +43,13 @@ The default endpoint is the OS account's `~/.config/herdr/herdr.sock`. An option
 
 Patterns are case-sensitive literal strings, limited to 16 entries of 256 characters. They are not regular expressions. Directory and state locations are derived from the OS account, not the facade's `HOME` or `XDG_*` environment. There is no CLI or MCP option to choose a different state directory.
 
-In Codex, register the installed command:
+In the Parent shell pane, start Codex with this project's MCP connection:
 
 ```sh
-codex mcp add herdr-broker -- herdr-broker mcp
+node .agents/skills/herdr-broker/scripts/run.mjs parent
 ```
 
-Make sure `node` resolves to Node 24 in both the user terminal and Codex's environment. Alternatively configure an absolute Node 24 executable as the MCP command and pass the absolute installed `dist/cli.js` path and `mcp` as arguments. Codex uses the [MCP server configuration](https://learn.chatgpt.com/docs/extend/mcp?surface=cli).
+The helper passes `herdr_broker` MCP settings only to that Codex invocation, using its absolute Node 24 executable and the project helper's `mcp` command. It forwards only the verified Herdr context fields and leaves the global Codex configuration unchanged. The Parent uses `on-request` approval policy with the existing approval reviewer so state-changing MCP calls can undergo approval; `never` rejects calls that require approval. Codex tool approval and Broker Action Mode both apply. For a separately installed tarball, follow [operations](operations.md); the packaged CLI requires the same real Herdr process context. Codex uses the [MCP server configuration](https://learn.chatgpt.com/docs/extend/mcp?surface=cli).
 
 ## Tool arguments and results
 

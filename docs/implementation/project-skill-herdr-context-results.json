@@ -1,0 +1,92 @@
+{
+  "context": {
+    "ok": true,
+    "project": "/Users/dwchoo/project/herdr-broker",
+    "pane_id": "w2:p1"
+  },
+  "doctor": {
+    "ok": true,
+    "runtime": {
+      "node": "24.19.0",
+      "platform": "darwin",
+      "arch": "arm64",
+      "sqlite": "3.53.4",
+      "supported": true
+    },
+    "herdr": {
+      "ok": true,
+      "version": "0.9.0",
+      "protocol": 22
+    },
+    "worker": {
+      "ok": true,
+      "cli_version": "0.154.0",
+      "model_requested": "gpt-5.6-luna",
+      "effort": "low",
+      "model_observed": null,
+      "profile": "restricted_diagnosis",
+      "model_availability": "not_probed",
+      "inference_performed": false
+    },
+    "state": {
+      "ok": true,
+      "directory": "/Users/dwchoo/.local/state/herdr-broker/53aca296117e8d2a5bfccd93",
+      "initialized": true,
+      "owner_only": true,
+      "writable": true,
+      "ledger_integrity": "checked_by_core_on_use"
+    },
+    "profiles": {
+      "passive": true,
+      "local_posix": true,
+      "ssh_posix": true,
+      "ssh_readiness": "interactive_confirmation_required"
+    },
+    "limits": {
+      "parent_payload_bytes": 16384,
+      "worker_calls": 4,
+      "ordinary_actions": 3,
+      "interrupts": 1
+    },
+    "privacy": {
+      "mode": "broker_memory",
+      "complete_no_store": false
+    },
+    "pane_input_attempts": 0
+  },
+  "mcp_tools": [
+    "pane_describe",
+    "job_start",
+    "job_status",
+    "job_wait",
+    "job_cancel",
+    "action_propose",
+    "action_submit",
+    "action_status",
+    "session_lower_mode",
+    "evidence_get"
+  ],
+  "interactive_parent_action": {
+    "parent_pane_id": "w2:p1",
+    "target_pane_id": "w2:p2",
+    "tab_id": "w2:t1",
+    "command": "echo 'hello world'",
+    "cwd": "/Users/dwchoo",
+    "job_id": "1830ec0f-0120-45ef-ac3b-7d3af5c7c599",
+    "proposal_id": "68954a91-3bbd-4be6-abdf-eea4e0a09c5f",
+    "action_mode": 2,
+    "authorization_basis": "parent_risk_review",
+    "observation_state": "completion_observed",
+    "exit_code": 0,
+    "evidence_id": "cfc60a95-d9f9-4170-a6f5-4086c2f49a7d:L0101",
+    "output": "hello world",
+    "observed_begin": "__HERDR_BEGIN_23897ec62ad8e0c0771940e30b85ab4b__",
+    "observed_end": "__HERDR_END_23897ec62ad8e0c0771940e30b85ab4b__:0",
+    "job_ended": true,
+    "job_phase": "cancelled",
+    "parent_payload_bytes_used": 12765,
+    "verification": "Parent MCP calls and final receipt report observed through Herdr agent read; fresh target BEGIN/output/END independently observed through Herdr pane read.",
+    "codex_approval_policy": "on-request",
+    "approvals_reviewer": "auto_review"
+  }
+}
