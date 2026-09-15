@@ -194,7 +194,8 @@ test('An observed shell change invalidates old proposals even when replacement S
   const first = await job(client), proposal = await client.call('action_propose', action(first.job_id));
   assert.equal(proposal.authorization, 'parent_risk_review');
   h.state.respond = (socket, request, response) => {
-    if (request.method === 'pane.process_info') response.result.process_info = { ...processInfo, shell_pid: 1001, foreground_processes: Array.from({ length: 20 }, (_, n) => ({ pid: 1001 + n, name: 'sh', argv0: 'x'.repeat(4000) })) };
+    const shellPid = process.pid + 1000;
+    if (request.method === 'pane.process_info') response.result.process_info = { ...processInfo, shell_pid: shellPid, foreground_processes: Array.from({ length: 20 }, (_, n) => ({ pid: shellPid + n, name: 'sh', argv0: 'x'.repeat(4000) })) };
     socket.write(JSON.stringify(response) + '\n');
   };
   assert.equal((await job(client)).error, 'memory_budget_exhausted');

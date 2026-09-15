@@ -52,6 +52,23 @@ Parent·controller·Target을 다른 tab으로 옮기면 기존 연결이나 소
 
 `redaction_patterns`는 정규식이 아닌 literal 문자열이다. 재시작 때 적용한다. HOME/XDG·MCP 인자·`--state-dir`로 state 영역을 바꿀 수 없다. core는 OS 계정 home의 `~/.local/state/herdr-broker/<endpoint와 Console ID의 digest>/`를 사용한다. Console 등록 정보는 같은 root의 `consoles/`에 저장한다. directory는 0700, DB·identity·core socket은 0600이다.
 
+## Console 상태판
+
+interactive terminal에서는 Console이 실시간 상태판으로 열린다. Parent → Console → Target은 소유 범위를 표시하며, 각 Target의 진행 중인 Job·Worker 분석·Action은 별도 상태로 보인다. 입력 접수는 실행 완료와 구분하고, 승인 대기·미확정 실행의 보류를 요약한다. Parent 연결 끊김, pane 종료·이동·교체, 확인 실패는 각각 표시한다. `확인 필요`인 Mode는 현재 Pane Session을 아직 확인하지 못했다는 뜻이다.
+
+| 키 | 조작 |
+| --- | --- |
+| `↑↓`, `Enter` | Target 선택, 상세 보기. 상세에서는 스크롤 |
+| `a` | 선택한 Target의 proposal 검토 후 명시적 승인·거절 |
+| `m` | 현재 세션 확인 후 Mode 선택 |
+| `n` | 같은 tab에 소유 Target 추가 |
+| `l`, `?`, `Esc` | 최근 이벤트, 도움말, 돌아가기 |
+| `:` | 아래의 기존 명령 입력 (`status`, `inspect`, `ssh-ready`, `recover`, `quit` 등) |
+
+작은 pane에서는 연결과 승인·보류 상태가 먼저 보인다. 상세는 같은 Console 화면에서 열리며 pane 배치를 변경하지 않는다. 최근 상태 변경 50개는 core 실행 동안 유지되고, 영속 실행 기록은 상세에서 확인한다. 상태판을 켜 두는 것만으로 terminal 출력 수집·Job·Worker 실행·승인 소비가 발생하지 않는다. 자동 갱신은 입력 중인 명령이나 검토 대상을 바꾸지 않는다.
+
+기존 JSON 출력을 쓰려면 소유 controller에서 `herdr-broker serve <console_id> --format json`으로 시작한다. non-TTY와 `TERM=dumb`도 JSON을 사용하며 pipe에서는 사용자 승인·Mode 상향 권한을 얻지 못한다. 이미 실행 중인 core는 업데이트로 재시작하지 않는다. 다음 실행에 상태판이 적용되고 기존 terminal과 Control State를 이어받는다.
+
 ## 진단과 Action
 
 1. Parent가 exact pane을 `pane_describe`로 확인하고 목표를 정해 `job_start`한다.

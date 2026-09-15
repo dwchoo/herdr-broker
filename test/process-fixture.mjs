@@ -15,13 +15,17 @@ try {
     const consoles = new Consoles(config);
     let record = await consoles.get(config.consoleId);
     const scope = { workspace_id: record.workspace_id, tab_id: record.tab_id, terminals: new Map(record.panes.map(pane => [pane.pane_id, pane.terminal_id])) };
-    const core = await startCore({ ...config, scope, verifyParent: async paneId => { await consoles.verifyParent(record, paneId); await consoles.verify(record); } });
-    startConsole({ ...core, async addTerminal() {
+    const core = await startCore({ ...config, ...(config.clockPath && { now: () => Number(readFileSync(config.clockPath, 'utf8')) }), consoleInfo: record, scope, verifyParent: async paneId => { const parent = await consoles.verifyParent(record, paneId); await consoles.verify(record); return parent; } });
+    const close = startConsole({ ...core, async close() {
+      await core.close();
+      // Keep the controlling process alive briefly so the external PTY can inspect restored termios.
+      if (process.env.HB_TEST_CONSOLE_FORMAT === 'dashboard') await new Promise(resolve => setTimeout(resolve, 150));
+    }, async addTerminal() {
       record = await consoles.addTerminal(record);
       for (const pane of record.panes) scope.terminals.set(pane.pane_id, pane.terminal_id);
       return core.consoleStatus();
-    } }, process.stdin, process.stdout);
-    process.once('SIGTERM', () => void core.close());
+    } }, process.stdin, process.stdout, process.env.HB_TEST_CONSOLE_FORMAT === 'dashboard' ? undefined : 'json');
+    process.once('SIGTERM', () => void close());
   } else if (mode === 'serve') {
     const core = await startCore({ endpoint, stateRoot, ...(process.env.HB_TEST_SSH !== undefined && { sshEnabled: process.env.HB_TEST_SSH === 'true' }), ...(clockPath && { now: () => Number(readFileSync(clockPath, 'utf8')) }), ...(process.env.HB_TEST_REDACTION && { redactionPatterns: JSON.parse(process.env.HB_TEST_REDACTION) }), ...(process.env.HB_TEST_OBSERVATION_MS && { observationMs: Number(process.env.HB_TEST_OBSERVATION_MS) }), fault: point => {
       if (process.env.HB_TEST_FAULT === point) process.kill(process.pid, 'SIGKILL');
@@ -31,7 +35,7 @@ try {
         queueMicrotask(() => process.stdin.emit('data', command));
       }
     } });
-    startConsole(core, process.stdin, process.stdout);
-    process.once('SIGTERM', () => void core.close());
+    const close = startConsole(core, process.stdin, process.stdout, 'json');
+    process.once('SIGTERM', () => void close());
   } else await connectFacade(endpoint, process.stdin, process.stdout);
 } catch (error) { process.stderr.write(error.message + '\n'); process.exitCode = 1; }

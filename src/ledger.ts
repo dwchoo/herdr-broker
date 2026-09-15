@@ -171,11 +171,11 @@ export class Ledger {
     this.update(receipt, true);
     return receipt;
   }
-  summary() {
+  summary(maintain = true) {
     this.verify();
-    this.commit(() => this.db.prepare("DELETE FROM intents WHERE updated < ? AND id NOT IN (SELECT proposal FROM holds) AND (operation != 'interrupt' OR json_extract(control, '$.original_proposal_id') NOT IN (SELECT proposal FROM holds))").run(this.now() - 7 * 86400000));
+    if (maintain) this.commit(() => this.db.prepare("DELETE FROM intents WHERE updated < ? AND id NOT IN (SELECT proposal FROM holds) AND (operation != 'interrupt' OR json_extract(control, '$.original_proposal_id') NOT IN (SELECT proposal FROM holds))").run(this.now() - 7 * 86400000));
     const counts = this.db.prepare('SELECT (SELECT count(*) FROM intents) AS control_record_count, (SELECT count(*) FROM consumed) AS consumed_proposal_count, (SELECT count(*) FROM holds) AS held_terminal_count').get() as { control_record_count: number; consumed_proposal_count: number; held_terminal_count: number };
-    return { ...counts, receipts: (this.db.prepare('SELECT control FROM intents ORDER BY updated DESC LIMIT 32').all() as Array<{ control: string }>).map(row => JSON.parse(row.control)), held_terminals: this.db.prepare('SELECT h.terminal, h.proposal FROM holds h JOIN intents i ON i.id = h.proposal ORDER BY i.updated DESC, h.terminal LIMIT 32').all(), held_terminals_truncated: counts.held_terminal_count > 32, tombstone_days: 7 };
+    return { ...counts, receipts: (this.db.prepare('SELECT control FROM intents ORDER BY updated DESC LIMIT 32').all() as Array<{ control: string }>).map(row => JSON.parse(row.control) as Control), held_terminals: this.db.prepare('SELECT h.terminal, h.proposal FROM holds h JOIN intents i ON i.id = h.proposal ORDER BY i.updated DESC, h.terminal LIMIT 32').all(), held_terminals_truncated: counts.held_terminal_count > 32, tombstone_days: 7 };
   }
   close() {
     if (!this.db.open) return;

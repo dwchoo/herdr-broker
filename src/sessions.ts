@@ -11,6 +11,12 @@ export type Target = z.infer<typeof targetSchema>;
 export interface Session { id: string; target: Target; process: ProcessInfo; fingerprint: string; continuity: number; connection: { kind: 'local' | 'ssh'; local_ssh_process_ids: number[]; remote_identity_authenticated: false }; mode: number; revision: number; active: boolean; bytes: number; recoveryObjective?: string; ssh?: { cwd: string; ready: boolean } }
 export const targetOf = (pane: Pane): Target => ({ pane_id: pane.pane_id, terminal_id: pane.terminal_id, workspace_id: pane.workspace_id, tab_id: pane.tab_id });
 export const sameTarget = (a: Target, b: Target) => JSON.stringify(a) === JSON.stringify(b);
+function binding(pane: Pane, info: ProcessInfo, generation: number) {
+  const target = targetOf(pane);
+  const ssh = info.foreground_processes.filter(item => item.pid === info.foreground_process_group_id && posix.basename(item.argv0 ?? item.name) === 'ssh').map(item => [item.pid, createHash('sha256').update(JSON.stringify([item.name, item.argv0, item.argv])).digest('hex')] as const);
+  const connection: Session['connection'] = { kind: ssh.length ? 'ssh' : 'local', local_ssh_process_ids: ssh.map(item => item[0]), remote_identity_authenticated: false };
+  return { target, connection, fingerprint: JSON.stringify([target, info.shell_pid, generation, ssh.length ? [info.foreground_process_group_id, ssh] : null]) };
+}
 export class Sessions {
   private readonly current = new Map<string, Session>();
   private retain: (bytes: number) => void = () => {};
@@ -23,10 +29,7 @@ export class Sessions {
     catch (error) { if (signal?.aborted) throw error; const previous = this.current.get(pane.pane_id); if (previous) previous.active = false; throw error; }
     if (signal?.aborted) throw new BrokerError('cancelled');
     if (actionTarget && info.foreground_processes.some(item => item.pid === process.pid)) throw new BrokerError('console_target_forbidden');
-    const target = targetOf(pane);
-    const ssh = info.foreground_processes.filter(item => item.pid === info.foreground_process_group_id && posix.basename(item.argv0 ?? item.name) === 'ssh').map(item => [item.pid, createHash('sha256').update(JSON.stringify([item.name, item.argv0, item.argv])).digest('hex')] as const);
-    const connection: Session['connection'] = { kind: ssh.length ? 'ssh' : 'local', local_ssh_process_ids: ssh.map(item => item[0]), remote_identity_authenticated: false };
-    const fingerprint = JSON.stringify([target, info.shell_pid, this.herdr.generation, ssh.length ? [info.foreground_process_group_id, ssh] : null]);
+    const { target, connection, fingerprint } = binding(pane, info, this.herdr.generation);
     const previous = this.current.get(pane.pane_id);
     if (previous && previous.fingerprint !== fingerprint) previous.active = false;
     const bytes = 1024 + 2 * Buffer.byteLength(JSON.stringify([target, info, fingerprint])) + (previous?.fingerprint === fingerprint && previous.ssh ? 2 * Buffer.byteLength(previous.ssh.cwd) : 0);
@@ -41,6 +44,13 @@ export class Sessions {
     const session = [...this.current.values()].find(value => value.id === id && value.active && value.continuity === this.herdr.generation);
     if (!session) throw new BrokerError('session_changed');
     return session;
+  }
+  // A display observation cannot create, replace or invalidate an execution session.
+  peek(pane: Pane, info: ProcessInfo) {
+    const observed = binding(pane, info, this.herdr.generation);
+    const session = this.current.get(pane.pane_id);
+    const verified = session?.active && session.fingerprint === observed.fingerprint && this.herdr.currentEndpoint();
+    return { connection: observed.connection.kind, session: verified ? { pane_session_id: session.id, action_mode: session.mode, mode_revision: session.revision } : null };
   }
   mode(id: string, mode: number, human = false) {
     const session = this.get(id);

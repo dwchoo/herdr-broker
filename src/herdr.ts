@@ -4,7 +4,7 @@ import { lstatSync } from 'node:fs';
 import { z } from 'zod';
 
 export class BrokerError extends Error {
-  constructor(readonly code: string) { super(code); }
+  constructor(readonly code: string, readonly nativeCode?: string) { super(code); }
 }
 const id = z.string().min(1).max(256);
 const paneSchema = z.object({
@@ -24,6 +24,10 @@ export class Herdr {
   generation = 0;
   private endpointIdentity: string | undefined;
   constructor(private readonly endpoint: string, private readonly verifyAuthority: () => void, private readonly scope?: ConsoleScope) {}
+  currentEndpoint() {
+    try { const info = lstatSync(this.endpoint); return info.isSocket() && this.endpointIdentity === `${info.dev}:${info.ino}`; }
+    catch { return false; }
+  }
   requirePane(paneId: string) {
     if (this.scope && !this.scope.terminals.has(paneId)) throw new BrokerError('pane_outside_console');
   }
@@ -85,7 +89,7 @@ export class Herdr {
         try {
           const response = z.object({ id: z.literal(requestId), result: z.unknown().optional(), error: z.object({ code: z.string() }).optional() })
             .parse(JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(buffer.subarray(0, end))));
-          if (response.error) throw new BrokerError(submission && ['pane_not_found', 'invalid_key', 'pane_send_failed'].includes(response.error.code) ? response.error.code : 'herdr_rejected');
+          if (response.error) throw new BrokerError(submission && ['pane_not_found', 'invalid_key', 'pane_send_failed'].includes(response.error.code) ? response.error.code : 'herdr_rejected', response.error.code);
           if (!response.result) throw new BrokerError('herdr_invalid_response');
           this.verifyAuthority();
           finish(undefined, response.result);

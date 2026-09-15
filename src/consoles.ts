@@ -89,6 +89,7 @@ export class Consoles {
   async verifyParent(record: ConsoleRecord, paneId?: string) {
     const parent = paneId === undefined ? await this.parent() : await this.herdr.describe(paneId);
     if (parent.workspace_id !== record.workspace_id || parent.tab_id !== record.tab_id) throw new BrokerError('console_tab_required');
+    return parent;
   }
   socket(record: ConsoleRecord) { return join(stateDirectory(this.config.endpoint, this.config.stateRoot, record.console_id), 'core.sock'); }
   async create(label: string) {

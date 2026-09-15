@@ -24,6 +24,7 @@ export class Actions {
   private readonly submissions = new Map<string, Promise<object>>();
   private readonly wires = new Map<string, Promise<unknown>>();
   private readonly observers = new Set<Promise<void>>();
+  private readonly modeChanges = new Set<string>();
   private readonly stop = new AbortController();
   private readonly now: () => number;
   constructor(private readonly herdr: Herdr, private readonly jobs: Jobs, private readonly sessions: Sessions, private readonly options: ActionOptions) { this.now = options.now ?? Date.now; }
@@ -58,9 +59,8 @@ export class Actions {
     if (!proposal || proposal.owner !== owner || proposal.job !== job) throw new BrokerError('proposal_unavailable');
     return proposal;
   }
-  private decision(proposal: Proposal) {
-    const job = this.jobs.actionContext(proposal.owner, proposal.job);
-    if (!job.active) return { authorization: 'blocked', reason: 'job_ended' };
+  private decision(proposal: Proposal, active = this.jobs.actionContext(proposal.owner, proposal.job).active) {
+    if (!active) return { authorization: 'blocked', reason: 'job_ended' };
     if (!proposal.body) return { authorization: 'blocked', reason: 'payload_expired' };
     let session;
     try { session = this.sessions.get(proposal.session); } catch { return { authorization: 'blocked', reason: 'session_changed' }; }
@@ -76,9 +76,9 @@ export class Actions {
     if (session.mode === 2 && risk && ['read', 'bounded_change'].includes(risk.classification) && risk.inspected && !risk.uncertainties.length && !risk.categories.length) return { authorization: 'parent_risk_review', reason: null };
     return { authorization: 'approval_required', reason: risk ? 'policy_requires_approval' : 'risk_invalid_or_missing' };
   }
-  private view(proposal: Proposal) {
+  private view(proposal: Proposal, active?: boolean) {
     if (proposal.receipt) return { ...proposal.receipt, target: proposal.target, contract: 'action.v1', evidence: proposal.evidence ?? null, observation: proposal.observation ?? null };
-    return { job_id: proposal.job, proposal_id: proposal.id, pane_session_id: proposal.session, target: proposal.target, mode_revision: proposal.revision, operation: proposal.operation, original_proposal_id: proposal.original, payload_digest: proposal.digest, contract: 'action.v1', submission_state: 'not_submitted', observation_state: 'not_started', exit_code: null, ...this.decision(proposal), approval_expires_at: proposal.approval ? new Date(proposal.approval.expires).toISOString() : null };
+    return { job_id: proposal.job, proposal_id: proposal.id, pane_session_id: proposal.session, target: proposal.target, mode_revision: proposal.revision, operation: proposal.operation, original_proposal_id: proposal.original, payload_digest: proposal.digest, contract: 'action.v1', submission_state: 'not_submitted', observation_state: 'not_started', exit_code: null, ...this.decision(proposal, active), approval_expires_at: proposal.approval ? new Date(proposal.approval.expires).toISOString() : null };
   }
   jobFor(owner: string, id: string) {
     const proposal = this.proposals.get(id);
@@ -99,6 +99,7 @@ export class Actions {
   }
   private allowed(proposal: Proposal) {
     this.options.verifyAuthority();
+    if (this.modeChanges.has(proposal.session)) throw new BrokerError('mode_change_in_progress');
     if (this.stop.signal.aborted || !this.jobs.actionContext(proposal.owner, proposal.job).active) throw new BrokerError('job_ended');
     const decision = this.decision(proposal);
     if (!['user_approval', 'parent_risk_review', 'autonomous'].includes(decision.authorization)) throw new BrokerError(decision.reason ?? 'approval_required');
@@ -146,6 +147,7 @@ export class Actions {
         this.options.ledger.verify();
         if (this.stop.signal.aborted || !this.jobs.actionContext(proposal.owner, proposal.job).active) throw new BrokerError('job_ended');
         const current = this.sessions.get(proposal.session);
+        if (this.modeChanges.has(proposal.session)) throw new BrokerError('mode_change_in_progress');
         if (current.revision !== receipt.mode_revision || current.mode === 0) throw new BrokerError('mode_changed');
         if (!proposal.body || proposal.rejected) throw new BrokerError('proposal_invalid');
         if (receipt.authorization === 'user_approval' && receipt.approval_expires! <= this.now()) throw new BrokerError('approval_expired');
@@ -256,6 +258,16 @@ export class Actions {
     return this.view(proposal);
   }
   mode(id: string, mode: number) { this.options.verifyAuthority(); return this.sessions.mode(id, mode, true); }
+  async changeMode(id: string, mode: number, inspected?: Awaited<ReturnType<Actions['inspect']>>) {
+    this.options.verifyAuthority();
+    this.modeChanges.add(id);
+    try {
+      const current = await this.inspect(this.sessions.get(id).target.pane_id);
+      if (current.pane_session_id !== id) throw new BrokerError('session_changed');
+      if (inspected && (current.mode_revision !== inspected.mode_revision || !sameTarget(current.target, inspected.target))) throw new BrokerError('inspect_stale');
+      return this.mode(id, mode);
+    } finally { this.modeChanges.delete(id); }
+  }
   async inspect(paneId: string) {
     this.options.verifyAuthority();
     const pane = await this.herdr.describe(paneId, this.stop.signal);
@@ -284,4 +296,7 @@ export class Actions {
   }
   budget(jobId: string) { return { ordinary_attempts_remaining: Math.max(0, 3 - this.options.ledger.count(jobId, 'execute')), interrupt_attempts_remaining: Math.max(0, 1 - this.options.ledger.count(jobId, 'interrupt')) }; }
   summary() { return { ...this.options.ledger.summary(), proposals: [...this.proposals.values()].slice(-32).map(proposal => ({ ...this.view(proposal), evidence: undefined })) }; }
+  consoleProposals(activeJobs: ReadonlySet<string>) {
+    return [...this.proposals.values()].filter(proposal => !proposal.receipt && activeJobs.has(proposal.job)).map(proposal => this.view(proposal, true));
+  }
 }

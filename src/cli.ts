@@ -11,9 +11,10 @@ import { projectContext } from './project-context.js';
 try {
   if (process.versions.node.split('.')[0] !== '24') throw new BrokerError('node_24_required');
   const [command, ...extra] = process.argv.slice(2);
-  if (command === 'serve' ? extra.length !== 1 : command === 'doctor' ? extra.length > 1 : extra.length > 0) throw new BrokerError('invalid_arguments');
+  const jsonConsole = command === 'serve' && extra.length === 3 && extra[1] === '--format' && extra[2] === 'json';
+  if (command === 'serve' ? extra.length !== 1 && !jsonConsole : command === 'doctor' ? extra.length > 1 : extra.length > 0) throw new BrokerError('invalid_arguments');
   if (command === '--version') process.stdout.write('herdr-broker 0.1.0\n');
-  else if (!command || command === '--help') process.stdout.write('Usage: herdr-broker serve <console_id> | mcp | doctor <console_id> | --version\nserve: run a Console core in its owned control pane\nmcp: open or attach a persistent Console from this project in Herdr\ndoctor: check runtime, pinned profile and that Console’s private state without pane input\n');
+  else if (!command || command === '--help') process.stdout.write('Usage: herdr-broker serve <console_id> [--format json] | mcp | doctor <console_id> | --version\nserve: run a live Console dashboard in its owned control pane (non-TTY/TERM=dumb: JSON)\nmcp: open or attach a persistent Console from this project in Herdr\ndoctor: check runtime, pinned profile and that Console’s private state without pane input\n');
   else if (command === 'doctor') {
     const config = { ...await loadHerdrConfiguration(), project: await projectContext() };
     if (!extra[0]) throw new BrokerError('console_id_required');
@@ -29,14 +30,14 @@ try {
     if (record.controller.pane_id !== config.herdrContext.HERDR_PANE_ID) throw new BrokerError('console_controller_required');
     await consoles.verify(record);
     const scope = { workspace_id: record.workspace_id, tab_id: record.tab_id, terminals: new Map(record.panes.map(pane => [pane.pane_id, pane.terminal_id])) };
-    const core = await startCore({ ...config, consoleId: record.console_id, scope, verifyParent: async paneId => {
-      await consoles.verifyParent(record, paneId); await consoles.verify(record);
+    const core = await startCore({ ...config, consoleId: record.console_id, consoleInfo: record, scope, verifyParent: async paneId => {
+      const parent = await consoles.verifyParent(record, paneId); await consoles.verify(record); return parent;
     } });
     const close = startConsole({ ...core, async addTerminal() {
       record = await consoles.addTerminal(record);
       for (const pane of record.panes) scope.terminals.set(pane.pane_id, pane.terminal_id);
       return core.consoleStatus!();
-    } }, process.stdin, process.stdout);
+    } }, process.stdin, process.stdout, jsonConsole ? 'json' : undefined);
     process.once('SIGINT', () => void close());
     process.once('SIGTERM', () => void close());
   } else if (command === 'mcp') {

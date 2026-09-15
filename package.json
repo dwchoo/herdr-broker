@@ -23,10 +23,11 @@
     "prepack": "npm run build"
   },
   "dependencies": {
+    "@modelcontextprotocol/client": "2.0.0",
     "@modelcontextprotocol/server": "2.0.0",
     "better-sqlite3": "13.0.3",
-    "zod": "4.6.5",
-    "@modelcontextprotocol/client": "2.0.0"
+    "string-width": "8.2.2",
+    "zod": "4.6.5"
   },
   "devDependencies": {
     "@types/better-sqlite3": "9.6.0",

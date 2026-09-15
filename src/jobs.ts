@@ -204,10 +204,12 @@ export class Jobs {
     }
     if (total() + bytes > limit) throw new BrokerError('memory_budget_exhausted');
   }
-  summary() {
-    this.sweep();
+  summary(view: 'status' | 'dashboard' = 'status') {
+    if (view === 'status') this.sweep();
+    const all = [...this.jobs.values()];
+    const visible = view === 'status' ? all.slice(-32) : all.filter((job, index) => index >= all.length - 32 || !ended(job) && job.deadline > this.now());
     return {
-      jobs: [...this.jobs.values()].slice(-32).map(job => ({ job_id: job.id, pane_id: job.paneId, pane_session_id: job.session, worker_calls_remaining: Math.max(0, 4 - job.workerCalls), phase: job.phase, data_state: job.dataState, job_ended: ended(job), ...this.actionMode(job), result_ready: !job.error && job.phase !== 'observing' && !!(job.current?.prepared || job.current?.report), deadline_remaining_ms: Math.max(0, job.deadline - this.now()), parent_payload_bytes_remaining: job.limit - job.used, ...(job.workerCalls > 0 && { worker: this.workerStatus(job) }), ...(job.ended !== undefined && { ended_at: new Date(job.ended).toISOString(), retention_expires_at: new Date(job.ended + 1800000).toISOString() }), snapshot: job.current?.value?.metadata })),
+      jobs: visible.map(job => ({ job_id: job.id, pane_id: job.paneId, pane_session_id: job.session, worker_calls_remaining: Math.max(0, 4 - job.workerCalls), phase: job.phase, data_state: job.dataState, job_ended: ended(job), ...this.actionMode(job), result_ready: !job.error && job.phase !== 'observing' && !!(job.current?.prepared || job.current?.report), deadline_remaining_ms: Math.max(0, job.deadline - this.now()), parent_payload_bytes_remaining: job.limit - job.used, ...(job.workerCalls > 0 && { worker: this.workerStatus(job) }), ...(job.ended !== undefined && { ended_at: new Date(job.ended).toISOString(), retention_expires_at: new Date(job.ended + 1800000).toISOString() }), snapshot: job.current?.value?.metadata })),
       job_count: this.jobs.size, memory_bytes: this.sessions.memoryBytes() + [...this.jobs.values()].reduce((sum, job) => sum + job.memory, 0), memory_limit_bytes: Math.min(this.memoryLimit, 64 * 1024 * 1024), retention_after_end_ms: 1800000,
       action_submission_supported: true, action_outcome: 'separate_receipt', action_mode: 'per_session',
     };
