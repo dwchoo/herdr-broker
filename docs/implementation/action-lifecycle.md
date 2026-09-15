@@ -15,7 +15,7 @@ Issue #16–#21의 문서 기준은 Parent spec D8–D13이다. 공개 MCP의 �
 
 `job_start`의 선택적 Action scope는 협조적 local POSIX shell의 절대 cwd, 변경 가능한 절대 경로, 신뢰한 작업인지 여부를 명시한다. scope가 없으면 진단만 가능하다. Caller가 보낸 host/user 설명은 관찰한 process 정보와 구분한다. Broker는 파일 경로 선언의 범위와 Parent 판단 구조를 검사하며 임의 shell script의 의미적 안전성을 증명하지 않는다.
 
-`action_propose`는 job ID, exact target, 같은 목표, execute/interrupt, command, cwd/env, 영향 경로와 Parent risk review를 받는다. env는 명시적인 키/값만 허용한다. Broker는 nonce와 wrapper, Enter까지 포함한 전송 payload를 생성해 immutable digest로 고정한다. `action_submit`은 job/proposal ID만 받는다.
+`action_propose`는 job ID, exact target, 같은 목표, execute/interrupt, command, cwd/env, 영향 경로와 Parent risk review를 받는다. env는 명시적인 키/값만 허용한다. Broker는 nonce와 wrapper, Enter까지 포함한 전송 payload를 생성해 immutable digest로 고정한다. `action_submit`은 proposal ID만 받는다.
 
 mode 2의 자동 후보에는 확인한 효과와 입력, 영향 범위, 복구 방법, 불확실성, 고위험 범주가 필요하다. 형식 누락·불확실성·미확인 script·고위험 범주는 개별 승인을 요구한다. mode 3은 범위 안의 위험 불명·고위험에도 추가 승인을 삽입하지 않는다. 세 mode 모두 scope/target/session/revision/cancel/deadline/budget/hold 검사를 유지한다.
 

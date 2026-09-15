@@ -19,7 +19,7 @@ export type ProcessInfo = z.infer<typeof processSchema>;
 
 export class Herdr {
   constructor(private readonly endpoint: string, private readonly verifyAuthority: () => void) {}
-  private request(method: string, params: object, signal?: AbortSignal): Promise<unknown> {
+  private request(method: string, params: object, signal?: AbortSignal, submission = false, afterWrite?: () => void, beforeWrite?: () => void): Promise<unknown> {
     return new Promise((resolve, reject) => {
       try { this.verifyAuthority(); } catch (error) { reject(error); return; }
       const requestId = randomUUID();
@@ -41,8 +41,10 @@ export class Herdr {
       socket.on('error', () => finish(new BrokerError('herdr_unavailable')));
       socket.on('end', () => finish(new BrokerError('herdr_disconnected')));
       socket.on('connect', () => {
-        try { this.verifyAuthority(); socket.write(JSON.stringify({ id: requestId, method, params }) + '\n'); }
-        catch { finish(new BrokerError('authority_lost')); }
+        try { this.verifyAuthority(); beforeWrite?.(); socket.write(JSON.stringify({ id: requestId, method, params }) + '\n', () => {
+          try { afterWrite?.(); } catch { finish(new BrokerError('send_interrupted')); }
+        }); }
+        catch (error) { finish(error instanceof BrokerError ? error : new BrokerError('authority_lost')); }
       });
       socket.on('data', chunk => {
         if (buffer.length + chunk.length > 1024 * 1024) { finish(new BrokerError('herdr_response_too_large')); return; }
@@ -52,13 +54,17 @@ export class Herdr {
         try {
           const response = z.object({ id: z.literal(requestId), result: z.unknown().optional(), error: z.object({ code: z.string() }).optional() })
             .parse(JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(buffer.subarray(0, end))));
-          if (response.error) throw new BrokerError('herdr_rejected');
+          if (response.error) throw new BrokerError(submission && ['pane_not_found', 'invalid_key', 'pane_send_failed'].includes(response.error.code) ? response.error.code : 'herdr_rejected');
           if (!response.result) throw new BrokerError('herdr_invalid_response');
           this.verifyAuthority();
           finish(undefined, response.result);
         } catch (error) { finish(error instanceof BrokerError ? error : new BrokerError('herdr_invalid_response')); }
       });
     });
+  }
+  async send(paneId: string, payload: { text: string; keys: string[] }, signal?: AbortSignal, afterWrite?: () => void, beforeWrite?: () => void) {
+    const response = await this.request('pane.send_input', { pane_id: paneId, ...payload }, signal, true, afterWrite, beforeWrite);
+    if (!z.object({ type: z.literal('ok') }).safeParse(response).success) throw new BrokerError('herdr_invalid_response');
   }
   async processInfo(paneId: string, signal?: AbortSignal) {
     const parsed = z.object({ type: z.literal('pane_process_info'), process_info: processSchema }).safeParse(await this.request('pane.process_info', { pane_id: paneId }, signal));

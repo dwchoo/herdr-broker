@@ -156,6 +156,24 @@ export class Jobs {
     try { value = await work(); } catch (error) { value = { job_id: id, error: error instanceof BrokerError ? error.code : 'internal_error' }; }
     return this.deliver(job, false, value);
   }
+  actionBudget(owner: string, id: string, bytes: number, consume = false) {
+    const job = this.owned(owner, id);
+    if (consume) { job.used += bytes; return; }
+    if (!this.active(job)) throw new BrokerError('job_ended');
+    if (job.used + bytes > job.limit - 512) { this.stop(job, 'budget_exhausted'); throw new BrokerError('parent_budget_exhausted'); }
+  }
+  prepareActionSnapshot(owner: string, id: string, text: string, session: string, truncated: boolean) {
+    const job = this.owned(owner, id);
+    return prepareSnapshot(text, session, truncated, this.patterns, this.now(), job.sequence + 1);
+  }
+  actionEvidence(owner: string, id: string, snapshot: ReturnType<typeof prepareSnapshot>) {
+    const job = this.owned(owner, id);
+    if (job.dataState !== 'retained') return null;
+    const bytes = 2048 + 2 * Buffer.byteLength(snapshot.rows.join('\n')) + 128 * snapshot.rows.length + 2 * Buffer.byteLength(snapshot.text);
+    this.reserve(bytes); job.memory += bytes;
+    job.snapshots.set(snapshot.metadata.snapshot_id, { value: snapshot, rowCount: snapshot.rows.length, cursorExpires: 0, prepared: false });
+    return snapshot;
+  }
   private recordUsage(job: Job, usage: Usage | null) {
     if (!usage) return;
     const before = job.workerUsage;
@@ -180,7 +198,7 @@ export class Jobs {
     return {
       jobs: [...this.jobs.values()].slice(-32).map(job => ({ job_id: job.id, phase: job.phase, data_state: job.dataState, job_ended: ended(job), ...this.actionMode(job), result_ready: !job.error && job.phase !== 'observing' && !!(job.current?.prepared || job.current?.report), deadline_remaining_ms: Math.max(0, job.deadline - this.now()), parent_payload_bytes_remaining: job.limit - job.used, ...(job.workerCalls > 0 && { worker: this.workerStatus(job) }), ...(job.ended !== undefined && { ended_at: new Date(job.ended).toISOString(), retention_expires_at: new Date(job.ended + 1800000).toISOString() }), snapshot: job.current?.value?.metadata })),
       job_count: this.jobs.size, memory_bytes: this.sessions.memoryBytes() + [...this.jobs.values()].reduce((sum, job) => sum + job.memory, 0), memory_limit_bytes: Math.min(this.memoryLimit, 64 * 1024 * 1024), retention_after_end_ms: 1800000,
-      action_submission: 'unsupported', action_outcome: 'unsupported', action_mode: 'per_session',
+      action_submission_supported: true, action_outcome: 'separate_receipt', action_mode: 'per_session',
     };
   }
   purge(id: string) {
@@ -202,7 +220,7 @@ export class Jobs {
     return this.deliver(job, false, { job_id: job.id, error: 'invalid_tool_arguments' });
   }
   private status(job: Job, waitTimedOut = false, cursor?: string) {
-    const base = { job_id: job.id, pane_session_id: job.session, pane_id: job.paneId, phase: job.phase, data_state: job.dataState, result_ready: !job.error && job.phase !== 'observing' && !!(job.current?.prepared || job.current?.report), job_ended: ended(job), ...this.actionMode(job), action_state: 'unsupported', wait_timed_out: waitTimedOut, ...(job.workerCalls > 0 && { worker: this.workerStatus(job) }), ...(job.error && { error: job.error }) };
+    const base = { job_id: job.id, pane_session_id: job.session, pane_id: job.paneId, phase: job.phase, data_state: job.dataState, result_ready: !job.error && job.phase !== 'observing' && !!(job.current?.prepared || job.current?.report), job_ended: ended(job), ...this.actionMode(job), action_state: job.scope ? 'available' : 'scope_required', wait_timed_out: waitTimedOut, ...(job.workerCalls > 0 && { worker: this.workerStatus(job) }), ...(job.error && { error: job.error }) };
     const current = job.current;
     if (!current?.value || job.phase === 'observing' || (job.error && (current.prepared || current.report))) return base;
     const baseline = [...job.snapshots.values()].find(record => record.cursor === cursor);
@@ -243,7 +261,7 @@ export class Jobs {
     }
     if (budget.parent_payload_bytes_used > job.limit - 512 || Buffer.byteLength(text) > 8192) {
       this.stop(job, 'budget_exhausted');
-      response = { job_id: job.id, error: 'parent_budget_exhausted', job_ended: true, action_state: 'unsupported', budget };
+      response = { job_id: job.id, error: 'parent_budget_exhausted', job_ended: true, action_state: 'stopped', budget };
       text = encode();
       job.noticeSent = true;
     }

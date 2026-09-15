@@ -9,14 +9,14 @@ test('Parent discovers passive tools and describes the exact pane without input'
   const tools = await client.request('tools/list', {});
   for (const tool of tools.result.tools) {
     assert.equal(tool.annotations?.readOnlyHint, ['pane_describe', 'job_status', 'job_wait', 'evidence_get', 'action_status'].includes(tool.name));
-    assert.equal(tool.annotations?.destructiveHint, false);
+    assert.equal(tool.annotations?.destructiveHint, tool.name === 'action_submit');
     assert.equal(tool.inputSchema.additionalProperties, false);
   }
-  assert.deepEqual(tools.result.tools.map(tool => tool.name).sort(), ['pane_describe', 'job_start', 'job_status', 'job_wait', 'job_cancel', 'evidence_get', 'action_propose', 'action_status', 'session_lower_mode'].sort());
+  assert.deepEqual(tools.result.tools.map(tool => tool.name).sort(), ['pane_describe', 'job_start', 'job_status', 'job_wait', 'job_cancel', 'evidence_get', 'action_propose', 'action_status', 'action_submit', 'session_lower_mode'].sort());
   const result = await client.call('pane_describe', { pane_id: pane.pane_id });
   assert.deepEqual(result.target, { pane_id: 'ws:pane', terminal_id: 'terminal-1', workspace_id: 'ws', tab_id: 'tab-1' });
   assert.equal(result.context.cwd, '/fixture');
-  assert.deepEqual(h.calls.map(call => call.method), ['ping', 'ping', 'pane.get']);
+  assert.deepEqual(h.calls.map(call => call.method), ['ping', 'ping', 'pane.get', 'pane.process_info']);
   assert.equal(h.calls[2].params.pane_id, 'ws:pane');
 });
 
@@ -28,7 +28,7 @@ test('Parent receives immutable prepared context while the observation job remai
   const ready = await client.call('job_wait', { job_id: start.job_id, wait_ms: 1000 });
   assert.equal(ready.phase, 'result_ready');
   assert.equal(ready.job_ended, false);
-  assert.equal(ready.action_state, 'unsupported');
+  assert.equal(ready.action_state, 'scope_required');
   assert.equal(ready.result.kind, 'prepared_context');
   assert.match(ready.result.text, /build failed: missing module/);
   assert.match(ready.result.text, /unknown detail/);

@@ -39,7 +39,7 @@ test('Console core survives facade exit, rejects a second process, and recovers 
   const transport = new StdioClientTransport({ command: process.execPath, args: ['test/process-fixture.mjs', 'mcp', ready.socket], stderr: 'pipe' });
   const client = new Client({ name: 'installed-protocol-peer', version: '1' });
   await client.connect(transport);
-  assert.equal((await client.listTools()).tools.length, 9);
+  assert.equal((await client.listTools()).tools.length, 10);
   const described = await client.callTool({ name: 'pane_describe', arguments: { pane_id: pane.pane_id } });
   assert.equal(JSON.parse(described.content[0].text).target.pane_id, pane.pane_id);
   const started = await client.callTool({ name: 'job_start', arguments: { pane_id: pane.pane_id, objective: 'process retention fixture' } });
@@ -52,7 +52,7 @@ test('Console core survives facade exit, rejects a second process, and recovers 
   await client.close();
   owner.process.stdin.write('status\n');
   const retained = await nextLine(owner.process.stdout);
-  assert.equal(retained.action_submission, 'unsupported');
+  assert.equal(retained.action_submission_supported, true);
   assert.equal(retained.jobs[0].phase, 'cancelled');
   assert.ok(!JSON.stringify(retained).includes('build failed'));
   assert.ok(!owner.errors().includes('build failed'));

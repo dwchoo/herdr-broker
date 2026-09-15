@@ -1,0 +1,517 @@
+{
+  "at": "2026-09-15T11:28:16.223Z",
+  "node": "24.19.0",
+  "herdr": "0.9.0",
+  "protocol": 22,
+  "boundary": "actual Herdr socket; observing proxy counts only Broker submissions; actual interactive PTY console",
+  "target": {
+    "pane_id": "w9:p1",
+    "terminal_id": "term_65b83d8916179a",
+    "workspace_id": "w9",
+    "tab_id": "w9:t1"
+  },
+  "wire_attempts": 3,
+  "cases": [
+    {
+      "name": "cwd-env-literals-nonzero",
+      "first": {
+        "proposal_id": "fc516f9e-d1a1-4222-ad2f-7fe76dfc4555",
+        "job_id": "d4d24dc4-2899-461a-917c-5ac66efff2d9",
+        "pane_session_id": "a4910a87-c141-47be-a194-75cb239abc94",
+        "terminal_id": "term_65b83d8916179a",
+        "payload_digest": "004a943c934612d14114f131674b13d3377f862d5be8d47ce63d4735bdba7b93",
+        "mode_revision": 2,
+        "operation": "execute",
+        "authorization": "user_approval",
+        "approval_expires": 1789471993824,
+        "approval_consumed": true,
+        "submission_state": "accepted",
+        "observation_state": "observing",
+        "exit_code": null,
+        "created_at": 1789471694061,
+        "updated_at": 1789471694171,
+        "hold_reason": "awaiting_outcome",
+        "recovery": null,
+        "target": {
+          "pane_id": "w9:p1",
+          "terminal_id": "term_65b83d8916179a",
+          "workspace_id": "w9",
+          "tab_id": "w9:t1"
+        },
+        "contract": "action.v1",
+        "evidence": null,
+        "observation": {
+          "method": "bounded_passive_marker",
+          "truncated": false,
+          "baseline_digest": "a6a3cf2ebc48035418794cb15b2741eed6d8752979126075d7ce41bcdcd13033"
+        },
+        "budget": {
+          "deadline_ms": 300000,
+          "deadline_remaining_ms": 299072,
+          "parent_payload_bytes_limit": 16384,
+          "parent_payload_bytes_used": 5151,
+          "parent_payload_bytes_remaining": 11233
+        }
+      },
+      "receipt": {
+        "proposal_id": "fc516f9e-d1a1-4222-ad2f-7fe76dfc4555",
+        "job_id": "d4d24dc4-2899-461a-917c-5ac66efff2d9",
+        "pane_session_id": "a4910a87-c141-47be-a194-75cb239abc94",
+        "terminal_id": "term_65b83d8916179a",
+        "payload_digest": "004a943c934612d14114f131674b13d3377f862d5be8d47ce63d4735bdba7b93",
+        "mode_revision": 2,
+        "operation": "execute",
+        "authorization": "user_approval",
+        "approval_expires": 1789471993824,
+        "approval_consumed": true,
+        "submission_state": "accepted",
+        "observation_state": "completion_observed",
+        "exit_code": 7,
+        "created_at": 1789471694061,
+        "updated_at": 1789471694291,
+        "hold_reason": null,
+        "recovery": null,
+        "target": {
+          "pane_id": "w9:p1",
+          "terminal_id": "term_65b83d8916179a",
+          "workspace_id": "w9",
+          "tab_id": "w9:t1"
+        },
+        "contract": "action.v1",
+        "evidence": {
+          "items": [
+            {
+              "evidence_id": "e3564941-2979-4247-8512-5fd9113bb056:L0018",
+              "text": "__HERDR_END_83488a3295e61d6f404af2dd759faa78__:7",
+              "offset_bytes": 0
+            }
+          ],
+          "truncated": false,
+          "next": null
+        },
+        "observation": {
+          "method": "bounded_passive_marker",
+          "truncated": false,
+          "baseline_digest": "a6a3cf2ebc48035418794cb15b2741eed6d8752979126075d7ce41bcdcd13033"
+        },
+        "budget": {
+          "deadline_ms": 300000,
+          "deadline_remaining_ms": 298770,
+          "parent_payload_bytes_limit": 16384,
+          "parent_payload_bytes_used": 6372,
+          "parent_payload_bytes_remaining": 10012
+        }
+      },
+      "actual_output": "<disposable-cwd>\nenv=literal ' $HOME $(unexecuted)\nliteral $HOME $(not-a-command)",
+      "parent_cwd": "<disposable-cwd>",
+      "excerpt": {
+        "items": [
+          {
+            "evidence_id": "e3564941-2979-4247-8512-5fd9113bb056:L0001",
+            "text": "dwchoo@DongWonui-MacBookPro hb-live-local-SwNTeW % /bin/sh -",
+            "offset_bytes": 0
+          },
+          {
+            "evidence_id": "e3564941-2979-4247-8512-5fd9113bb056:L0002",
+            "text": "c 'printf '\\''\\n__HERDR_%s_%s__\\n'\\'' BEGIN '\\''83488a3295e6",
+            "offset_bytes": 0
+          },
+          {
+            "evidence_id": "e3564941-2979-4247-8512-5fd9113bb056:L0003",
+            "text": "1d6f404af2dd759faa78'\\''; ( cd '\\''/private/tmp/hb-live-loca",
+            "offset_bytes": 0
+          },
+          {
+            "evidence_id": "e3564941-2979-4247-8512-5fd9113bb056:L0004",
+            "text": "l-SwNTeW'\\'' && /usr/bin/env -i PATH=/usr/bin:/bin:/usr/sbin",
+            "offset_bytes": 0
+          },
+          {
+            "evidence_id": "e3564941-2979-4247-8512-5fd9113bb056:L0005",
+            "text": ":/sbin '\\''HB_LITERAL=literal '\\''\\'\\'''\\'' $HOME $(unexecut",
+            "offset_bytes": 0
+          },
+          {
+            "evidence_id": "e3564941-2979-4247-8512-5fd9113bb056:L0006",
+            "text": "ed)'\\'' /bin/sh -c '\\''pwd; printf \"env=%s\\n\" \"$HB_LITERAL\";",
+            "offset_bytes": 0
+          },
+          {
+            "evidence_id": "e3564941-2979-4247-8512-5fd9113bb056:L0007",
+            "text": " printf '\\''\\'\\'''\\''%s\\n'\\''\\'\\'''\\'' '\\''\\'\\'''\\''literal ",
+            "offset_bytes": 0
+          },
+          {
+            "evidence_id": "e3564941-2979-4247-8512-5fd9113bb056:L0008",
+            "text": "$HOME $(not-a-command)'\\''\\'\\'''\\''; exit 7'\\''",
+            "offset_bytes": 0
+          },
+          {
+            "evidence_id": "e3564941-2979-4247-8512-5fd9113bb056:L0009",
+            "text": "); herdr_broker_exit=$?; printf '\\''\\n__HERDR_%s_%s__:%s\\n'\\",
+            "offset_bytes": 0
+          },
+          {
+            "evidence_id": "e3564941-2979-4247-8512-5fd9113bb056:L0010",
+            "text": "'' END '\\''83488a3295e61d6f404af2dd759faa78'\\'' \"$herdr_brok",
+            "offset_bytes": 0
+          },
+          {
+            "evidence_id": "e3564941-2979-4247-8512-5fd9113bb056:L0011",
+            "text": "er_exit\"; exit \"$herdr_broker_exit\"'",
+            "offset_bytes": 0
+          },
+          {
+            "evidence_id": "e3564941-2979-4247-8512-5fd9113bb056:L0012",
+            "text": "",
+            "offset_bytes": 0
+          },
+          {
+            "evidence_id": "e3564941-2979-4247-8512-5fd9113bb056:L0013",
+            "text": "__HERDR_BEGIN_83488a3295e61d6f404af2dd759faa78__",
+            "offset_bytes": 0
+          }
+        ],
+        "truncated": true,
+        "next": {
+          "evidence_id": "e3564941-2979-4247-8512-5fd9113bb056:L0014",
+          "offset_bytes": 0
+        }
+      }
+    },
+    {
+      "name": "subshell-cwd",
+      "first": {
+        "proposal_id": "6f4a31dd-0e26-42f9-ad8f-cfa29eefdd4b",
+        "job_id": "f7cba3cf-9bc6-4b50-8a2b-a4dee3a1e625",
+        "pane_session_id": "a4910a87-c141-47be-a194-75cb239abc94",
+        "terminal_id": "term_65b83d8916179a",
+        "payload_digest": "65686de303d22db670be11e6be0945dc2be9080f703a96b75abf40357245ac51",
+        "mode_revision": 2,
+        "operation": "execute",
+        "authorization": "user_approval",
+        "approval_expires": 1789471994623,
+        "approval_consumed": true,
+        "submission_state": "accepted",
+        "observation_state": "observing",
+        "exit_code": null,
+        "created_at": 1789471694629,
+        "updated_at": 1789471694640,
+        "hold_reason": "awaiting_outcome",
+        "recovery": null,
+        "target": {
+          "pane_id": "w9:p1",
+          "terminal_id": "term_65b83d8916179a",
+          "workspace_id": "w9",
+          "tab_id": "w9:t1"
+        },
+        "contract": "action.v1",
+        "evidence": null,
+        "observation": {
+          "method": "bounded_passive_marker",
+          "truncated": false,
+          "baseline_digest": "1a797bf494e048490824a65b999b75e64ed2305750b12813452a995aec8f5539"
+        },
+        "budget": {
+          "deadline_ms": 300000,
+          "deadline_remaining_ms": 299952,
+          "parent_payload_bytes_limit": 16384,
+          "parent_payload_bytes_used": 8332,
+          "parent_payload_bytes_remaining": 8052
+        }
+      },
+      "receipt": {
+        "proposal_id": "6f4a31dd-0e26-42f9-ad8f-cfa29eefdd4b",
+        "job_id": "f7cba3cf-9bc6-4b50-8a2b-a4dee3a1e625",
+        "pane_session_id": "a4910a87-c141-47be-a194-75cb239abc94",
+        "terminal_id": "term_65b83d8916179a",
+        "payload_digest": "65686de303d22db670be11e6be0945dc2be9080f703a96b75abf40357245ac51",
+        "mode_revision": 2,
+        "operation": "execute",
+        "authorization": "user_approval",
+        "approval_expires": 1789471994623,
+        "approval_consumed": true,
+        "submission_state": "accepted",
+        "observation_state": "completion_observed",
+        "exit_code": 0,
+        "created_at": 1789471694629,
+        "updated_at": 1789471694871,
+        "hold_reason": null,
+        "recovery": null,
+        "target": {
+          "pane_id": "w9:p1",
+          "terminal_id": "term_65b83d8916179a",
+          "workspace_id": "w9",
+          "tab_id": "w9:t1"
+        },
+        "contract": "action.v1",
+        "evidence": {
+          "items": [
+            {
+              "evidence_id": "84995e62-a373-45b9-b3e9-3157448ea26c:L0032",
+              "text": "__HERDR_END_34a51c9a012f933bd1298baced616172__:0",
+              "offset_bytes": 0
+            }
+          ],
+          "truncated": false,
+          "next": null
+        },
+        "observation": {
+          "method": "bounded_passive_marker",
+          "truncated": false,
+          "baseline_digest": "1a797bf494e048490824a65b999b75e64ed2305750b12813452a995aec8f5539"
+        },
+        "budget": {
+          "deadline_ms": 300000,
+          "deadline_remaining_ms": 299649,
+          "parent_payload_bytes_limit": 16384,
+          "parent_payload_bytes_used": 9552,
+          "parent_payload_bytes_remaining": 6832
+        }
+      },
+      "actual_output": "/",
+      "parent_cwd": "<disposable-cwd>",
+      "excerpt": {
+        "items": [
+          {
+            "evidence_id": "84995e62-a373-45b9-b3e9-3157448ea26c:L0001",
+            "text": "dwchoo@DongWonui-MacBookPro hb-live-local-SwNTeW % /bin/sh -",
+            "offset_bytes": 0
+          },
+          {
+            "evidence_id": "84995e62-a373-45b9-b3e9-3157448ea26c:L0002",
+            "text": "c 'printf '\\''\\n__HERDR_%s_%s__\\n'\\'' BEGIN '\\''83488a3295e6",
+            "offset_bytes": 0
+          },
+          {
+            "evidence_id": "84995e62-a373-45b9-b3e9-3157448ea26c:L0003",
+            "text": "1d6f404af2dd759faa78'\\''; ( cd '\\''/private/tmp/hb-live-loca",
+            "offset_bytes": 0
+          },
+          {
+            "evidence_id": "84995e62-a373-45b9-b3e9-3157448ea26c:L0004",
+            "text": "l-SwNTeW'\\'' && /usr/bin/env -i PATH=/usr/bin:/bin:/usr/sbin",
+            "offset_bytes": 0
+          },
+          {
+            "evidence_id": "84995e62-a373-45b9-b3e9-3157448ea26c:L0005",
+            "text": ":/sbin '\\''HB_LITERAL=literal '\\''\\'\\'''\\'' $HOME $(unexecut",
+            "offset_bytes": 0
+          },
+          {
+            "evidence_id": "84995e62-a373-45b9-b3e9-3157448ea26c:L0006",
+            "text": "ed)'\\'' /bin/sh -c '\\''pwd; printf \"env=%s\\n\" \"$HB_LITERAL\";",
+            "offset_bytes": 0
+          },
+          {
+            "evidence_id": "84995e62-a373-45b9-b3e9-3157448ea26c:L0007",
+            "text": " printf '\\''\\'\\'''\\''%s\\n'\\''\\'\\'''\\'' '\\''\\'\\'''\\''literal ",
+            "offset_bytes": 0
+          },
+          {
+            "evidence_id": "84995e62-a373-45b9-b3e9-3157448ea26c:L0008",
+            "text": "$HOME $(not-a-command)'\\''\\'\\'''\\''; exit 7'\\''",
+            "offset_bytes": 0
+          },
+          {
+            "evidence_id": "84995e62-a373-45b9-b3e9-3157448ea26c:L0009",
+            "text": "); herdr_broker_exit=$?; printf '\\''\\n__HERDR_%s_%s__:%s\\n'\\",
+            "offset_bytes": 0
+          },
+          {
+            "evidence_id": "84995e62-a373-45b9-b3e9-3157448ea26c:L0010",
+            "text": "'' END '\\''83488a3295e61d6f404af2dd759faa78'\\'' \"$herdr_brok",
+            "offset_bytes": 0
+          },
+          {
+            "evidence_id": "84995e62-a373-45b9-b3e9-3157448ea26c:L0011",
+            "text": "er_exit\"; exit \"$herdr_broker_exit\"'",
+            "offset_bytes": 0
+          },
+          {
+            "evidence_id": "84995e62-a373-45b9-b3e9-3157448ea26c:L0012",
+            "text": "",
+            "offset_bytes": 0
+          },
+          {
+            "evidence_id": "84995e62-a373-45b9-b3e9-3157448ea26c:L0013",
+            "text": "__HERDR_BEGIN_83488a3295e61d6f404af2dd759faa78__",
+            "offset_bytes": 0
+          }
+        ],
+        "truncated": true,
+        "next": {
+          "evidence_id": "84995e62-a373-45b9-b3e9-3157448ea26c:L0014",
+          "offset_bytes": 0
+        }
+      }
+    },
+    {
+      "name": "fresh-explicit-cwd",
+      "first": {
+        "proposal_id": "2ea541f8-4397-4377-9481-c1be67150ad9",
+        "job_id": "5e434413-3ae6-4632-a3e7-cccbec0b8ecd",
+        "pane_session_id": "a4910a87-c141-47be-a194-75cb239abc94",
+        "terminal_id": "term_65b83d8916179a",
+        "payload_digest": "a9e4c4332ed871c9aa98efb2d2264ce2cacc92031d88d18f157ccc71e0e8837a",
+        "mode_revision": 2,
+        "operation": "execute",
+        "authorization": "user_approval",
+        "approval_expires": 1789471995281,
+        "approval_consumed": true,
+        "submission_state": "accepted",
+        "observation_state": "observing",
+        "exit_code": null,
+        "created_at": 1789471695504,
+        "updated_at": 1789471695610,
+        "hold_reason": "awaiting_outcome",
+        "recovery": null,
+        "target": {
+          "pane_id": "w9:p1",
+          "terminal_id": "term_65b83d8916179a",
+          "workspace_id": "w9",
+          "tab_id": "w9:t1"
+        },
+        "contract": "action.v1",
+        "evidence": null,
+        "observation": {
+          "method": "bounded_passive_marker",
+          "truncated": false,
+          "baseline_digest": "9d3e3091f85e76b49a49cd08dd08a2224d7b13ffa18f73a4df387149c6486286"
+        },
+        "budget": {
+          "deadline_ms": 300000,
+          "deadline_remaining_ms": 299446,
+          "parent_payload_bytes_limit": 16384,
+          "parent_payload_bytes_used": 9594,
+          "parent_payload_bytes_remaining": 6790
+        }
+      },
+      "receipt": {
+        "proposal_id": "2ea541f8-4397-4377-9481-c1be67150ad9",
+        "job_id": "5e434413-3ae6-4632-a3e7-cccbec0b8ecd",
+        "pane_session_id": "a4910a87-c141-47be-a194-75cb239abc94",
+        "terminal_id": "term_65b83d8916179a",
+        "payload_digest": "a9e4c4332ed871c9aa98efb2d2264ce2cacc92031d88d18f157ccc71e0e8837a",
+        "mode_revision": 2,
+        "operation": "execute",
+        "authorization": "user_approval",
+        "approval_expires": 1789471995281,
+        "approval_consumed": true,
+        "submission_state": "accepted",
+        "observation_state": "completion_observed",
+        "exit_code": 0,
+        "created_at": 1789471695504,
+        "updated_at": 1789471696175,
+        "hold_reason": null,
+        "recovery": null,
+        "target": {
+          "pane_id": "w9:p1",
+          "terminal_id": "term_65b83d8916179a",
+          "workspace_id": "w9",
+          "tab_id": "w9:t1"
+        },
+        "contract": "action.v1",
+        "evidence": {
+          "items": [
+            {
+              "evidence_id": "84d3588b-2fec-4cd5-9cf9-5c7296d922a2:L0046",
+              "text": "__HERDR_END_f12a6774e610e06de2c2e10fbaefc94a__:0",
+              "offset_bytes": 0
+            }
+          ],
+          "truncated": false,
+          "next": null
+        },
+        "observation": {
+          "method": "bounded_passive_marker",
+          "truncated": false,
+          "baseline_digest": "9d3e3091f85e76b49a49cd08dd08a2224d7b13ffa18f73a4df387149c6486286"
+        },
+        "budget": {
+          "deadline_ms": 300000,
+          "deadline_remaining_ms": 298840,
+          "parent_payload_bytes_limit": 16384,
+          "parent_payload_bytes_used": 11870,
+          "parent_payload_bytes_remaining": 4514
+        }
+      },
+      "actual_output": "<disposable-cwd>",
+      "parent_cwd": "<disposable-cwd>",
+      "excerpt": {
+        "items": [
+          {
+            "evidence_id": "84d3588b-2fec-4cd5-9cf9-5c7296d922a2:L0001",
+            "text": "dwchoo@DongWonui-MacBookPro hb-live-local-SwNTeW % /bin/sh -",
+            "offset_bytes": 0
+          },
+          {
+            "evidence_id": "84d3588b-2fec-4cd5-9cf9-5c7296d922a2:L0002",
+            "text": "c 'printf '\\''\\n__HERDR_%s_%s__\\n'\\'' BEGIN '\\''83488a3295e6",
+            "offset_bytes": 0
+          },
+          {
+            "evidence_id": "84d3588b-2fec-4cd5-9cf9-5c7296d922a2:L0003",
+            "text": "1d6f404af2dd759faa78'\\''; ( cd '\\''/private/tmp/hb-live-loca",
+            "offset_bytes": 0
+          },
+          {
+            "evidence_id": "84d3588b-2fec-4cd5-9cf9-5c7296d922a2:L0004",
+            "text": "l-SwNTeW'\\'' && /usr/bin/env -i PATH=/usr/bin:/bin:/usr/sbin",
+            "offset_bytes": 0
+          },
+          {
+            "evidence_id": "84d3588b-2fec-4cd5-9cf9-5c7296d922a2:L0005",
+            "text": ":/sbin '\\''HB_LITERAL=literal '\\''\\'\\'''\\'' $HOME $(unexecut",
+            "offset_bytes": 0
+          },
+          {
+            "evidence_id": "84d3588b-2fec-4cd5-9cf9-5c7296d922a2:L0006",
+            "text": "ed)'\\'' /bin/sh -c '\\''pwd; printf \"env=%s\\n\" \"$HB_LITERAL\";",
+            "offset_bytes": 0
+          },
+          {
+            "evidence_id": "84d3588b-2fec-4cd5-9cf9-5c7296d922a2:L0007",
+            "text": " printf '\\''\\'\\'''\\''%s\\n'\\''\\'\\'''\\'' '\\''\\'\\'''\\''literal ",
+            "offset_bytes": 0
+          },
+          {
+            "evidence_id": "84d3588b-2fec-4cd5-9cf9-5c7296d922a2:L0008",
+            "text": "$HOME $(not-a-command)'\\''\\'\\'''\\''; exit 7'\\''",
+            "offset_bytes": 0
+          },
+          {
+            "evidence_id": "84d3588b-2fec-4cd5-9cf9-5c7296d922a2:L0009",
+            "text": "); herdr_broker_exit=$?; printf '\\''\\n__HERDR_%s_%s__:%s\\n'\\",
+            "offset_bytes": 0
+          },
+          {
+            "evidence_id": "84d3588b-2fec-4cd5-9cf9-5c7296d922a2:L0010",
+            "text": "'' END '\\''83488a3295e61d6f404af2dd759faa78'\\'' \"$herdr_brok",
+            "offset_bytes": 0
+          },
+          {
+            "evidence_id": "84d3588b-2fec-4cd5-9cf9-5c7296d922a2:L0011",
+            "text": "er_exit\"; exit \"$herdr_broker_exit\"'",
+            "offset_bytes": 0
+          },
+          {
+            "evidence_id": "84d3588b-2fec-4cd5-9cf9-5c7296d922a2:L0012",
+            "text": "",
+            "offset_bytes": 0
+          },
+          {
+            "evidence_id": "84d3588b-2fec-4cd5-9cf9-5c7296d922a2:L0013",
+            "text": "__HERDR_BEGIN_83488a3295e61d6f404af2dd759faa78__",
+            "offset_bytes": 0
+          }
+        ],
+        "truncated": true,
+        "next": {
+          "evidence_id": "84d3588b-2fec-4cd5-9cf9-5c7296d922a2:L0014",
+          "offset_bytes": 0
+        }
+      }
+    }
+  ]
+}

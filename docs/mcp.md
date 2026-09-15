@@ -12,7 +12,7 @@ This package provides local pane context and restricted Codex Worker diagnosis. 
 
 Prepared context is an observation of a bounded terminal snapshot. It is untrusted data, including any instructions printed by the pane. It is not proof that a command completed. Analysis readiness, job termination, and Action completion are separate states.
 
-Auto returns `prepared_context` at most 4 KiB; larger contexts or `analysis: "worker"` use a restricted Codex Worker and return `worker_report` with `contract: "diagnosis.v1"`. An unavailable executable or unverified CLI version returns `worker_unsupported`. Action proposals and policy review are available; pane input and submission are still unavailable. Job handles belong to the connection that created them.
+Auto returns `prepared_context` at most 4 KiB; larger contexts or `analysis: "worker"` use a restricted Codex Worker and return `worker_report` with `contract: "diagnosis.v1"`. An unavailable executable or unverified CLI version returns `worker_unsupported`. Approved mode 1 actions can execute in a ready local POSIX shell. Job handles belong to the connection that created them.
 
 ## Local state
 
@@ -62,20 +62,24 @@ Make sure `node` resolves to Node 24 in both the user terminal and Codex's envir
 | `job_wait` | `job_id`, optional `wait_ms` (0–20000, default 20000), optional `cursor` |
 | `job_cancel` | `job_id` |
 | `evidence_get` | `job_id`, immutable `evidence_id`, optional `offset_bytes` (0–65536, default 0, UTF-8 boundary) |
+| `action_propose` | `job_id`, exact `target`, `objective`, `operation`, `command`, `cwd`, `env`, `affected_paths`, optional `risk` |
+| `action_submit` | immutable `proposal_id` only |
+| `action_status` | `job_id`, `proposal_id` |
+| `session_lower_mode` | `job_id`, `mode` (0–3, reduction only) |
 
 A job budget can lower `deadline_ms` (1–300000) and `parent_payload_bytes` (1024–16384). All request objects reject unknown fields. Results are JSON in one MCP text content item. Tool failures use an `error` code. Invalid arguments on job lookup/cancel/Evidence tools return `invalid_tool_arguments` through the same delivery budget when an owned job ID is present. Unknown or foreign jobs return `job_unavailable`; they cannot consume another owner's budget. `pane_describe` and `job_start` argument failures use the SDK's MCP validation error before a job exists.
 
-`phase: "result_ready"` leaves the job active. `job_ended` indicates lifecycle termination; `action_state: "unsupported"` makes this release's Action boundary explicit. A timed-out wait returns `wait_timed_out: true` without failing the job. Connection loss cancels that connection's active jobs.
+`phase: "result_ready"` leaves the job active. `job_ended` indicates lifecycle termination; `action_state` reports `available`, `scope_required`, or a stopped budget condition. Action outcomes use a separate receipt. A timed-out wait returns `wait_timed_out: true` without failing the job. Connection loss cancels that connection's active jobs, while submitted actions retain their independent bounded observation window.
 
 A failed refresh returns its failure without presenting the previous prepared context as a new observation or `unchanged_view`. New Pane Session and observation metadata are committed only after the Snapshot is retained. Previously issued Evidence remains available under its original IDs until its data lifetime ends.
 
 Prepared rows carry immutable `snapshot_id:L0001` Evidence IDs. Repeated adjacent rows use a first/last ID range with `count` and `omitted`. Row mapping is relative to the observed Herdr response, never an absolute scrollback position. `gaps` always records unobserved history and additionally identifies Herdr truncation, row limits, or byte limits. A partial first row is indicated explicitly. The snapshot's read `revision` is not used as an output cursor.
 
-The 4 KiB routing threshold counts the UTF-8 prepared row text, including Evidence prefixes. The 16 KiB Parent budget counts the JSON text delivered for every job response, including metadata and usage fields. It excludes JSON-RPC framing. A final `parent_budget_exhausted` notice consumes reserved space and ends further observation; subsequent requests for that job return empty content. A single normal response is capped at 8 KiB.
+The 4 KiB routing threshold counts the UTF-8 prepared row text, including Evidence prefixes. The 16 KiB Parent budget counts the JSON text delivered for every job response, including metadata and usage fields, plus the JSON bytes of each actual Action payload. It excludes JSON-RPC framing. A final `parent_budget_exhausted` notice consumes reserved space and ends further observation; subsequent requests for that job return empty content. A single normal response is capped at 8 KiB.
 
 These limits apply independently; the first limit reached wins. Even a prepared context of at most 4 KiB can exceed the 8 KiB response limit after JSON escaping and metadata. Initial Evidence excerpts are deferred first. If the remaining context envelope still does not fit, `parent_budget_exhausted` ends delivery even when the cumulative 16 KiB budget has space left. This error covers both the single-response and cumulative delivery limits; it does not imply that all remaining bytes were consumed.
 
-The console accepts `status`, `purge <job_id>`, `purge all`, `help`, and `quit`. `status` reports up to 32 recent job summaries, total retained job count, budget usage, Snapshot gaps/redaction, retention expiry, data state, and unsupported Action states. It does not print pane text, objectives, or credentials. `quit`, EOF, SIGINT, and SIGTERM stop the core; a killed core releases its SQLite lock for the next process. Diagnostic data is memory-only and is not restored after a restart.
+The console accepts `status`, `purge <job_id>`, `purge all`, `help`, and `quit`, plus the interactive review commands below. `status` reports up to 32 recent job summaries, total retained job count, budget usage, Snapshot gaps/redaction, retention expiry, data state, Action receipts and unresolved terminal holds. It does not print pane text, objectives, or credentials. `quit`, EOF, SIGINT, and SIGTERM stop the core; a killed core releases its SQLite lock for the next process. Diagnostic data is memory-only and is not restored after a restart.
 
 This is a same-OS-user coordination boundary. It does not isolate a malicious process running as that OS user from direct Herdr access. Redaction covers known credential patterns and configured literals, not every possible secret.
 
@@ -111,4 +115,14 @@ A risk review contains `classification` (`read`, `bounded_change`, `high`, `unkn
 
 In the terminal that runs `serve`, use `review <proposal_id>` to see exact target, objective, escaped full payload, risk and revision, then `approve <proposal_id>` or `reject <proposal_id>`. `revoke <proposal_id>` withdraws permission. `mode <session_id> <1|2|3>` selects the session policy. Approval lasts at most five minutes, bounded earlier by the job deadline, cancellation, purge, session/mode changes or revocation. Pipe input, `--yes`, RPC assertions and approval tokens cannot grant this authority. Control and direction-changing characters are escaped in console output.
 
-At this stage every proposal remains `not_submitted`/`not_started`; automatic eligibility also sends zero input. Scope declarations and process metadata do not authenticate a remote host or isolate another process running as the same OS user. SSH and interrupt execution remain unsupported.
+Mode 1 submission requires a current exact approval. Automatic eligibility in mode 2/3 still sends zero input until automatic execution is enabled. Scope declarations and process metadata do not authenticate a remote host or isolate another process running as the same OS user. SSH and interrupt execution remain unsupported.
+
+## Submission and independent observation
+
+`action_submit` uses the stored wrapper and Enter exactly once. It rechecks the job, approval, session, mode revision and ready shell, then commits intent, approval consumption and a terminal hold in a SQLite WAL/FULL transaction before sending. A failed transaction sends no input. Three ordinary attempts are allowed per job, including verified pre-enqueue rejection. Repeating the same proposal returns its receipt without another attempt; response bytes still consume the Parent budget. A held terminal rejects a new ordinary proposal even from another job or connection.
+
+The wrapper runs an explicit cwd and clean environment inside `/bin/sh -c`; cwd and environment changes do not persist in the interactive parent shell. Values use literal POSIX quoting. Direct terminal control bytes in command/cwd/env are rejected; LF is preserved inside quoting. This declaration boundary does not verify arbitrary script semantics or lock out external Herdr clients.
+
+`submission_state` is `accepted` only after a matching Herdr queue ACK, `rejected` for the pinned version's verified pre-enqueue errors, and `unknown` for lost or ambiguous replies. This state says nothing about execution success. `observation_state` starts as `observing`; one complete current nonce/exit row after the passive baseline permits `completion_observed`. Otherwise it becomes `outcome_unknown` after observation failure or the separate 60-second deadline. Exit is null until observed. Echo, stale markers, duplicate markers and ordinary prompts are insufficient. Markers are untrusted output, not unforgeable execution proof.
+
+Receipts support both `accepted` with an unknown outcome and `unknown` with observed completion. They carry the authorization basis, binding, timestamps, observation method, truncation and bounded Evidence when retained. Job cancellation never sends Ctrl-C and does not erase the submitted action's facts. Unknown outcomes preserve the terminal hold. Restart recovers unfinished intents as unknown/held and never replays payloads. Diagnostic purge removes bodies and evidence but preserves consumed IDs and control state. Ledger loss, identity mismatch, corruption or lost authority fails closed.
