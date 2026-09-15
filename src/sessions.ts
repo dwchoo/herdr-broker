@@ -70,6 +70,10 @@ export class Sessions {
     if (session.connection.kind === 'ssh') return this.sshEnabled && session.ssh?.ready === true;
 
     const info = session.process;
-    return info.shell_pid !== null && info.foreground_process_group_id === info.shell_pid && info.foreground_processes.some(item => item.pid === info.shell_pid && ['sh', 'zsh', 'bash', 'dash', 'ksh'].includes(posix.basename(item.argv0 ?? item.name)));
+    return localShellReady(info);
   }
+}
+
+export function localShellReady(info: ProcessInfo) {
+  return info.shell_pid !== null && info.foreground_process_group_id === info.shell_pid && info.foreground_processes.some(item => item.pid === info.shell_pid && ['sh', 'zsh', 'bash', 'dash', 'ksh'].includes(posix.basename(item.argv0 ?? item.name)));
 }

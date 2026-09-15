@@ -6,9 +6,10 @@ import { BrokerError } from './herdr.js';
 
 const encodeConsole = (value: unknown) => JSON.stringify(value).replace(/[\u007f-\u009f\u202a-\u202e\u2066-\u2069]/g, char => `\\u${char.charCodeAt(0).toString(16).padStart(4, '0')}`);
 
-interface ConsoleCore { socketPath: string; close(): Promise<void>; summary(): object; purge(id: string): object; actions?: Actions }
+interface ConsoleCore { socketPath: string; close(): Promise<void>; summary(): object; purge(id: string): object; actions?: Actions; consoleStatus?(): object; addTerminal?(): Promise<object> }
 export function startConsole(core: ConsoleCore, input: Readable, output: Writable) {
   const commands = ['status', 'purge <job_id>', 'purge all', 'review <proposal_id>', 'approve <proposal_id>', 'reject <proposal_id>', 'revoke <proposal_id>', 'mode <session_id> <1|2|3>', 'inspect <pane_id>', 'ssh-ready <pane_session_id> <absolute cwd>', 'recover <original_proposal_id> <new objective>', 'help', 'quit'];
+  if (core.addTerminal) commands.unshift('panes', 'new');
   let buffer = '';
   let reviewed: { id: string; digest: string } | undefined;
   let inspected: Awaited<ReturnType<Actions['inspect']>> | undefined;
@@ -27,6 +28,11 @@ export function startConsole(core: ConsoleCore, input: Readable, output: Writabl
       if (command === 'quit') { await close(); return; }
       const purge = /^purge (all|[0-9a-f-]{36})$/.exec(command);
       try {
+        if (command === 'panes' && core.consoleStatus) { output.write(encodeConsole(core.consoleStatus()) + '\n'); return; }
+        if (command === 'new' && core.addTerminal) {
+          if (!interactive) throw new BrokerError('interactive_console_required');
+          output.write(encodeConsole(await core.addTerminal()) + '\n'); return;
+        }
         const inspect = /^inspect (\S{1,256})$/.exec(command);
         const sshReady = /^ssh-ready ([0-9a-f-]{36}) (.+)$/.exec(command);
         const recover = /^recover ([0-9a-f-]{36}) (.+)$/.exec(command);
@@ -71,7 +77,7 @@ export function startConsole(core: ConsoleCore, input: Readable, output: Writabl
   input.on('data', onData);
   input.once('end', () => void pending.then(close));
   input.once('error', () => void close());
-  output.write(encodeConsole({ status: 'ready', socket: core.socketPath, commands }) + '\n');
+  output.write(encodeConsole({ status: 'ready', socket: core.socketPath, ...(core.consoleStatus && { console: core.consoleStatus() }), commands }) + '\n');
   return close;
 }
 

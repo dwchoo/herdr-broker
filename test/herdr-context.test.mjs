@@ -6,7 +6,7 @@ import { resolve } from 'node:path';
 
 for (const command of ['serve', 'mcp', 'doctor']) test(`Production ${command} refuses a caller running outside Herdr`, () => {
   const env = Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.startsWith('HERDR_')));
-  const result = spawnSync(process.execPath, ['dist/cli.js', command], { env, encoding: 'utf8', timeout: 10000 });
+  const result = spawnSync(process.execPath, ['dist/cli.js', command, ...(command === 'serve' ? ['d4f50e8a-59df-4a84-b87a-8253e48fb5f6'] : [])], { env, encoding: 'utf8', timeout: 10000 });
   assert.equal(result.status, 1);
   assert.equal(result.stdout, '');
   assert.match(result.stderr, /herdr_context_required/);

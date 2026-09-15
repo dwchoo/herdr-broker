@@ -1,0 +1,152 @@
+{
+  "date": "2026-09-16",
+  "versions": {
+    "node": "24.19.0",
+    "herdr": "0.9.0",
+    "protocol": 22,
+    "codex": "0.154.0"
+  },
+  "console_id": "22ed72d7-824e-4ee6-9446-15cb75e598f1",
+  "workspace_id": "w13",
+  "controller_pane": "w13:p1",
+  "original_target": {
+    "pane_id": "w13:p2",
+    "terminal_id": "term_65b881cbe63f12e"
+  },
+  "additional_target": {
+    "pane_id": "w13:p3",
+    "terminal_id": "term_65b884d669ec32f",
+    "workspace_id": "w13",
+    "tab_id": "w13:t2"
+  },
+  "first_action": {
+    "proposal_id": "3fd05fb7-b459-4d41-b69e-d3f4d1259923",
+    "submission_state": "accepted",
+    "observation_state": "completion_observed",
+    "exit_code": 0,
+    "hold_reason": null
+  },
+  "sdk_parent_crash": {
+    "console_id": "22ed72d7-824e-4ee6-9446-15cb75e598f1",
+    "parent_killed_pid": 59595,
+    "target_shell_before": 59601,
+    "target_shell_after": 59601,
+    "core_before": 59708,
+    "core_after": 59708
+  },
+  "sdk_reattach_action": {
+    "proposal_id": "7a45f4bb-b425-4ab6-9d04-72a5d329cace",
+    "submission_state": "accepted",
+    "observation_state": "completion_observed",
+    "exit_code": 0,
+    "hold_reason": null
+  },
+  "actual_codex_skill": {
+    "normal_exit": {
+      "codex_exit": {
+        "code": 0,
+        "signal": null
+      },
+      "core_survived": true,
+      "target_shell_survived": true
+    },
+    "receipt": {
+      "proposal_id": "8dfebdb7-1385-4cfe-80bd-976daaf1bd0d",
+      "submission_state": "accepted",
+      "observation_state": "completion_observed",
+      "exit_code": 0,
+      "hold_reason": null
+    },
+    "tools": [
+      "console_status",
+      "console_attach",
+      "console_status",
+      "pane_describe",
+      "job_start",
+      "job_wait",
+      "evidence_get",
+      "action_propose",
+      "action_propose",
+      "action_submit",
+      "action_status",
+      "evidence_get",
+      "job_cancel",
+      "job_status",
+      "console_status"
+    ],
+    "job_ended_on_budget": true,
+    "notes": "Codex repaired one objective_mismatch. After observing exit 0, cumulative delivery reached the budget while cancelling; job_ended and action_state stopped were verified."
+  },
+  "actual_codex_crash": {
+    "codex_pid": 62696,
+    "job_id": "09c0f687-e186-4125-91b4-c1264e34ef62",
+    "console_id": "22ed72d7-824e-4ee6-9446-15cb75e598f1",
+    "signal": "SIGKILL",
+    "code": null,
+    "killed_after_job_start": true,
+    "core_before": 59708,
+    "core_after": 59708,
+    "target_shell_before": 59601,
+    "target_shell_after": 59601
+  },
+  "continuation_after_codex_crash": {
+    "proposal_id": "cee87477-8d0c-449e-bce0-082f3b1d42c9",
+    "submission_state": "accepted",
+    "observation_state": "completion_observed",
+    "exit_code": 0,
+    "hold_reason": null
+  },
+  "core_restart": {
+    "previous_core_pid": 59708,
+    "new_core_pid": 65772,
+    "panes": [
+      {
+        "pane_id": "w13:p2",
+        "terminal_id": "term_65b881cbe63f12e"
+      },
+      {
+        "pane_id": "w13:p3",
+        "terminal_id": "term_65b884d669ec32f"
+      }
+    ],
+    "receipt_count": 4,
+    "idle_rss_kib": 80816,
+    "idle_cpu_percent": 0,
+    "measurement": "Single idle observation; excludes Parent and Worker"
+  },
+  "tests": {
+    "full_suite": {
+      "passed": 206,
+      "failed": 0
+    },
+    "review_regression_suite": {
+      "passed": 21,
+      "failed": 0
+    },
+    "typecheck": "passed",
+    "skill_validation": "passed",
+    "closed_workspace_regression": "passed",
+    "package_dry_run": "new runtime modules included; tests excluded"
+  },
+  "review": {
+    "standards_remaining": 0,
+    "spec_remaining": 0
+  },
+  "limits": [
+    "New registered Herdr terminals only; existing external panes cannot be adopted",
+    "Parent conversations and historical Evidence are not durably restored",
+    "Same-OS-user deliberate direct CLI/socket access is outside the isolation guarantee"
+  ],
+  "doctor": {
+    "ok": true,
+    "state": {
+      "ok": true,
+      "directory": "/Users/dwchoo/.local/state/herdr-broker/24517a9dee2cf8751bdbceab",
+      "initialized": true,
+      "owner_only": true,
+      "writable": true,
+      "ledger_integrity": "checked_by_core_on_use"
+    },
+    "pane_input_attempts": 0
+  }
+}

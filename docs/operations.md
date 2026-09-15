@@ -4,42 +4,39 @@
 
 검증 기준은 macOS arm64, Node 24, Herdr 0.9.0/protocol 22, Codex CLI 0.154.0이다. Worker는 `gpt-5.6-luna`/low를 사용하며 로컬 Codex 계정의 기존 인증으로 실행한다. 원격에 AI runtime이나 credential을 설치하지 않는다. SSH 실행은 사용자 준비 확인이 필요한 `ssh_posix` profile로 제공한다. [SSH acceptance](implementation/issue-24-ssh-acceptance.md)는 #24 artifact의 기록이며, 현재 checkout의 실행 문맥과 검증 절차는 [project skill 검증](implementation/project-skill-herdr-context.md)을 따른다.
 
-## Herdr 안의 기본 배치
+## Broker Console 시작과 재접속
 
-사용자는 **Herdr의 Parent Pane에서 Codex와 대화하고, 다른 Target Pane의 SSH 또는 로컬 shell을 진단·조작**한다. Broker console도 같은 로컬 Herdr의 별도 pane이나 tab에서 실행한다.
+Herdr에서 이 프로젝트를 연 Codex에게 `$herdr-broker`를 요청한다. Skill은 새 **Broker Console**을 열거나 기존 Console ID에 재접속한다. 새 Console은 전용 Herdr workspace 안에 사용자 조작 pane과 실제 Target terminal을 함께 만든다. 사용자는 Target terminal에 직접 입력하고 Codex는 같은 terminal을 Broker로 읽고 조작한다.
 
-| 위치 | 실행할 것 |
+| 위치 | 역할 |
 | --- | --- |
-| Parent Pane | Broker MCP에 연결한 Codex CLI |
-| Target Pane | SSH 또는 로컬 shell |
-| Broker console pane/tab | `herdr-broker serve`, 승인·모드 변경·복구 |
+| Parent Pane | 프로젝트의 Codex CLI. 하나의 Console에 연결 |
+| Console workspace의 조작 pane | 독립 core, 소유 pane 목록, 승인·모드·복구 |
+| 같은 workspace의 Target Pane | 사용자와 Codex가 공유하는 실제 local/SSH shell |
 
-Worker는 Broker가 필요할 때 실행하는 로컬 child process다. 별도 Worker Pane을 수동으로 열 필요는 없다.
+Console마다 core와 Control State가 독립적이다. Broker가 새로 만든 terminal만 등록하며 기존 외부 pane 가져오기는 제공하지 않는다. Worker는 필요할 때 core가 실행하므로 별도 pane이 필요 없다.
 
-## 설치·기동
-
-이 저장소의 checkout에서는 `.agents/skills/herdr-broker/`의 project skill을 기본 진입점으로 사용한다. Node 24로 `node .agents/skills/herdr-broker/scripts/run.mjs check`를 실행해 Herdr 문맥을 확인한다. 같은 helper의 `serve`는 Broker console, `parent`는 이번 실행에만 MCP를 연결한 Codex를 시작한다. helper는 이 프로젝트 안의 cwd와 실제 Herdr pane을 요구한다.
-
-Parent helper는 이번 Codex 실행에 `on-request` 승인 정책을 적용하고 기존 승인 검토기 설정을 사용한다. Codex의 도구 승인과 Broker의 Action Mode는 각각 적용된다. `approval_policy=never`에서는 승인이 필요한 MCP 변경 도구가 실행 전에 거부된다.
-
-tarball을 별도로 설치하는 경우에는 Herdr의 로컬 shell에서 Node 24를 PATH에 놓고 다음을 실행한다. 아래 `serve`는 Broker console로 사용할 pane/tab에서 실행한다.
+Node 24로 checkout을 준비한다.
 
 ```sh
-npm install --prefix /absolute/install /absolute/herdr-broker-0.1.0.tgz
-/absolute/install/node_modules/.bin/herdr-broker doctor
-/absolute/install/node_modules/.bin/herdr-broker serve
+npm ci
+npm run build
+node .agents/skills/herdr-broker/scripts/run.mjs setup
 ```
 
-Broker console을 열어 두고 **같은 로컬 Herdr의 Parent Pane**에서 Codex를 MCP에 연결한다. Parent Pane에도 Node 24를 PATH에 놓는다. 다음 인자는 이번 Codex 실행에만 MCP 설정을 적용한다.
+`setup`은 이 checkout의 `.codex/config.toml`에 MCP 실행 경로를 설정한다. 전역 설정은 바꾸지 않는다. 기존 파일의 설정은 보존하며 이미 다른 `herdr_broker` 설정이 있으면 덮어쓰지 않는다. 새 파일의 승인 정책은 `on-request`이며 기존 approval reviewer를 사용한다. 이 설정 단계는 Herdr 밖에서도 가능하지만 Broker 도구 사용은 실제 Herdr 문맥을 요구한다. 실행 경로가 바뀌면 setup을 다시 실행한다.
+
+이후 Herdr의 이 프로젝트 shell에서 Codex를 새로 시작해 `$herdr-broker`를 사용한다. 현재 실행 중인 Codex에는 새 MCP 설정이 소급 적용되지 않는다. 이번 실행에만 연결하려면 다음 helper도 사용할 수 있다.
 
 ```sh
-codex -a on-request \
-  -c 'mcp_servers.herdr_broker.command="/absolute/install/node_modules/.bin/herdr-broker"' \
-  -c 'mcp_servers.herdr_broker.args=["mcp"]' \
-  -c 'mcp_servers.herdr_broker.env_vars=["HERDR_ENV","HERDR_PANE_ID","HERDR_WORKSPACE_ID","HERDR_TAB_ID","HERDR_SOCKET_PATH"]'
+node .agents/skills/herdr-broker/scripts/run.mjs parent
 ```
 
-MCP 설정의 command는 설치한 executable의 절대 경로, args는 `["mcp"]`다. Herdr가 주입한 환경변수를 MCP child에 전달하고, child는 실제 pane과 process 계층을 재검증한다. `mcp`는 실행 중인 core에 연결하며 자체 core를 만들지 않는다. Node 26은 거부한다. Docker는 사용하지 않는다.
+MCP가 처음 연결될 때는 terminal이나 core를 만들지 않는다. Skill의 `console_open`이 workspace와 core를 자동으로 시작하며, `console_attach`는 기존 Console을 검증해 연결한다. 사용자가 별도 `serve` 명령을 먼저 실행할 필요가 없다. 한 Console에 Parent 하나만 연결된다.
+
+Codex의 정상 종료·강제 종료 뒤에도 Console과 shell/SSH는 유지된다. 재접속할 Codex에 `$herdr-broker Console <ID>에 이어 붙어줘`라고 요청한다. ID를 모르면 Skill이 목록을 조회한다. 새 Parent는 실행 결과와 hold를 확인한 뒤 새 Job으로 관찰을 이어간다. 이전 command를 재전송하지 않는다.
+
+조작 pane에서 `panes`는 대상과 실행 기록을 보여 주고, `new`는 같은 workspace의 새 tab에 소유 terminal을 추가한다(최대 8개). Herdr에서 수동으로 만든 pane은 등록되지 않는다. `quit`는 core만 중지하고 terminal은 유지한다. 다시 접속하면 기존 조작 pane이 idle shell일 때 같은 Control State로 core를 재시작한다. **작업 공간 전체를 끝내려면 사용자가 Herdr workspace를 닫는다.** 닫힌 workspace를 이전 Console ID로 자동 재생성하지 않는다.
 
 기본 설정 파일은 OS 계정 home의 `~/.config/herdr-broker/config.json`이며 없어도 기본 경로를 사용한다. 사용자 소유 regular file, mode 0600이어야 한다.
 
@@ -51,7 +48,7 @@ MCP 설정의 command는 설치한 executable의 절대 경로, args는 `["mcp"]
 }
 ```
 
-`redaction_patterns`는 정규식이 아닌 literal 문자열이다. 재시작 때 적용한다. HOME/XDG·MCP 인자·`--state-dir`로 state 영역을 바꿀 수 없다. core는 OS 계정 home의 `~/.local/state/herdr-broker/<endpoint digest>/`를 사용한다. directory는 0700, DB·identity·core socket은 0600이다.
+`redaction_patterns`는 정규식이 아닌 literal 문자열이다. 재시작 때 적용한다. HOME/XDG·MCP 인자·`--state-dir`로 state 영역을 바꿀 수 없다. core는 OS 계정 home의 `~/.local/state/herdr-broker/<endpoint와 Console ID의 digest>/`를 사용한다. Console 등록 정보는 같은 root의 `consoles/`에 저장한다. directory는 0700, DB·identity·core socket은 0600이다.
 
 ## 진단과 Action
 
@@ -121,7 +118,7 @@ purge는 Snapshot·report·Evidence·pending payload를 제거한다. 제거된 
 
 ## 문제 점검
 
-`doctor`는 pane에 입력하지 않고 version·profile·state 쓰기/권한을 확인한다. model inference와 credential 조회는 하지 않으므로 계정의 model 사용 가능성은 실제 Worker 호출에서 확인한다.
+`node dist/cli.js doctor <Console ID>`는 pane에 입력하지 않고 version·profile·해당 Console의 실제 state 쓰기/권한을 확인한다. model inference와 credential 조회는 하지 않으므로 계정의 model 사용 가능성은 실제 Worker 호출에서 확인한다.
 
 | 오류 | 확인할 내용 |
 | --- | --- |
@@ -129,7 +126,11 @@ purge는 Snapshot·report·Evidence·pending payload를 제거한다. 제거된 
 | `herdr_context_required` / `herdr_context_mismatch` | 이 프로젝트의 로컬 Herdr pane에서 시작. 환경변수를 수동으로 지정하지 않고 현재 pane의 문맥으로 Parent를 다시 실행 |
 | `project_context_required` | project skill이 있는 저장소 안의 cwd에서 helper 실행 |
 | `herdr_unsupported` / `worker_unsupported` | pinned Herdr/Codex version과 binary 경로 |
-| `core_unavailable` / `authority_busy` | 같은 endpoint의 `serve` terminal과 기존 core |
+| `core_unavailable` / `authority_busy` | 해당 Console의 조작 pane과 core |
+| `console_busy_or_disconnected` | 기존 Parent를 종료하고 다시 접속 |
+| `console_already_bound` | 이 MCP 연결은 이미 Console 하나에 결합됨. 다른 Console은 새 Parent에서 접속 |
+| `pane_outside_console` | 해당 Console이 등록한 pane·terminal·workspace만 사용 |
+| `console_workspace_changed` / `console_controller_busy` | 조작 pane의 mapping과 실행 중인 process를 사용자와 확인 |
 | `config_invalid` / `state_permissions` | 소유권·regular file·권한·strict 설정 field |
 | `session_changed` / `target_changed` | exact pane 재조회 후 새 job/proposal |
 | `terminal_held` | original receipt와 실제 shell 확인 후 명시적 복구 |

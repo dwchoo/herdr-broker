@@ -11,7 +11,7 @@ const reason = (error: unknown) => error instanceof BrokerError ? error.code : e
 async function state(options: CoreOptions) {
   try {
     await mkdir(options.stateRoot, { recursive: true, mode: 0o700 });
-    const directory = stateDirectory(options.endpoint, options.stateRoot);
+    const directory = stateDirectory(options.endpoint, options.stateRoot, options.consoleId);
     const privatePath = async (path: string, kind: 'directory' | 'file' | 'socket') => {
       const info = await lstat(path);
       if (info.uid !== process.getuid?.() || (info.mode & 0o777) !== (kind === 'directory' ? 0o700 : 0o600) || !(kind === 'directory' ? info.isDirectory() : kind === 'socket' ? info.isSocket() : info.isFile() && info.nlink === 1)) throw new BrokerError('state_permissions');

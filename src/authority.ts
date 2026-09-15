@@ -10,12 +10,12 @@ export function privateDirectory(path: string) {
   if (!info.isDirectory() || info.uid !== process.getuid?.()) throw new BrokerError('state_permissions');
   chmodSync(path, 0o700);
 }
-export function stateDirectory(endpoint: string, stateRoot: string) {
-  return join(stateRoot, createHash('sha256').update(endpoint).digest('hex').slice(0, 24));
+export function stateDirectory(endpoint: string, stateRoot: string, consoleId?: string) {
+  return join(stateRoot, createHash('sha256').update(endpoint + (consoleId ? `\0${consoleId}` : '')).digest('hex').slice(0, 24));
 }
-export function acquireAuthority(endpoint: string, stateRoot: string) {
+export function acquireAuthority(endpoint: string, stateRoot: string, consoleId?: string) {
   privateDirectory(stateRoot);
-  const directory = stateDirectory(endpoint, stateRoot);
+  const directory = stateDirectory(endpoint, stateRoot, consoleId);
   const existing = existsSync(directory);
   privateDirectory(directory);
   const path = join(directory, 'authority.sqlite');

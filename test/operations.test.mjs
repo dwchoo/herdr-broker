@@ -8,8 +8,8 @@ import { harness, pane, connect } from './harness.mjs';
 import { consoleProcess } from './console-harness.mjs';
 import { action, scope } from './action-harness.mjs';
 
-async function doctor(endpoint, stateRoot) {
-  const child = spawn(process.execPath, ['test/process-fixture.mjs', 'doctor', endpoint, stateRoot], { stdio: 'pipe' });
+async function doctor(endpoint, stateRoot, consoleId) {
+  const child = spawn(process.execPath, ['test/process-fixture.mjs', 'doctor', endpoint, stateRoot, ...(consoleId ? [consoleId] : [])], { stdio: 'pipe' });
   let stdout = '', stderr = '';
   child.stdout.on('data', chunk => { stdout += chunk; });
   child.stderr.on('data', chunk => { stderr += chunk; });
@@ -18,6 +18,19 @@ async function doctor(endpoint, stateRoot) {
   assert.ok(stdout, stderr);
   return { code, report: JSON.parse(stdout) };
 }
+
+test('Doctor checks the selected Console storage and detects its unsafe ledger permissions', async t => {
+  const consoleId = 'd4f50e8a-59df-4a84-b87a-8253e48fb5f6';
+  const h = await harness(t, { core: { consoleId, scope: { workspace_id: pane.workspace_id, terminals: new Map([[pane.pane_id, pane.terminal_id]]) } } });
+  const directory = dirname(h.core.socketPath);
+  const normal = await doctor(h.endpoint, join(h.root, 'state'), consoleId);
+  assert.equal(normal.report.state.directory, directory);
+  assert.equal(normal.report.state.ok, true);
+  const ledger = join(directory, 'ledger.sqlite');
+  await chmod(ledger, 0o644);
+  try { assert.equal((await doctor(h.endpoint, join(h.root, 'state'), consoleId)).report.state.error, 'state_permissions'); }
+  finally { await chmod(ledger, 0o600); }
+});
 
 test('Doctor checks pinned runtime and state without pane input or consuming first-start initialization', async t => {
   const h = await harness(t), before = h.calls.length, stateRoot = join(h.root, 'doctor-first');

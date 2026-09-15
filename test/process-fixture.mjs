@@ -6,7 +6,7 @@ const [mode, endpoint, stateRoot, clockPath] = process.argv.slice(2);
 try {
   if (mode === 'doctor') {
     const { doctor } = await import('../dist/doctor.js');
-    const report = await doctor({ endpoint, stateRoot });
+    const report = await doctor({ endpoint, stateRoot, ...(clockPath && { consoleId: clockPath }) });
     process.stdout.write(JSON.stringify(report) + '\n');
     process.exitCode = report.ok ? 0 : 1;
   } else if (mode === 'serve') {

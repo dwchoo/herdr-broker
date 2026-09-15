@@ -1,12 +1,12 @@
 # Herdr Broker MCP
 
-This package provides local pane context and restricted Codex Worker diagnosis. Run the Parent and Broker console in local Herdr panes. The project's `herdr-broker` skill starts a console and connects its Parent over stdio. The facade requires an existing core and never starts one automatically.
+This package provides local pane context and restricted Codex Worker diagnosis. Run the Parent and Broker console in local Herdr panes. The project's `herdr-broker` skill starts a console and connects its Parent over stdio. The MCP gateway initially exposes Console lifecycle tools. Opening a Console creates its workspace and independent core; attaching reuses that core or restarts it in its verified idle controller shell.
 
-Production `serve`, `mcp`, and `doctor` verify the injected Herdr context against the configured canonical socket, live pane mapping, and OS process ancestry. An outside caller is rejected even if it copies a real pane's environment. The project helper also requires a cwd within its own project. These entrypoint checks do not provide OS isolation against a same-user process deliberately bypassing the CLI and writing the internal socket protocol directly.
+Production `serve`, `mcp`, and `doctor` verify the injected Herdr context against the configured canonical socket, live pane mapping, and OS process ancestry. An outside caller is rejected even if it copies a real pane's environment. The production MCP gateway, managed core and project helper also require a cwd within their own project. These entrypoint checks do not provide OS isolation against a same-user process deliberately bypassing the CLI and writing the internal socket protocol directly.
 
 ## Supported workflow
 
-1. Call `pane_describe` with an exact Herdr pane ID.
+1. Call `console_open` with a short label, or `console_list` then `console_attach` with an existing Console ID. Read `console_status`, then call `pane_describe` with one of its owned pane IDs.
 2. Call `job_start` with the same pane ID, an objective, and `analysis: "auto"`.
 3. Poll `job_status` or use `job_wait` for a bounded wait. Return the delivered cursor to acknowledge a view and request another observation with `job_wait`.
 4. Use `evidence_get` with a returned immutable row ID to inspect a bounded redacted excerpt.
@@ -18,7 +18,7 @@ Auto returns `prepared_context` at most 4 KiB; larger contexts or `analysis: "wo
 
 ## Local state
 
-The owner configuration is `~/.config/herdr-broker/config.json` (owner-only regular file, mode 0600). Optional `codex_binary` is an absolute executable path, default `/opt/homebrew/bin/codex`; only Codex CLI 0.154.0 with the pinned `gpt-5.6-luna/low` profile is supported. MCP callers cannot supply executable, model, provider, or tool configuration. State is derived from the canonical Herdr socket path under `~/.local/state/herdr-broker/`. The core holds an exclusive SQLite authority lock until shutdown. Directories use mode 0700; database and socket files use mode 0600.
+The owner configuration is `~/.config/herdr-broker/config.json` (owner-only regular file, mode 0600). Optional `codex_binary` is an absolute executable path, default `/opt/homebrew/bin/codex`; only Codex CLI 0.154.0 with the pinned `gpt-5.6-luna/low` profile is supported. MCP callers cannot supply executable, model, provider, or tool configuration. State is derived from the canonical Herdr socket path and Console ID under `~/.local/state/herdr-broker/`. The core holds an exclusive SQLite authority lock until shutdown. Directories use mode 0700; database and socket files use mode 0600.
 
 Snapshot limits are 1,000 physical rows and 64 KiB. Jobs last at most 300 seconds; a wait lasts at most 20 seconds. Repeated result delivery counts toward the 16 KiB per-job Parent payload budget. Diagnostic bodies expire 30 minutes after job termination, on explicit purge, or on core shutdown, whichever occurs first, within a 64 MiB retained-data budget.
 
@@ -29,7 +29,7 @@ Use Node 24 on macOS arm64 and a running Herdr 0.9.0 server (protocol 22). From 
 ```sh
 npm ci
 npm run build
-node .agents/skills/herdr-broker/scripts/run.mjs serve
+node .agents/skills/herdr-broker/scripts/run.mjs setup
 ```
 
 The default endpoint is the OS account's `~/.config/herdr/herdr.sock`. An optional owner-only configuration file (mode 0600) can select another endpoint and literal redaction patterns:
@@ -49,12 +49,16 @@ In the Parent shell pane, start Codex with this project's MCP connection:
 node .agents/skills/herdr-broker/scripts/run.mjs parent
 ```
 
-The helper passes `herdr_broker` MCP settings only to that Codex invocation, using its absolute Node 24 executable and the project helper's `mcp` command. It forwards only the verified Herdr context fields and leaves the global Codex configuration unchanged. The Parent uses `on-request` approval policy with the existing approval reviewer so state-changing MCP calls can undergo approval; `never` rejects calls that require approval. Codex tool approval and Broker Action Mode both apply. For a separately installed tarball, follow [operations](operations.md); the packaged CLI requires the same real Herdr process context. Codex uses the [MCP server configuration](https://learn.chatgpt.com/docs/extend/mcp?surface=cli).
+Setup writes only this checkout's MCP configuration; a new Codex launched in this project inherits it. The Parent helper provides the same settings for one invocation and uses `on-request` approval policy with the existing reviewer. Codex tool approval and Broker Action Mode both apply. Both paths forward Herdr-injected context for process ancestry validation. See [operations](operations.md) for persistence and restart behavior.
 
 ## Tool arguments and results
 
 | Tool | Arguments |
 | --- | --- |
+| `console_open` | `label` (1–80 characters); create and attach a new Console |
+| `console_list` | optional returned `cursor`; list this project’s Console IDs in pages of at most 20 records / 8 KiB |
+| `console_attach` | `console_id` (UUID); attach one existing Console |
+| `console_status` | no arguments; owned panes, up to 8 recent durable receipts, and holds |
 | `pane_describe` | `pane_id` (exact ID, 1–256 characters) |
 | `job_start` | `pane_id`, `objective` (1–4096 characters), optional `analysis: "auto" \| "worker"`, optional `budget` |
 | `job_status` | `job_id`, optional `cursor` |
@@ -68,6 +72,8 @@ The helper passes `herdr_broker` MCP settings only to that Codex invocation, usi
 
 A job budget can lower `deadline_ms` (1–300000) and `parent_payload_bytes` (1024–16384). All request objects reject unknown fields. Results are JSON in one MCP text content item. Tool failures use an `error` code. Invalid arguments on job lookup/cancel/Evidence tools return `invalid_tool_arguments` through the same delivery budget when an owned job ID is present. Unknown or foreign jobs return `job_unavailable`; they cannot consume another owner's budget. `pane_describe` and `job_start` argument failures use the SDK's MCP validation error before a job exists.
 
+Console lists return `next` and `truncated`. Pass a non-null `next` as `cursor` to retrieve the following page. Lists describe saved registrations; attaching always checks the current native workspace. Use `herdr-broker doctor <console_id>` to check that Console's actual state directory.
+
 `phase: "result_ready"` leaves the job active. `job_ended` indicates lifecycle termination; `action_state` reports `available`, `scope_required`, or a stopped budget condition. Action outcomes use a separate receipt. A timed-out wait returns `wait_timed_out: true` without failing the job. Connection loss cancels that connection's active jobs, while submitted actions retain their independent bounded observation window.
 
 A failed refresh returns its failure without presenting the previous prepared context as a new observation or `unchanged_view`. New Pane Session and observation metadata are committed only after the Snapshot is retained. Previously issued Evidence remains available under its original IDs until its data lifetime ends.
@@ -78,7 +84,7 @@ The 4 KiB routing threshold counts the UTF-8 prepared row text, including Eviden
 
 These limits apply independently; the first limit reached wins. Even a prepared context of at most 4 KiB can exceed the 8 KiB response limit after JSON escaping and metadata. Initial Evidence excerpts are deferred first. If the remaining context envelope still does not fit, `parent_budget_exhausted` ends delivery even when the cumulative 16 KiB budget has space left. This error covers both the single-response and cumulative delivery limits; it does not imply that all remaining bytes were consumed.
 
-The console accepts `status`, `purge <job_id>`, `purge all`, `help`, and `quit`, plus the interactive review commands below. `status` reports up to 32 recent job summaries, total retained job count, budget usage, Snapshot gaps/redaction, retention expiry, data state, Action receipts and unresolved terminal holds. It does not print pane text, objectives, or credentials. `quit`, EOF, SIGINT, and SIGTERM stop the core; a killed core releases its SQLite lock for the next process. Diagnostic data is memory-only and is not restored after a restart.
+The console accepts `panes`, `new` (interactive creation of an owned terminal), `status`, `purge <job_id>`, `purge all`, `help`, and `quit`, plus the interactive review commands below. `status` reports up to 32 recent job summaries, total retained job count, budget usage, Snapshot gaps/redaction, retention expiry, data state, Action receipts and unresolved terminal holds. It does not print pane text, objectives, or credentials. `quit`, EOF, SIGINT, and SIGTERM stop the core; a killed core releases its SQLite lock for the next process. Diagnostic data is memory-only and is not restored after a restart. Parent exit leaves the core and native terminals running. New Parent connections start fresh jobs and inspect durable receipts with `console_status`. A connection stays bound to its first Console; concurrent attachment is refused. Registered pane and terminal IDs must still belong to the recorded workspace. Replaced or moved targets and all outside panes are rejected. Only newly created terminals can be registered.
 
 This is a same-OS-user coordination boundary. It does not isolate a malicious process running as that OS user from direct Herdr access. Redaction covers known credential patterns and configured literals, not every possible secret.
 
