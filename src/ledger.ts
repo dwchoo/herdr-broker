@@ -1,6 +1,6 @@
 import Database from 'better-sqlite3';
 import type { Stats } from 'node:fs';
-import { lstatSync, existsSync, openSync, closeSync, readFileSync, writeFileSync, fsyncSync } from 'node:fs';
+import { lstatSync, existsSync, openSync, closeSync, readSync, readFileSync, writeFileSync, fsyncSync } from 'node:fs';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { BrokerError } from './herdr.js';
@@ -19,11 +19,20 @@ export class Ledger {
   private readonly db: Database.Database;
   private readonly path: string;
   private readonly inode: Stats;
-  constructor(directory: string, private readonly verifyAuthority: () => void, private readonly now = Date.now, private readonly fault: (point: FaultPoint) => void = () => {}) {
+  private readonly sidecars = new Map<string, Stats>();
+  private identity?: { path: string; value: string };
+  constructor(directory: string, private readonly verifyAuthority: () => void, private readonly now = Date.now, private readonly fault: (point: FaultPoint) => void = () => {}, allowInitialize = false) {
     this.path = join(directory, 'ledger.sqlite');
     const marker = join(directory, 'ledger.identity');
     const fresh = !existsSync(this.path) && !existsSync(marker);
+    if (fresh && !allowInitialize) throw new BrokerError('ledger_missing');
     if (!fresh && (!existsSync(this.path) || !existsSync(marker))) throw new BrokerError('ledger_missing');
+    if (!fresh) {
+      if (this.checkFile(marker).size > 128) throw new BrokerError('ledger_invalid');
+      const identity = readFileSync(marker, 'utf8');
+      if (!/^[0-9a-f-]{36}\n(?:dirty|clean)\n\d{1,16}$/.test(identity) || !Number.isSafeInteger(Number(identity.split('\n')[2]))) throw new BrokerError('ledger_invalid');
+      if (identity.split('\n')[1] === 'dirty' && !existsSync(this.path + '-wal')) throw new BrokerError('ledger_missing');
+    }
     if (fresh) closeSync(openSync(this.path, 'wx', 0o600));
     this.inode = lstatSync(this.path);
     this.checkFile(this.path);
@@ -35,19 +44,22 @@ export class Ledger {
       if (fresh) {
         const identity = randomUUID();
         db.transaction(() => {
-          db!.exec('CREATE TABLE metadata (identity TEXT NOT NULL); CREATE TABLE intents (id TEXT PRIMARY KEY, job TEXT NOT NULL, terminal TEXT NOT NULL, operation TEXT NOT NULL, updated INTEGER NOT NULL, control TEXT NOT NULL); CREATE TABLE holds (terminal TEXT PRIMARY KEY, proposal TEXT NOT NULL); CREATE TABLE consumed (id TEXT PRIMARY KEY, digest TEXT NOT NULL)');
-          db!.prepare('INSERT INTO metadata VALUES (?)').run(identity);
+          db!.exec('CREATE TABLE metadata (identity TEXT NOT NULL, generation INTEGER NOT NULL); CREATE TABLE intents (id TEXT PRIMARY KEY, job TEXT NOT NULL, terminal TEXT NOT NULL, operation TEXT NOT NULL, updated INTEGER NOT NULL, control TEXT NOT NULL); CREATE TABLE holds (terminal TEXT PRIMARY KEY, proposal TEXT NOT NULL); CREATE TABLE consumed (id TEXT PRIMARY KEY, digest TEXT NOT NULL)');
+          db!.prepare('INSERT INTO metadata VALUES (?, 0)').run(identity);
         }).immediate();
         const fd = openSync(marker, 'wx', 0o600);
-        try { writeFileSync(fd, identity); fsyncSync(fd); } finally { closeSync(fd); }
+        try { writeFileSync(fd, identity + '\ndirty\n0'); fsyncSync(fd); } finally { closeSync(fd); }
         const directoryFd = openSync(directory, 'r');
         try { fsyncSync(directoryFd); } finally { closeSync(directoryFd); }
       }
       this.checkFile(marker);
-      const metadata = db.prepare('SELECT identity FROM metadata').get() as { identity: string } | undefined;
-      if (metadata?.identity !== readFileSync(marker, 'utf8') || db.pragma('quick_check', { simple: true }) !== 'ok') throw new BrokerError('ledger_invalid');
+      const saved = readFileSync(marker, 'utf8').split('\n');
+      const metadata = db.prepare('SELECT identity, generation FROM metadata').get() as { identity: string; generation: number } | undefined;
+      if (!metadata || metadata.identity !== saved[0] || metadata.generation < Number(saved[2]) || db.pragma('quick_check', { simple: true }) !== 'ok') throw new BrokerError('ledger_invalid');
+      this.identity = { path: marker, value: metadata.identity + '\ndirty\n' + metadata.generation };
+      this.mark('dirty');
       this.verify();
-      db.transaction(() => {
+      this.commit(() => {
         for (const row of db!.prepare('SELECT control FROM intents').all() as Array<{ control: string }>) {
           const control: Control = JSON.parse(row.control);
           if (control.submission_state === 'dispatching') control.submission_state = 'unknown';
@@ -55,18 +67,47 @@ export class Ledger {
           if (this.held(control.terminal_id) === control.proposal_id) { control.hold_reason = 'core_restart'; control.updated_at = this.now(); }
           db!.prepare('UPDATE intents SET control = ?, updated = ? WHERE id = ?').run(JSON.stringify(control), control.updated_at, control.proposal_id);
         }
-      }).immediate();
+      });
+      for (const path of [marker, this.path + '-wal', this.path + '-shm']) this.sidecars.set(path, this.checkFile(path));
     } catch (error) { db?.close(); throw error instanceof BrokerError ? error : new BrokerError('ledger_invalid'); }
   }
   private checkFile(path: string) {
     const info = lstatSync(path);
     if (!info.isFile() || info.uid !== process.getuid?.() || info.nlink !== 1 || (info.mode & 0o077) !== 0) throw new BrokerError('ledger_permissions');
+    return info;
+  }
+  private mark(state: 'dirty' | 'clean', generation = Number(this.identity!.value.split('\n')[2])) {
+    const value = this.identity!.value.split('\n')[0] + '\n' + state + '\n' + generation;
+    const fd = openSync(this.identity!.path, 'r+');
+    try { writeFileSync(fd, value); fsyncSync(fd); } finally { closeSync(fd); }
+    this.identity!.value = value;
+  }
+  private commit<T>(work: () => T): T {
+    const result = this.db.transaction(() => {
+      const value = work();
+      this.db.prepare('UPDATE metadata SET generation = generation + 1').run();
+      return value;
+    }).immediate();
+    const { generation } = this.db.prepare('SELECT generation FROM metadata').get() as { generation: number };
+    // This durable witness must advance before any input can leave the core.
+    this.mark('dirty', generation);
+    this.verify();
+    return result;
   }
   verify() {
     try {
       this.verifyAuthority(); this.checkFile(this.path);
       const current = lstatSync(this.path);
       if (current.ino !== this.inode.ino || current.dev !== this.inode.dev) throw new BrokerError('ledger_lost');
+      const fd = openSync(this.path, 'r'), header = Buffer.alloc(16);
+      try { if (readSync(fd, header, 0, 16, 0) !== 16 || header.toString() !== 'SQLite format 3\0') throw new BrokerError('ledger_invalid'); }
+      finally { closeSync(fd); }
+      if (this.identity && (this.checkFile(this.identity.path).size > 128 || readFileSync(this.identity.path, 'utf8') !== this.identity.value)) throw new BrokerError('ledger_lost');
+      for (const [path, expected] of this.sidecars) {
+        const info = this.checkFile(path);
+        if (info.ino !== expected.ino || info.dev !== expected.dev || info.size < expected.size) throw new BrokerError('ledger_lost');
+        this.sidecars.set(path, info);
+      }
     } catch { throw new BrokerError('ledger_unavailable'); }
   }
   get(id: string): Control | undefined {
@@ -82,7 +123,7 @@ export class Ledger {
   intent(control: Control) {
     this.verify(); this.fault('before_intent');
     try {
-      return this.db.transaction(() => {
+      const result = this.commit(() => {
         const existing = this.get(control.proposal_id);
         if (existing) {
           if (existing.payload_digest !== control.payload_digest) throw new BrokerError('payload_mismatch');
@@ -96,20 +137,29 @@ export class Ledger {
         if (control.operation === 'execute') this.db.prepare('INSERT INTO holds VALUES (?, ?)').run(control.terminal_id, control.proposal_id);
         this.fault('in_transaction'); this.verify();
         return { fresh: true, control };
-      }).immediate();
+      });
+      this.verify();
+      return result;
     } catch (error) { throw error instanceof BrokerError ? error : new BrokerError('ledger_commit_failed'); }
   }
   update(control: Control, release = false) {
     this.verify();
-    try { this.db.transaction(() => {
+    try { this.commit(() => {
       this.db.prepare('UPDATE intents SET updated = ?, control = ? WHERE id = ?').run(control.updated_at, JSON.stringify(control), control.proposal_id);
       if (release) this.db.prepare('DELETE FROM holds WHERE terminal = ? AND proposal = ?').run(control.terminal_id, control.proposal_id);
-    }).immediate(); } catch { throw new BrokerError('ledger_commit_failed'); }
+    }); } catch { throw new BrokerError('ledger_commit_failed'); }
   }
   summary() {
     this.verify();
-    this.db.prepare('DELETE FROM intents WHERE updated < ? AND id NOT IN (SELECT proposal FROM holds)').run(this.now() - 7 * 86400000);
-    return { receipts: (this.db.prepare('SELECT control FROM intents ORDER BY updated DESC LIMIT 32').all() as Array<{ control: string }>).map(row => JSON.parse(row.control)), held_terminals: this.db.prepare('SELECT terminal, proposal FROM holds').all(), tombstone_days: 7 };
+    this.commit(() => this.db.prepare('DELETE FROM intents WHERE updated < ? AND id NOT IN (SELECT proposal FROM holds)').run(this.now() - 7 * 86400000));
+    const counts = this.db.prepare('SELECT (SELECT count(*) FROM intents) AS control_record_count, (SELECT count(*) FROM consumed) AS consumed_proposal_count, (SELECT count(*) FROM holds) AS held_terminal_count').get() as { control_record_count: number; consumed_proposal_count: number; held_terminal_count: number };
+    return { ...counts, receipts: (this.db.prepare('SELECT control FROM intents ORDER BY updated DESC LIMIT 32').all() as Array<{ control: string }>).map(row => JSON.parse(row.control)), held_terminals: this.db.prepare('SELECT h.terminal, h.proposal FROM holds h JOIN intents i ON i.id = h.proposal ORDER BY i.updated DESC, h.terminal LIMIT 32').all(), held_terminals_truncated: counts.held_terminal_count > 32, tombstone_days: 7 };
   }
-  close() { if (this.db.open) this.db.close(); }
+  close() {
+    if (!this.db.open) return;
+    let intact = false;
+    try { this.verify(); intact = true; } catch { /* A damaged ledger must remain dirty. */ }
+    this.db.close();
+    if (intact) this.mark('clean');
+  }
 }

@@ -37,13 +37,16 @@ export async function startCore(options: CoreOptions) {
   const authority = acquireAuthority(endpoint, options.stateRoot);
   const socketPath = join(authority.directory, 'core.sock');
   const herdr = new Herdr(endpoint, authority.verify);
-  try { await herdr.check(); authority.verify(); }
-  catch (error) { authority.close(); throw error; }
-  // Only the exclusive authority may remove a stale facade socket.
-  await unlink(socketPath).catch(error => { if (error.code !== 'ENOENT') { authority.close(); throw error; } });
   let ledger;
-  try { ledger = new Ledger(authority.directory, authority.verify, options.now, options.fault); }
-  catch (error) { authority.close(); throw error; }
+  try {
+    ledger = new Ledger(authority.directory, authority.verify, options.now, options.fault, authority.fresh);
+    await herdr.check(); authority.verify();
+    // Only the exclusive authority may remove a stale facade socket.
+    await unlink(socketPath).catch(error => { if (error.code !== 'ENOENT') throw error; });
+  } catch (error) {
+    try { ledger?.close(); } finally { authority.close(); }
+    throw error;
+  }
   const sessions = new Sessions(herdr);
   const jobs = new Jobs(herdr, options.redactionPatterns, options.now, options.memoryLimit, new CodexWorker(options.worker), sessions);
   const actions = new Actions(herdr, jobs, sessions, { ledger, now: options.now, verifyAuthority: authority.verify, observationMs: options.observationMs, fault: options.fault });

@@ -16,33 +16,42 @@ export type Pane = z.infer<typeof paneSchema>;
 const processSchema = z.object({ pane_id: id, shell_pid: z.number().int().positive().nullable().default(null), foreground_process_group_id: z.number().int().positive().nullable().default(null),
   foreground_processes: z.array(z.object({ pid: z.number().int().positive(), name: z.string().max(256), argv0: z.string().max(4096).nullable().optional() })).max(256).default([]), tty: z.string().max(4096).nullable().optional() });
 export type ProcessInfo = z.infer<typeof processSchema>;
+interface SendHooks { beforeWrite?: () => void; afterWrite?: () => void; onLateAck?: () => void }
 
 export class Herdr {
   constructor(private readonly endpoint: string, private readonly verifyAuthority: () => void) {}
-  private request(method: string, params: object, signal?: AbortSignal, submission = false, afterWrite?: () => void, beforeWrite?: () => void): Promise<unknown> {
+  private request(method: string, params: object, signal?: AbortSignal, submission?: SendHooks): Promise<unknown> {
     return new Promise((resolve, reject) => {
       try { this.verifyAuthority(); } catch (error) { reject(error); return; }
       const requestId = randomUUID();
       const socket = createConnection(this.endpoint);
       let buffer = Buffer.alloc(0);
       let settled = false;
+      let closed = false;
+      let deadline: ReturnType<typeof setTimeout> | undefined;
       const finish = (error?: BrokerError, result?: unknown) => {
-        if (settled) return;
-        settled = true;
+        if (closed) return;
+        closed = true;
+        clearTimeout(deadline);
         buffer = Buffer.alloc(0);
         signal?.removeEventListener('abort', abort);
         socket.destroy();
-        if (error) reject(error); else resolve(result);
+        if (!settled) { settled = true; if (error) reject(error); else resolve(result); }
+        else if (!error && z.object({ type: z.literal('ok') }).safeParse(result).success) submission?.onLateAck?.();
       };
       const abort = () => finish(new BrokerError('cancelled'));
       signal?.addEventListener('abort', abort, { once: true });
       if (signal?.aborted) { abort(); return; }
-      socket.setTimeout(5000, () => finish(new BrokerError('herdr_timeout')));
+      deadline = setTimeout(() => {
+        if (!settled && submission?.onLateAck) {
+          settled = true; reject(new BrokerError('herdr_timeout'));
+        } else finish(new BrokerError('herdr_timeout'));
+      }, 5000);
       socket.on('error', () => finish(new BrokerError('herdr_unavailable')));
       socket.on('end', () => finish(new BrokerError('herdr_disconnected')));
       socket.on('connect', () => {
-        try { this.verifyAuthority(); beforeWrite?.(); socket.write(JSON.stringify({ id: requestId, method, params }) + '\n', () => {
-          try { afterWrite?.(); } catch { finish(new BrokerError('send_interrupted')); }
+        try { this.verifyAuthority(); submission?.beforeWrite?.(); socket.write(JSON.stringify({ id: requestId, method, params }) + '\n', () => {
+          try { submission?.afterWrite?.(); } catch { finish(new BrokerError('send_interrupted')); }
         }); }
         catch (error) { finish(error instanceof BrokerError ? error : new BrokerError('authority_lost')); }
       });
@@ -62,8 +71,8 @@ export class Herdr {
       });
     });
   }
-  async send(paneId: string, payload: { text: string; keys: string[] }, signal?: AbortSignal, afterWrite?: () => void, beforeWrite?: () => void) {
-    const response = await this.request('pane.send_input', { pane_id: paneId, ...payload }, signal, true, afterWrite, beforeWrite);
+  async send(paneId: string, payload: { text: string; keys: string[] }, signal: AbortSignal, hooks: SendHooks) {
+    const response = await this.request('pane.send_input', { pane_id: paneId, ...payload }, signal, hooks);
     if (!z.object({ type: z.literal('ok') }).safeParse(response).success) throw new BrokerError('herdr_invalid_response');
   }
   async processInfo(paneId: string, signal?: AbortSignal) {

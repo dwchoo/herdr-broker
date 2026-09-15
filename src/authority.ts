@@ -38,7 +38,7 @@ export function acquireAuthority(endpoint: string, stateRoot: string) {
     const row = database.prepare('SELECT endpoint, format FROM authority').get();
     if (JSON.stringify(row) !== JSON.stringify({ endpoint, format: 1 }) || database.pragma('quick_check', { simple: true }) !== 'ok') throw new BrokerError('authority_invalid');
     const held = database;
-    return { directory,
+    return { directory, fresh,
       verify() {
         try {
           const current = lstatSync(path);

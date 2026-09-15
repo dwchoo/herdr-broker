@@ -132,7 +132,8 @@ export class Actions {
     try {
       if (!this.jobs.actionContext(proposal.owner, proposal.job).active) throw new BrokerError('job_ended');
       this.options.verifyAuthority();
-      const sent = this.herdr.send(proposal.target.pane_id, payload, AbortSignal.any([this.stop.signal, job.signal]), () => this.options.fault?.('after_wire'), () => {
+      const wireSignal = AbortSignal.any([this.stop.signal, AbortSignal.timeout(Math.min(this.options.observationMs ?? 60000, 60000))]);
+      const sent = this.herdr.send(proposal.target.pane_id, payload, wireSignal, { afterWrite: () => this.options.fault?.('after_wire'), beforeWrite: () => {
         this.options.ledger.verify();
         if (this.stop.signal.aborted || !this.jobs.actionContext(proposal.owner, proposal.job).active) throw new BrokerError('job_ended');
         const current = this.sessions.get(proposal.session);
@@ -140,7 +141,12 @@ export class Actions {
         if (!proposal.body || proposal.rejected) throw new BrokerError('proposal_invalid');
         if (receipt.authorization === 'user_approval' && receipt.approval_expires! <= this.now()) throw new BrokerError('approval_expired');
         if (receipt.authorization !== 'user_approval' && this.decision(proposal).authorization !== receipt.authorization) throw new BrokerError('authorization_changed');
-      });
+      }, onLateAck: () => {
+        if (receipt.submission_state !== 'unknown') return;
+        receipt.submission_state = 'accepted'; receipt.updated_at = this.now();
+        if (receipt.hold_reason === 'submission_unknown') receipt.hold_reason = 'awaiting_outcome';
+        try { this.options.ledger.update(receipt); } catch { receipt.hold_reason = 'ledger_write_failed'; }
+      } });
       await sent;
       receipt.submission_state = 'accepted';
     } catch (error) {
