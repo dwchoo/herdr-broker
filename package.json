@@ -1,0 +1,36 @@
+{
+  "name": "herdr-broker",
+  "version": "0.1.0",
+  "description": "Bounded passive Herdr pane context for Codex",
+  "type": "module",
+  "bin": {
+    "herdr-broker": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "docs/mcp.md",
+    "docs/implementation/issue-13-passive-context.md",
+    "npm-shrinkwrap.json",
+    "docs/implementation/issue-13-acceptance.json"
+  ],
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run build && node --test test/*.test.mjs",
+    "prepack": "npm run build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server": "2.0.0",
+    "better-sqlite3": "13.0.3",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/client": "2.0.0",
+    "@types/better-sqlite3": "9.6.0",
+    "@types/node": "24.13.4",
+    "typescript": "7.0.2"
+  }
+}

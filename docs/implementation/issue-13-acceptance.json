@@ -1,0 +1,275 @@
+{
+  "verified_at": "2026-09-15T07:51:29.254Z",
+  "runtime": {
+    "node": "v24.19.0",
+    "platform": "darwin",
+    "arch": "arm64",
+    "codex": "0.154.0",
+    "herdr": "0.9.0",
+    "herdr_protocol": 22,
+    "sqlite": "3.53.4"
+  },
+  "method_trace": [
+    {
+      "method": "initialize"
+    },
+    {
+      "method": "notifications/initialized"
+    },
+    {
+      "method": "tools/list"
+    },
+    {
+      "method": "tools/call",
+      "tool": "pane_describe"
+    },
+    {
+      "method": "tools/call",
+      "tool": "job_start"
+    },
+    {
+      "method": "tools/call",
+      "tool": "job_status"
+    },
+    {
+      "method": "tools/call",
+      "tool": "job_wait"
+    },
+    {
+      "method": "tools/call",
+      "tool": "job_cancel"
+    }
+  ],
+  "pane_input_bytes_after_fixture_ready": 0,
+  "fixture_preparation": "New disposable workspace w5; the fixture setup input preceded the measured observation period.",
+  "core_state": "OS-account canonical state; real SQLite exclusive authority; installed compiled CLI",
+  "codex_approval": "Ephemeral on-request policy with auto_review; writes mode reviews job_start and job_cancel; user config unchanged.",
+  "calls": [
+    {
+      "tool": "pane_describe",
+      "status": "completed",
+      "result": {
+        "target": {
+          "pane_id": "w5:p1",
+          "terminal_id": "term_65b8093fdbf236",
+          "workspace_id": "w5",
+          "tab_id": "w5:t1"
+        },
+        "context": {
+          "cwd": "/private/tmp/herdr-broker-issue13",
+          "foreground_cwd": "/private/tmp/herdr-broker-issue13",
+          "agent_status": "unknown"
+        },
+        "supported_profiles": [
+          "passive"
+        ],
+        "action_supported": false
+      }
+    },
+    {
+      "tool": "job_start",
+      "status": "completed",
+      "result": {
+        "job_id": "79e9e504-2e1b-40fe-b2a8-fb3723260191",
+        "pane_session_id": "bf9db24d-7c62-4b2f-b2d9-8495c5adfecb",
+        "pane_id": "w5:p1",
+        "phase": "observing",
+        "result_ready": false,
+        "job_ended": false,
+        "action_state": "unsupported",
+        "wait_timed_out": false,
+        "budget": {
+          "deadline_ms": 300000,
+          "deadline_remaining_ms": 299999,
+          "parent_payload_bytes_limit": 16384,
+          "parent_payload_bytes_used": 404,
+          "parent_payload_bytes_remaining": 15980
+        }
+      }
+    },
+    {
+      "tool": "job_status",
+      "status": "completed",
+      "result": {
+        "job_id": "79e9e504-2e1b-40fe-b2a8-fb3723260191",
+        "pane_session_id": "bf9db24d-7c62-4b2f-b2d9-8495c5adfecb",
+        "pane_id": "w5:p1",
+        "phase": "result_ready",
+        "result_ready": true,
+        "job_ended": false,
+        "action_state": "unsupported",
+        "wait_timed_out": false,
+        "snapshot": {
+          "snapshot_id": "5598a1d2-f684-4388-9baf-6e481b9b51c0",
+          "pane_session_id": "bf9db24d-7c62-4b2f-b2d9-8495c5adfecb",
+          "capture_sequence": 1,
+          "captured_at": "2026-09-15T07:51:29.254Z",
+          "source": "recent",
+          "format": "ansi",
+          "physical_rows": 3,
+          "utf8_bytes": 127,
+          "truncated": false,
+          "gaps": [
+            "history_unobserved"
+          ],
+          "history_complete": false,
+          "row_mapping": {
+            "normalized_to_physical": "one_to_one",
+            "first_physical_row": 1,
+            "last_physical_row": 3,
+            "first_row_partial": false
+          },
+          "redaction": {
+            "version": "basic-v1",
+            "pattern_digest": "4f53cda18c2baa0c",
+            "count": 0,
+            "rules": []
+          }
+        },
+        "result": {
+          "kind": "prepared_context",
+          "text": "5598a1d2-f684-4388-9baf-6e481b9b51c0:L0001 ISSUE13_BUILD_FAILED: missing synthetic module\n5598a1d2-f684-4388-9baf-6e481b9b51c0:L0002 unknown fixture detail retained\n5598a1d2-f684-4388-9baf-6e481b9b51c0:L0003 ISSUE13_BUILD_PASSED: conflicting stale evidence"
+        },
+        "budget": {
+          "deadline_ms": 300000,
+          "deadline_remaining_ms": 295525,
+          "parent_payload_bytes_limit": 16384,
+          "parent_payload_bytes_used": 1660,
+          "parent_payload_bytes_remaining": 14724
+        }
+      }
+    },
+    {
+      "tool": "job_wait",
+      "status": "completed",
+      "result": {
+        "job_id": "79e9e504-2e1b-40fe-b2a8-fb3723260191",
+        "pane_session_id": "bf9db24d-7c62-4b2f-b2d9-8495c5adfecb",
+        "pane_id": "w5:p1",
+        "phase": "result_ready",
+        "result_ready": true,
+        "job_ended": false,
+        "action_state": "unsupported",
+        "wait_timed_out": false,
+        "snapshot": {
+          "snapshot_id": "5598a1d2-f684-4388-9baf-6e481b9b51c0",
+          "pane_session_id": "bf9db24d-7c62-4b2f-b2d9-8495c5adfecb",
+          "capture_sequence": 1,
+          "captured_at": "2026-09-15T07:51:29.254Z",
+          "source": "recent",
+          "format": "ansi",
+          "physical_rows": 3,
+          "utf8_bytes": 127,
+          "truncated": false,
+          "gaps": [
+            "history_unobserved"
+          ],
+          "history_complete": false,
+          "row_mapping": {
+            "normalized_to_physical": "one_to_one",
+            "first_physical_row": 1,
+            "last_physical_row": 3,
+            "first_row_partial": false
+          },
+          "redaction": {
+            "version": "basic-v1",
+            "pattern_digest": "4f53cda18c2baa0c",
+            "count": 0,
+            "rules": []
+          }
+        },
+        "result": {
+          "kind": "prepared_context",
+          "text": "5598a1d2-f684-4388-9baf-6e481b9b51c0:L0001 ISSUE13_BUILD_FAILED: missing synthetic module\n5598a1d2-f684-4388-9baf-6e481b9b51c0:L0002 unknown fixture detail retained\n5598a1d2-f684-4388-9baf-6e481b9b51c0:L0003 ISSUE13_BUILD_PASSED: conflicting stale evidence"
+        },
+        "budget": {
+          "deadline_ms": 300000,
+          "deadline_remaining_ms": 291415,
+          "parent_payload_bytes_limit": 16384,
+          "parent_payload_bytes_used": 2916,
+          "parent_payload_bytes_remaining": 13468
+        }
+      }
+    },
+    {
+      "tool": "job_cancel",
+      "status": "completed",
+      "result": {
+        "job_id": "79e9e504-2e1b-40fe-b2a8-fb3723260191",
+        "pane_session_id": "bf9db24d-7c62-4b2f-b2d9-8495c5adfecb",
+        "pane_id": "w5:p1",
+        "phase": "cancelled",
+        "result_ready": true,
+        "job_ended": true,
+        "action_state": "unsupported",
+        "wait_timed_out": false,
+        "snapshot": {
+          "snapshot_id": "5598a1d2-f684-4388-9baf-6e481b9b51c0",
+          "pane_session_id": "bf9db24d-7c62-4b2f-b2d9-8495c5adfecb",
+          "capture_sequence": 1,
+          "captured_at": "2026-09-15T07:51:29.254Z",
+          "source": "recent",
+          "format": "ansi",
+          "physical_rows": 3,
+          "utf8_bytes": 127,
+          "truncated": false,
+          "gaps": [
+            "history_unobserved"
+          ],
+          "history_complete": false,
+          "row_mapping": {
+            "normalized_to_physical": "one_to_one",
+            "first_physical_row": 1,
+            "last_physical_row": 3,
+            "first_row_partial": false
+          },
+          "redaction": {
+            "version": "basic-v1",
+            "pattern_digest": "4f53cda18c2baa0c",
+            "count": 0,
+            "rules": []
+          }
+        },
+        "result": {
+          "kind": "prepared_context",
+          "text": "5598a1d2-f684-4388-9baf-6e481b9b51c0:L0001 ISSUE13_BUILD_FAILED: missing synthetic module\n5598a1d2-f684-4388-9baf-6e481b9b51c0:L0002 unknown fixture detail retained\n5598a1d2-f684-4388-9baf-6e481b9b51c0:L0003 ISSUE13_BUILD_PASSED: conflicting stale evidence"
+        },
+        "budget": {
+          "deadline_ms": 300000,
+          "deadline_remaining_ms": 285315,
+          "parent_payload_bytes_limit": 16384,
+          "parent_payload_bytes_used": 4168,
+          "parent_payload_bytes_remaining": 12216
+        }
+      }
+    }
+  ],
+  "source_sha256": {
+    "src/snapshot.ts": "1daf0dce012fcfe60c05484e2ed50f79302e4f5efc01537244d50997f2a83ebd",
+    "src/authority.ts": "3050a936340c412fc0debb3564200c4b7ff156c0cce6efd236cb284b23aac97f",
+    "src/cli.ts": "f940d63b4555e6540341810de5acf85326c403501d59961c29adef9ed1c115cd",
+    "src/herdr.ts": "ca2d9e6f938bbaf94781bc7c06a81fc84a433e3de5ef89a8d09ca4d4bc72ccb4",
+    "src/jobs.ts": "4c25ca6ea0386319cdaf8feb5bf763127b7823e58ea61e747a2e301adccae275",
+    "src/runtime.ts": "afb4d14a4817b5fa78e1bf655d205fb3cbad7321bd3428492fab2bc4910dfc30",
+    "src/core.ts": "b8cd9c8918e667b0ac8720de528762ede49e4d3dbd179b5f83faf7eac82493ba",
+    "src/config.ts": "9e8634311ab5d0adf30ee2bbc8c053a4a7d656677d0d824e0fc384b8a31b6bbf"
+  },
+  "validation": {
+    "typecheck": "passed",
+    "full_test_suite": {
+      "passed": 14,
+      "failed": 0
+    },
+    "standards_review": {
+      "findings": 1,
+      "fixed": 1,
+      "remaining": 0
+    },
+    "spec_review": {
+      "findings": 2,
+      "fixed": 2,
+      "remaining": 0
+    },
+    "job_payload_bytes_measured": 4168
+  }
+}
