@@ -154,3 +154,7 @@ In the interactive console, `inspect <pane_id>` passively shows the exact target
 The session binds exact mapping, shell PID, observed SSH process/group/argument context and Herdr continuity. Ordinary local foreground commands preserve the session. SSH entry/exit or changed connection context, pane move/recreation, endpoint inode replacement and passive connection loss invalidate prior proposals and approvals. Normal per-request socket closure is not a new session; a missing Action ACK alone does not invalidate otherwise observable continuity. Undetected PID reuse, remote identity changes, check/send races and external Herdr input remain outside the guarantee.
 
 If a refresh observes a different session, the old job ends with `session_changed`; start a new job, whose initial Delta is `replace` and default mode is 2. The old job cannot silently adopt the new target, scope or mode. Old Evidence remains bound to its immutable old Snapshot until normal retention/purge. New modes/jobs do not release a durable terminal hold. SSH remains passive until its separate actual acceptance enables an explicit supported execution profile.
+
+## Diagnostic interpretation
+
+Evidence `truncated` describes excerpt pagination (`truncation_scope: "excerpt"`); it never cancels Snapshot history gaps or proves complete terminal history. A module resolution error does not by itself prove a missing file. Cache-hit messages are not contradictory evidence unless their scope actually conflicts with the failure. Keep these as hypotheses when the needed facts are absent.

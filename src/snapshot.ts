@@ -70,7 +70,7 @@ export function excerpt(snapshotId: string, rows: readonly string[], firstRow = 
   type Item = { evidence_id: string; text: string; offset_bytes: number };
   type Position = { evidence_id: string; offset_bytes: number };
   const items: Item[] = [];
-  const wrap = (entries: Item[], next: Position | null) => ({ items: entries, truncated: next !== null, next });
+  const wrap = (entries: Item[], next: Position | null) => ({ items: entries, truncation_scope: 'excerpt', truncated: next !== null, next });
   const positions = selectedRows ?? Array.from({ length: rows.length - firstRow }, (_, index) => firstRow + index);
   let position = 0;
   let row = positions[position] ?? rows.length;

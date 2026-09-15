@@ -267,7 +267,7 @@ export class Jobs {
     let text = encode();
     const firstEvidenceId = job.current?.report?.findings[0]?.evidence_ids[0] ?? (job.current?.prepared && job.current.value ? `${job.current.value.metadata.snapshot_id}:L0001` : undefined);
     if (view && 'evidence' in view && firstEvidenceId && (budget.parent_payload_bytes_used > job.limit - 512 || Buffer.byteLength(text) > 8192)) {
-      response = { ...view, evidence: { items: [], truncated: true, next: { evidence_id: firstEvidenceId, offset_bytes: 0 } }, budget };
+      response = { ...view, evidence: { items: [], truncation_scope: 'excerpt', truncated: true, next: { evidence_id: firstEvidenceId, offset_bytes: 0 } }, budget };
       text = encode();
     }
     if (budget.parent_payload_bytes_used > job.limit - 512 || Buffer.byteLength(text) > 8192) {

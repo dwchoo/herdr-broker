@@ -361,3 +361,17 @@ test('The 4096-byte routing boundary also obeys the independent encoded-response
   assert.equal(escaped.budget.parent_payload_bytes_used, delivered);
   assert.deepEqual(await client.call('job_status', { job_id: escaped.job_id }), { payload_omitted: true });
 });
+
+test('Evidence pagination completion never clears a truncated Snapshot history', async t => {
+  const h = await harness(t, { text: 'make: Error 2', respond(socket, request, response) {
+    if (request.method === 'pane.read') response.result.read.truncated = true;
+    socket.write(JSON.stringify(response) + '\n');
+  } });
+  const client = await h.connect(), ready = await observe(client);
+  const reply = await client.call('evidence_get', { job_id: ready.job_id, evidence_id: `${ready.snapshot.snapshot_id}:L0001` });
+  assert.equal(ready.snapshot.truncated, true);
+  assert.equal(ready.snapshot.history_complete, false);
+  assert.equal(reply.evidence.truncated, false);
+  assert.equal(reply.evidence.truncation_scope, 'excerpt');
+  assert.match(client.hello.result.instructions, /excerpt pagination/);
+});
