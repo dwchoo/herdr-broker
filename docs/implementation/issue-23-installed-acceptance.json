@@ -1,0 +1,447 @@
+{
+  "at": "2026-09-15T13:28:02.322Z",
+  "installation": {
+    "at": "2026-09-15T13:13:55.915Z",
+    "node": "24.19.0",
+    "platform": "darwin",
+    "arch": "arm64",
+    "root": "/private/tmp/hb-installed-MKRgn8",
+    "executable": "/private/tmp/hb-installed-MKRgn8/installed/node_modules/.bin/herdr-broker",
+    "tarball": "/private/tmp/hb-installed-MKRgn8/package/herdr-broker-0.1.0.tgz",
+    "integrity": "sha512-9hnxG4P7wVPBwY0+IVofx6eZsjtTWFxXRLAKo1GoYlfVwbT1qik42E/nEt5iUzPCtp/wXIiTb/WECH6Oa8AmEQ==",
+    "files": [
+      "README.md",
+      "dist/actions.js",
+      "dist/authority.js",
+      "dist/cli.js",
+      "dist/config.js",
+      "dist/core.js",
+      "dist/doctor.js",
+      "dist/herdr.js",
+      "dist/jobs.js",
+      "dist/ledger.js",
+      "dist/runtime.js",
+      "dist/sessions.js",
+      "dist/snapshot.js",
+      "dist/worker.js",
+      "docs/implementation/issue-13-acceptance.json",
+      "docs/implementation/issue-13-passive-context.md",
+      "docs/mcp.md",
+      "docs/operations.md",
+      "npm-shrinkwrap.json",
+      "package.json"
+    ],
+    "package": "herdr-broker",
+    "version": "0.1.0"
+  },
+  "doctor": {
+    "ok": true,
+    "runtime": {
+      "node": "24.19.0",
+      "platform": "darwin",
+      "arch": "arm64",
+      "sqlite": "3.53.4",
+      "supported": true
+    },
+    "herdr": {
+      "ok": true,
+      "version": "0.9.0",
+      "protocol": 22
+    },
+    "worker": {
+      "ok": true,
+      "cli_version": "0.154.0",
+      "model_requested": "gpt-5.6-luna",
+      "effort": "low",
+      "model_observed": null,
+      "profile": "restricted_diagnosis",
+      "model_availability": "not_probed",
+      "inference_performed": false
+    },
+    "state": {
+      "ok": true,
+      "directory": "/Users/dwchoo/.local/state/herdr-broker/56f82c911d6eb61148ebf54a",
+      "initialized": true,
+      "owner_only": true,
+      "writable": true,
+      "ledger_integrity": "checked_by_core_on_use"
+    },
+    "profiles": {
+      "passive": true,
+      "local_posix": true,
+      "ssh_posix": false
+    },
+    "limits": {
+      "parent_payload_bytes": 16384,
+      "worker_calls": 4,
+      "ordinary_actions": 3,
+      "interrupts": 1
+    },
+    "privacy": {
+      "mode": "broker_memory",
+      "complete_no_store": false
+    },
+    "pane_input_attempts": 0
+  },
+  "permissions": {
+    "directory": 448,
+    "authority.sqlite": 384,
+    "ledger.sqlite": 384,
+    "ledger.identity": 384,
+    "core.sock": 384
+  },
+  "actual_parent": {
+    "code": 0,
+    "elapsed_ms": 54942,
+    "mcp_command": "/private/tmp/hb-installed-MKRgn8/installed/node_modules/.bin/herdr-broker",
+    "tools": [
+      {
+        "tool": "pane_describe",
+        "value": {
+          "target": {
+            "pane_id": "wF:p1",
+            "terminal_id": "term_65b8581cba32816",
+            "workspace_id": "wF",
+            "tab_id": "wF:t1"
+          },
+          "pane_session_id": "dd7b720c-6e05-4181-a6c0-b835c4128099",
+          "action_mode": 1,
+          "mode_revision": 2,
+          "observed_connection": {
+            "kind": "local",
+            "local_ssh_process_ids": [],
+            "remote_identity_authenticated": false
+          },
+          "context": {
+            "cwd": "<disposable-cwd>",
+            "foreground_cwd": "<disposable-cwd>",
+            "agent_status": "unknown"
+          },
+          "supported_profiles": [
+            "passive",
+            "local_posix"
+          ],
+          "action_supported": true,
+          "automatic_modes_supported": true
+        }
+      },
+      {
+        "tool": "job_start",
+        "value": {
+          "job_id": "fde7f55b-a55c-4f52-ab8e-339ceeced3a5",
+          "pane_session_id": "ccd7ad03-61e7-4879-94f2-cac24ad39506",
+          "pane_id": "wF:p1",
+          "phase": "observing",
+          "data_state": "retained",
+          "result_ready": false,
+          "job_ended": false,
+          "action_mode": null,
+          "mode_revision": null,
+          "action_state": "available",
+          "wait_timed_out": false,
+          "budget": {
+            "deadline_ms": 300000,
+            "deadline_remaining_ms": 300000,
+            "parent_payload_bytes_limit": 16384,
+            "parent_payload_bytes_used": 466,
+            "parent_payload_bytes_remaining": 15918
+          }
+        }
+      },
+      {
+        "tool": "job_wait",
+        "value": {
+          "job_id": "fde7f55b-a55c-4f52-ab8e-339ceeced3a5",
+          "error": "invalid_tool_arguments",
+          "budget": {
+            "deadline_ms": 300000,
+            "deadline_remaining_ms": 297246,
+            "parent_payload_bytes_limit": 16384,
+            "parent_payload_bytes_used": 717,
+            "parent_payload_bytes_remaining": 15667
+          }
+        }
+      },
+      {
+        "tool": "job_wait",
+        "value": {
+          "job_id": "fde7f55b-a55c-4f52-ab8e-339ceeced3a5",
+          "pane_session_id": "dd7b720c-6e05-4181-a6c0-b835c4128099",
+          "pane_id": "wF:p1",
+          "phase": "result_ready",
+          "data_state": "retained",
+          "result_ready": true,
+          "job_ended": false,
+          "action_mode": 1,
+          "mode_revision": 2,
+          "action_state": "available",
+          "wait_timed_out": false,
+          "cursor": "427fe7fa-8b7b-4f65-82a7-493f65dd3533",
+          "cursor_expires_at": "2026-09-15T13:28:28.053Z",
+          "observation": {
+            "sequence": 1,
+            "observed_at": "2026-09-15T13:27:28.047Z"
+          },
+          "delta": {
+            "kind": "replace",
+            "history_complete": false
+          },
+          "snapshot": {
+            "snapshot_id": "a9abb923-9a5d-4172-a437-8262e6d74b23",
+            "pane_session_id": "dd7b720c-6e05-4181-a6c0-b835c4128099",
+            "capture_sequence": 1,
+            "captured_at": "2026-09-15T13:27:28.047Z",
+            "source": "recent",
+            "format": "ansi",
+            "physical_rows": 1,
+            "utf8_bytes": 51,
+            "truncated": false,
+            "gaps": [
+              "history_unobserved"
+            ],
+            "history_complete": false,
+            "row_mapping": {
+              "normalized_to_physical": "one_to_one",
+              "first_physical_row": 1,
+              "last_physical_row": 1,
+              "first_row_partial": false
+            },
+            "redaction": {
+              "version": "basic-v1",
+              "pattern_digest": "4f53cda18c2baa0c",
+              "count": 0,
+              "rules": []
+            }
+          },
+          "result": {
+            "kind": "prepared_context",
+            "text": "a9abb923-9a5d-4172-a437-8262e6d74b23:L0001 dwchoo@DongWonui-MacBookPro hb-live-local-QPN3eS % "
+          },
+          "evidence": {
+            "items": [
+              {
+                "evidence_id": "a9abb923-9a5d-4172-a437-8262e6d74b23:L0001",
+                "text": "dwchoo@DongWonui-MacBookPro hb-live-local-QPN3eS % ",
+                "offset_bytes": 0
+              }
+            ],
+            "truncation_scope": "excerpt",
+            "truncated": false,
+            "next": null
+          },
+          "budget": {
+            "deadline_ms": 300000,
+            "deadline_remaining_ms": 293914,
+            "parent_payload_bytes_limit": 16384,
+            "parent_payload_bytes_used": 2302,
+            "parent_payload_bytes_remaining": 14082
+          }
+        }
+      },
+      {
+        "tool": "evidence_get",
+        "value": {
+          "job_id": "fde7f55b-a55c-4f52-ab8e-339ceeced3a5",
+          "evidence": {
+            "items": [
+              {
+                "evidence_id": "a9abb923-9a5d-4172-a437-8262e6d74b23:L0001",
+                "text": "dwchoo@DongWonui-MacBookPro hb-live-local-QPN3eS % ",
+                "offset_bytes": 0
+              }
+            ],
+            "truncation_scope": "excerpt",
+            "truncated": false,
+            "next": null
+          },
+          "budget": {
+            "deadline_ms": 300000,
+            "deadline_remaining_ms": 289279,
+            "parent_payload_bytes_limit": 16384,
+            "parent_payload_bytes_used": 2742,
+            "parent_payload_bytes_remaining": 13642
+          }
+        }
+      },
+      {
+        "tool": "action_propose",
+        "value": {
+          "job_id": "fde7f55b-a55c-4f52-ab8e-339ceeced3a5",
+          "proposal_id": "5249ee56-e620-4f05-b7f1-6c0744849f26",
+          "pane_session_id": "dd7b720c-6e05-4181-a6c0-b835c4128099",
+          "target": {
+            "pane_id": "wF:p1",
+            "terminal_id": "term_65b8581cba32816",
+            "workspace_id": "wF",
+            "tab_id": "wF:t1"
+          },
+          "mode_revision": 2,
+          "operation": "execute",
+          "original_proposal_id": null,
+          "payload_digest": "f71f7768467a3c062e716e14b1c59bc90129b5c0ff549a8539da0935a85a62a8",
+          "contract": "action.v1",
+          "submission_state": "not_submitted",
+          "observation_state": "not_started",
+          "exit_code": null,
+          "authorization": "approval_required",
+          "reason": "policy_requires_approval",
+          "approval_expires_at": null,
+          "payload": {
+            "text": "/bin/sh -c 'printf '\\''\\n__HERDR_%s_%s__\\n'\\'' BEGIN '\\''751729b007c42702c36dc2fbc6b40dc1'\\''; ( cd '\\''<disposable-cwd>'\\'' && /usr/bin/env -i PATH=/usr/bin:/bin:/usr/sbin:/sbin  /bin/sh -c '\\''printf '\\''\\'\\'''\\''INSTALL_PROBE\\n'\\''\\'\\'''\\'''\\''\n); herdr_broker_exit=$?; printf '\\''\\n__HERDR_%s_%s__:%s\\n'\\'' END '\\''751729b007c42702c36dc2fbc6b40dc1'\\'' \"$herdr_broker_exit\"; exit \"$herdr_broker_exit\"'",
+            "keys": [
+              "Enter"
+            ]
+          },
+          "budget": {
+            "deadline_ms": 300000,
+            "deadline_remaining_ms": 280325,
+            "parent_payload_bytes_limit": 16384,
+            "parent_payload_bytes_used": 4024,
+            "parent_payload_bytes_remaining": 12360
+          }
+        }
+      },
+      {
+        "tool": "action_status",
+        "value": {
+          "job_id": "fde7f55b-a55c-4f52-ab8e-339ceeced3a5",
+          "proposal_id": "5249ee56-e620-4f05-b7f1-6c0744849f26",
+          "pane_session_id": "dd7b720c-6e05-4181-a6c0-b835c4128099",
+          "target": {
+            "pane_id": "wF:p1",
+            "terminal_id": "term_65b8581cba32816",
+            "workspace_id": "wF",
+            "tab_id": "wF:t1"
+          },
+          "mode_revision": 2,
+          "operation": "execute",
+          "original_proposal_id": null,
+          "payload_digest": "f71f7768467a3c062e716e14b1c59bc90129b5c0ff549a8539da0935a85a62a8",
+          "contract": "action.v1",
+          "submission_state": "not_submitted",
+          "observation_state": "not_started",
+          "exit_code": null,
+          "authorization": "approval_required",
+          "reason": "policy_requires_approval",
+          "approval_expires_at": null,
+          "budget": {
+            "deadline_ms": 300000,
+            "deadline_remaining_ms": 276862,
+            "parent_payload_bytes_limit": 16384,
+            "parent_payload_bytes_used": 4816,
+            "parent_payload_bytes_remaining": 11568
+          }
+        }
+      },
+      {
+        "tool": "job_cancel",
+        "value": {
+          "job_id": "fde7f55b-a55c-4f52-ab8e-339ceeced3a5",
+          "pane_session_id": "dd7b720c-6e05-4181-a6c0-b835c4128099",
+          "pane_id": "wF:p1",
+          "phase": "cancelled",
+          "data_state": "retained",
+          "result_ready": true,
+          "job_ended": true,
+          "action_mode": 1,
+          "mode_revision": 2,
+          "action_state": "available",
+          "wait_timed_out": false,
+          "cursor": "427fe7fa-8b7b-4f65-82a7-493f65dd3533",
+          "cursor_expires_at": "2026-09-15T13:28:28.053Z",
+          "observation": {
+            "sequence": 1,
+            "observed_at": "2026-09-15T13:27:28.047Z"
+          },
+          "delta": {
+            "kind": "replace",
+            "history_complete": false
+          },
+          "snapshot": {
+            "snapshot_id": "a9abb923-9a5d-4172-a437-8262e6d74b23",
+            "pane_session_id": "dd7b720c-6e05-4181-a6c0-b835c4128099",
+            "capture_sequence": 1,
+            "captured_at": "2026-09-15T13:27:28.047Z",
+            "source": "recent",
+            "format": "ansi",
+            "physical_rows": 1,
+            "utf8_bytes": 51,
+            "truncated": false,
+            "gaps": [
+              "history_unobserved"
+            ],
+            "history_complete": false,
+            "row_mapping": {
+              "normalized_to_physical": "one_to_one",
+              "first_physical_row": 1,
+              "last_physical_row": 1,
+              "first_row_partial": false
+            },
+            "redaction": {
+              "version": "basic-v1",
+              "pattern_digest": "4f53cda18c2baa0c",
+              "count": 0,
+              "rules": []
+            }
+          },
+          "result": {
+            "kind": "prepared_context",
+            "text": "a9abb923-9a5d-4172-a437-8262e6d74b23:L0001 dwchoo@DongWonui-MacBookPro hb-live-local-QPN3eS % "
+          },
+          "evidence": {
+            "items": [
+              {
+                "evidence_id": "a9abb923-9a5d-4172-a437-8262e6d74b23:L0001",
+                "text": "dwchoo@DongWonui-MacBookPro hb-live-local-QPN3eS % ",
+                "offset_bytes": 0
+              }
+            ],
+            "truncation_scope": "excerpt",
+            "truncated": false,
+            "next": null
+          },
+          "budget": {
+            "deadline_ms": 300000,
+            "deadline_remaining_ms": 271657,
+            "parent_payload_bytes_limit": 16384,
+            "parent_payload_bytes_used": 6397,
+            "parent_payload_bytes_remaining": 9987
+          }
+        }
+      }
+    ],
+    "usage": {
+      "input_tokens": 175333,
+      "cached_input_tokens": 149248,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 1222,
+      "reasoning_output_tokens": 233
+    },
+    "stderr_bytes": 0
+  },
+  "facade_protocol": [
+    {
+      "id": 1,
+      "initialized": true
+    },
+    {
+      "id": 2,
+      "initialized": false,
+      "tools": [
+        "pane_describe",
+        "job_start",
+        "job_status",
+        "job_wait",
+        "job_cancel",
+        "action_propose",
+        "action_submit",
+        "action_status",
+        "session_lower_mode",
+        "evidence_get"
+      ]
+    }
+  ],
+  "purge_pending": "body absent; approval blocked",
+  "pane_input_attempts": 0,
+  "state_body_matches": 0
+}

@@ -4,7 +4,12 @@ import { startCore } from '../dist/core.js';
 import { startConsole, connectFacade } from '../dist/runtime.js';
 const [mode, endpoint, stateRoot, clockPath] = process.argv.slice(2);
 try {
-  if (mode === 'serve') {
+  if (mode === 'doctor') {
+    const { doctor } = await import('../dist/doctor.js');
+    const report = await doctor({ endpoint, stateRoot });
+    process.stdout.write(JSON.stringify(report) + '\n');
+    process.exitCode = report.ok ? 0 : 1;
+  } else if (mode === 'serve') {
     const core = await startCore({ endpoint, stateRoot, ...(clockPath && { now: () => Number(readFileSync(clockPath, 'utf8')) }), ...(process.env.HB_TEST_REDACTION && { redactionPatterns: JSON.parse(process.env.HB_TEST_REDACTION) }), ...(process.env.HB_TEST_OBSERVATION_MS && { observationMs: Number(process.env.HB_TEST_OBSERVATION_MS) }), fault: point => {
       if (process.env.HB_TEST_FAULT === point) process.kill(process.pid, 'SIGKILL');
       if (point === 'before_wire' && process.env.HB_TEST_BEFORE_WIRE_CONSOLE) {

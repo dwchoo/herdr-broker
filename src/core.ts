@@ -125,5 +125,5 @@ export async function startCore(options: CoreOptions) {
     await once(server, 'listening');
     await chmod(socketPath, 0o600);
   } catch (error) { await close(); throw error; }
-  return { socketPath, close, summary: () => ({ ...jobs.summary(), ...actions.summary() }), actions, purge: (id: string) => { authority.verify(); return jobs.purge(id); } };
+  return { socketPath, close, summary: () => { const status = jobs.summary(); return { ...status, jobs: status.jobs.map(job => ({ ...job, ...actions.budget(job.job_id) })), ...sessions.summary(), ...actions.summary() }; }, actions, purge: (id: string) => { authority.verify(); return jobs.purge(id); } };
 }

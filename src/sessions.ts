@@ -48,6 +48,7 @@ export class Sessions {
     if (mode !== session.mode) { session.mode = mode; session.revision++; }
     return { pane_session_id: id, action_mode: session.mode, mode_revision: session.revision };
   }
+  summary() { return { session_count: this.current.size, sessions: [...this.current.values()].slice(-32).map(session => ({ pane_session_id: session.id, target: session.target, action_mode: session.mode, mode_revision: session.revision, active: session.active && session.continuity === this.herdr.generation, observed_connection: session.connection })) }; }
   ready(session: Session) {
     const info = session.process;
     return info.shell_pid !== null && info.foreground_process_group_id === info.shell_pid && info.foreground_processes.some(item => item.pid === info.shell_pid && ['sh', 'zsh', 'bash', 'dash', 'ksh'].includes(posix.basename(item.argv0 ?? item.name)));

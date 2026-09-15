@@ -26,6 +26,15 @@ const knownWarning = (message: string) => message === 'Code Mode is unavailable 
 export class CodexWorker {
   private busy = false;
   constructor(private readonly options: WorkerOptions = {}) {}
+  async check(signal?: AbortSignal) {
+    const configured = this.options.executable ?? '/opt/homebrew/bin/codex';
+    if (!isAbsolute(configured)) throw new BrokerError('worker_unsupported');
+    const executable = await realpath(configured).catch(() => { throw new BrokerError('worker_unsupported'); });
+    const timeout = AbortSignal.timeout(5000);
+    await this.process(executable, ['--version'], tmpdir(), '', signal ? AbortSignal.any([signal, timeout]) : timeout, true)
+      .catch(error => { throw timeout.aborted ? new BrokerError('worker_timeout') : error; });
+    return executable;
+  }
   async run(snapshot: ReturnType<typeof prepareSnapshot>, objective: string, signal: AbortSignal, patterns: string[] = [], repair?: string) {
     if (this.busy) throw new BrokerError('worker_busy');
     if (signal.aborted) throw new BrokerError('cancelled');
@@ -36,12 +45,7 @@ export class CodexWorker {
     let directory: string | undefined;
     let observedUsage: Usage | null = null;
     try {
-      const configured = this.options.executable ?? '/opt/homebrew/bin/codex';
-      if (!isAbsolute(configured)) throw new BrokerError('worker_unsupported');
-      const executable = await realpath(configured).catch(() => { throw new BrokerError('worker_unsupported'); });
-      const versionTimeout = AbortSignal.timeout(5000);
-      await this.process(executable, ['--version'], tmpdir(), '', AbortSignal.any([interrupted, versionTimeout]), true)
-        .catch(error => { throw versionTimeout.aborted ? new BrokerError('worker_timeout') : error; });
+      const executable = await this.check(interrupted);
       directory = await mkdtemp(join(tmpdir(), 'herdr-broker-worker-'));
       const schemaPath = join(directory, 'report.schema.json');
       await writeFile(schemaPath, JSON.stringify(z.toJSONSchema(reportSchema)), { mode: 0o600 });

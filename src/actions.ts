@@ -273,5 +273,6 @@ export class Actions {
     if (proposal?.receipt) Object.assign(proposal.receipt, receipt);
     return { ...receipt, new_job_required: true, pane_session_id: current.pane_session_id, mode_revision: session.revision };
   }
+  budget(jobId: string) { return { ordinary_attempts_remaining: Math.max(0, 3 - this.options.ledger.count(jobId, 'execute')), interrupt_attempts_remaining: Math.max(0, 1 - this.options.ledger.count(jobId, 'interrupt')) }; }
   summary() { return { ...this.options.ledger.summary(), proposals: [...this.proposals.values()].slice(-32).map(proposal => ({ ...this.view(proposal), evidence: undefined })) }; }
 }

@@ -1,7 +1,7 @@
 {
   "name": "herdr-broker",
   "version": "0.1.0",
-  "description": "Bounded passive Herdr pane context for Codex",
+  "description": "Bounded Herdr pane diagnosis and scoped Actions for Codex",
   "type": "module",
   "bin": {
     "herdr-broker": "dist/cli.js"
@@ -11,7 +11,8 @@
     "docs/mcp.md",
     "docs/implementation/issue-13-passive-context.md",
     "npm-shrinkwrap.json",
-    "docs/implementation/issue-13-acceptance.json"
+    "docs/implementation/issue-13-acceptance.json",
+    "docs/operations.md"
   ],
   "engines": {
     "node": ">=24 <25"

@@ -54,7 +54,7 @@ export function startConsole(core: ConsoleCore, input: Readable, output: Writabl
           output.write(encodeConsole(response) + '\n');
           return;
         }
-        output.write(encodeConsole(command === 'status' ? core.summary() : purge ? core.purge(purge[1]!) : { commands, action_supported: false }) + '\n');
+        output.write(encodeConsole(command === 'status' ? core.summary() : purge ? core.purge(purge[1]!) : { commands, action_supported: !!core.actions, modes: { default: 2, user_approval: 1, agent_risk_review: 2, autonomous: 3 }, recovery: 'inspect the current pane, then recover the original held proposal with a new objective' }) + '\n');
       } catch (error) { output.write(encodeConsole({ error: error instanceof BrokerError ? error.code : 'internal_error' }) + '\n'); }
   };
   const onData = (chunk: Buffer | string) => {
