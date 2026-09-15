@@ -83,6 +83,9 @@ export class Jobs {
       if (!this.active(job)) return;
       const pane = await this.herdr.describe(job.paneId, job.controller.signal);
       if (!this.active(job)) return;
+      const before = await this.sessions.observe(pane, job.controller.signal, !!job.scope);
+      if (!this.active(job)) return;
+      if (job.sequence > 0 && before.id !== job.session) throw new BrokerError('session_changed');
       const read = await this.herdr.capture(pane, job.controller.signal);
       if (!this.active(job)) return;
       const verified = await this.herdr.describe(job.paneId, job.controller.signal);
@@ -92,6 +95,7 @@ export class Jobs {
       const observedSession = await this.sessions.observe(verified, job.controller.signal, !!job.scope);
       if (!this.active(job)) return;
       const session = observedSession.id;
+      if (session !== before.id) throw new BrokerError('target_changed');
       if (observedSession.recoveryObjective) {
         if (observedSession.recoveryObjective !== job.objectiveDigest) throw new BrokerError('recovery_objective_required');
         delete observedSession.recoveryObjective;

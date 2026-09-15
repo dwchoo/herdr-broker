@@ -1,5 +1,6 @@
 import { createConnection } from 'node:net';
 import { randomUUID } from 'node:crypto';
+import { lstatSync } from 'node:fs';
 import { z } from 'zod';
 
 export class BrokerError extends Error {
@@ -14,15 +15,27 @@ const paneSchema = z.object({
 export type Pane = z.infer<typeof paneSchema>;
 
 const processSchema = z.object({ pane_id: id, shell_pid: z.number().int().positive().nullable().default(null), foreground_process_group_id: z.number().int().positive().nullable().default(null),
-  foreground_processes: z.array(z.object({ pid: z.number().int().positive(), name: z.string().max(256), argv0: z.string().max(4096).nullable().optional() })).max(256).default([]), tty: z.string().max(4096).nullable().optional() });
+  foreground_processes: z.array(z.object({ pid: z.number().int().positive(), name: z.string().max(256), argv0: z.string().max(4096).nullable().optional(), argv: z.array(z.string().max(65536)).max(256).nullable().optional() })).max(256).default([]), tty: z.string().max(4096).nullable().optional() });
 export type ProcessInfo = z.infer<typeof processSchema>;
 interface SendHooks { beforeWrite?: () => void; afterWrite?: () => void; onLateAck?: () => void }
 
 export class Herdr {
+  generation = 0;
+  private endpointIdentity: string | undefined;
   constructor(private readonly endpoint: string, private readonly verifyAuthority: () => void) {}
   private request(method: string, params: object, signal?: AbortSignal, submission?: SendHooks): Promise<unknown> {
     return new Promise((resolve, reject) => {
-      try { this.verifyAuthority(); } catch (error) { reject(error); return; }
+      try {
+        this.verifyAuthority();
+        const info = lstatSync(this.endpoint);
+        if (!info.isSocket()) throw new BrokerError('herdr_unavailable');
+        const identity = `${info.dev}:${info.ino}`;
+        if (this.endpointIdentity !== undefined && this.endpointIdentity !== identity) this.generation++;
+        this.endpointIdentity = identity;
+      } catch (error) {
+        this.generation++;
+        reject(error instanceof BrokerError ? error : new BrokerError('herdr_unavailable')); return;
+      }
       const requestId = randomUUID();
       const socket = createConnection(this.endpoint);
       let buffer = Buffer.alloc(0);
@@ -32,6 +45,7 @@ export class Herdr {
       const finish = (error?: BrokerError, result?: unknown) => {
         if (closed) return;
         closed = true;
+        if (error && !submission && !signal?.aborted && ['herdr_timeout', 'herdr_disconnected', 'herdr_unavailable', 'herdr_invalid_response', 'herdr_response_too_large'].includes(error.code)) this.generation++;
         clearTimeout(deadline);
         buffer = Buffer.alloc(0);
         signal?.removeEventListener('abort', abort);
@@ -93,8 +107,10 @@ export class Herdr {
   }
   async check(signal?: AbortSignal) {
     const result = await this.request('ping', {}, signal);
-    if (!z.object({ type: z.literal('pong'), version: z.literal('0.9.0'), protocol: z.literal(22) }).safeParse(result).success)
+    if (!z.object({ type: z.literal('pong'), version: z.literal('0.9.0'), protocol: z.literal(22) }).safeParse(result).success) {
+      this.generation++;
       throw new BrokerError('herdr_unsupported');
+    }
   }
   async describe(paneId: string, signal?: AbortSignal): Promise<Pane> {
     await this.check(signal);

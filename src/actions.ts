@@ -256,7 +256,7 @@ export class Actions {
     this.options.verifyAuthority();
     const pane = await this.herdr.describe(paneId, this.stop.signal);
     const session = await this.sessions.observe(pane, this.stop.signal, true);
-    return { target: session.target, pane_session_id: session.id, mode_revision: session.revision, action_mode: session.mode, shell_ready: this.sessions.ready(session), shell_pid: session.process.shell_pid, foreground_process_group_id: session.process.foreground_process_group_id, held_proposal_id: this.options.ledger.held(pane.terminal_id) ?? null };
+    return { target: session.target, pane_session_id: session.id, mode_revision: session.revision, action_mode: session.mode, observed_connection: session.connection, shell_ready: this.sessions.ready(session), shell_pid: session.process.shell_pid, foreground_process_group_id: session.process.foreground_process_group_id, held_proposal_id: this.options.ledger.held(pane.terminal_id) ?? null };
   }
   async recover(inspected: Awaited<ReturnType<Actions['inspect']>>, id: string, objective: string) {
     if (!objective.trim() || objective.length > 512 || /[\u0000-\u001f\u007f-\u009f]/.test(objective)) throw new BrokerError('invalid_objective');

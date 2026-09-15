@@ -1,0 +1,367 @@
+{
+  "at": "2026-09-15T12:54:34.562Z",
+  "node": "24.19.0",
+  "herdr": "0.9.0",
+  "protocol": 22,
+  "boundary": "actual disposable Herdr pane move/split/close, actual Broker console/public MCP; no submitted input",
+  "cases": [
+    {
+      "mode": 1,
+      "before": {
+        "target": {
+          "pane_id": "wC:p1",
+          "terminal_id": "term_65b850d44fcbf10",
+          "workspace_id": "wC",
+          "tab_id": "wC:t1"
+        },
+        "pane_session_id": "a7aebf72-afb0-4683-9ddc-d4f3ad5ea886",
+        "action_mode": 2,
+        "mode_revision": 1,
+        "observed_connection": {
+          "kind": "local",
+          "local_ssh_process_ids": [],
+          "remote_identity_authenticated": false
+        },
+        "context": {
+          "cwd": "<disposable-cwd>",
+          "foreground_cwd": "<disposable-cwd>",
+          "agent_status": "unknown"
+        },
+        "supported_profiles": [
+          "passive",
+          "local_posix"
+        ],
+        "action_supported": true,
+        "automatic_modes_supported": true
+      },
+      "moved": {
+        "target": {
+          "pane_id": "wC:p1",
+          "terminal_id": "term_65b850d44fcbf10",
+          "workspace_id": "wC",
+          "tab_id": "wC:t2"
+        },
+        "pane_session_id": "37696254-9e10-45f1-a184-b98eeb480b27",
+        "action_mode": 2,
+        "mode_revision": 1,
+        "observed_connection": {
+          "kind": "local",
+          "local_ssh_process_ids": [],
+          "remote_identity_authenticated": false
+        },
+        "context": {
+          "cwd": "<disposable-cwd>",
+          "foreground_cwd": "<disposable-cwd>",
+          "agent_status": "unknown"
+        },
+        "supported_profiles": [
+          "passive",
+          "local_posix"
+        ],
+        "action_supported": true,
+        "automatic_modes_supported": true
+      },
+      "stale": {
+        "job_id": "639d5969-e7dc-4b9a-998c-7ea8a776e08f",
+        "error": "session_changed",
+        "budget": {
+          "deadline_ms": 300000,
+          "deadline_remaining_ms": 299548,
+          "parent_payload_bytes_limit": 16384,
+          "parent_payload_bytes_used": 3493,
+          "parent_payload_bytes_remaining": 12891
+        }
+      },
+      "old_job": {
+        "job_id": "639d5969-e7dc-4b9a-998c-7ea8a776e08f",
+        "pane_session_id": "a7aebf72-afb0-4683-9ddc-d4f3ad5ea886",
+        "pane_id": "wC:p1",
+        "phase": "failed",
+        "data_state": "retained",
+        "result_ready": false,
+        "job_ended": true,
+        "action_mode": null,
+        "mode_revision": null,
+        "action_state": "available",
+        "wait_timed_out": false,
+        "error": "session_changed",
+        "budget": {
+          "deadline_ms": 300000,
+          "deadline_remaining_ms": 299335,
+          "parent_payload_bytes_limit": 16384,
+          "parent_payload_bytes_used": 3982,
+          "parent_payload_bytes_remaining": 12402
+        }
+      },
+      "closed": {
+        "error": "herdr_rejected"
+      },
+      "recreated": {
+        "target": {
+          "pane_id": "wC:p2",
+          "terminal_id": "term_65b850d594fa211",
+          "workspace_id": "wC",
+          "tab_id": "wC:t2"
+        },
+        "pane_session_id": "655ceea6-46f3-4d4a-bd58-e5fe56da01ad",
+        "action_mode": 2,
+        "mode_revision": 1,
+        "observed_connection": {
+          "kind": "local",
+          "local_ssh_process_ids": [],
+          "remote_identity_authenticated": false
+        },
+        "context": {
+          "cwd": "<disposable-cwd>",
+          "foreground_cwd": "<disposable-cwd>",
+          "agent_status": "unknown"
+        },
+        "supported_profiles": [
+          "passive",
+          "local_posix"
+        ],
+        "action_supported": true,
+        "automatic_modes_supported": true
+      }
+    },
+    {
+      "mode": 2,
+      "before": {
+        "target": {
+          "pane_id": "wC:p2",
+          "terminal_id": "term_65b850d594fa211",
+          "workspace_id": "wC",
+          "tab_id": "wC:t2"
+        },
+        "pane_session_id": "655ceea6-46f3-4d4a-bd58-e5fe56da01ad",
+        "action_mode": 2,
+        "mode_revision": 1,
+        "observed_connection": {
+          "kind": "local",
+          "local_ssh_process_ids": [],
+          "remote_identity_authenticated": false
+        },
+        "context": {
+          "cwd": "<disposable-cwd>",
+          "foreground_cwd": "<disposable-cwd>",
+          "agent_status": "unknown"
+        },
+        "supported_profiles": [
+          "passive",
+          "local_posix"
+        ],
+        "action_supported": true,
+        "automatic_modes_supported": true
+      },
+      "moved": {
+        "target": {
+          "pane_id": "wC:p2",
+          "terminal_id": "term_65b850d594fa211",
+          "workspace_id": "wC",
+          "tab_id": "wC:t3"
+        },
+        "pane_session_id": "afb380ad-a32c-4265-a31f-5bba733329e2",
+        "action_mode": 2,
+        "mode_revision": 1,
+        "observed_connection": {
+          "kind": "local",
+          "local_ssh_process_ids": [],
+          "remote_identity_authenticated": false
+        },
+        "context": {
+          "cwd": "<disposable-cwd>",
+          "foreground_cwd": "<disposable-cwd>",
+          "agent_status": "unknown"
+        },
+        "supported_profiles": [
+          "passive",
+          "local_posix"
+        ],
+        "action_supported": true,
+        "automatic_modes_supported": true
+      },
+      "stale": {
+        "job_id": "08908064-b124-440d-a12a-df37c3cc8131",
+        "error": "session_changed",
+        "budget": {
+          "deadline_ms": 300000,
+          "deadline_remaining_ms": 299559,
+          "parent_payload_bytes_limit": 16384,
+          "parent_payload_bytes_used": 3472,
+          "parent_payload_bytes_remaining": 12912
+        }
+      },
+      "old_job": {
+        "job_id": "08908064-b124-440d-a12a-df37c3cc8131",
+        "pane_session_id": "655ceea6-46f3-4d4a-bd58-e5fe56da01ad",
+        "pane_id": "wC:p2",
+        "phase": "failed",
+        "data_state": "retained",
+        "result_ready": false,
+        "job_ended": true,
+        "action_mode": null,
+        "mode_revision": null,
+        "action_state": "available",
+        "wait_timed_out": false,
+        "error": "session_changed",
+        "budget": {
+          "deadline_ms": 300000,
+          "deadline_remaining_ms": 299553,
+          "parent_payload_bytes_limit": 16384,
+          "parent_payload_bytes_used": 3961,
+          "parent_payload_bytes_remaining": 12423
+        }
+      },
+      "closed": {
+        "error": "herdr_rejected"
+      },
+      "recreated": {
+        "target": {
+          "pane_id": "wC:p3",
+          "terminal_id": "term_65b850d68ffc412",
+          "workspace_id": "wC",
+          "tab_id": "wC:t3"
+        },
+        "pane_session_id": "cf3c35c3-9d15-4749-80f4-e9cbb9aa3caf",
+        "action_mode": 2,
+        "mode_revision": 1,
+        "observed_connection": {
+          "kind": "local",
+          "local_ssh_process_ids": [],
+          "remote_identity_authenticated": false
+        },
+        "context": {
+          "cwd": "<disposable-cwd>",
+          "foreground_cwd": "<disposable-cwd>",
+          "agent_status": "unknown"
+        },
+        "supported_profiles": [
+          "passive",
+          "local_posix"
+        ],
+        "action_supported": true,
+        "automatic_modes_supported": true
+      }
+    },
+    {
+      "mode": 3,
+      "before": {
+        "target": {
+          "pane_id": "wC:p3",
+          "terminal_id": "term_65b850d68ffc412",
+          "workspace_id": "wC",
+          "tab_id": "wC:t3"
+        },
+        "pane_session_id": "cf3c35c3-9d15-4749-80f4-e9cbb9aa3caf",
+        "action_mode": 2,
+        "mode_revision": 1,
+        "observed_connection": {
+          "kind": "local",
+          "local_ssh_process_ids": [],
+          "remote_identity_authenticated": false
+        },
+        "context": {
+          "cwd": "<disposable-cwd>",
+          "foreground_cwd": "<disposable-cwd>",
+          "agent_status": "unknown"
+        },
+        "supported_profiles": [
+          "passive",
+          "local_posix"
+        ],
+        "action_supported": true,
+        "automatic_modes_supported": true
+      },
+      "moved": {
+        "target": {
+          "pane_id": "wC:p3",
+          "terminal_id": "term_65b850d68ffc412",
+          "workspace_id": "wC",
+          "tab_id": "wC:t4"
+        },
+        "pane_session_id": "1df7f0f1-764c-43a3-a061-ad149286f924",
+        "action_mode": 2,
+        "mode_revision": 1,
+        "observed_connection": {
+          "kind": "local",
+          "local_ssh_process_ids": [],
+          "remote_identity_authenticated": false
+        },
+        "context": {
+          "cwd": "<disposable-cwd>",
+          "foreground_cwd": "<disposable-cwd>",
+          "agent_status": "unknown"
+        },
+        "supported_profiles": [
+          "passive",
+          "local_posix"
+        ],
+        "action_supported": true,
+        "automatic_modes_supported": true
+      },
+      "stale": {
+        "job_id": "e0dc94b6-0f50-400f-8cd6-e220265f003e",
+        "error": "session_changed",
+        "budget": {
+          "deadline_ms": 300000,
+          "deadline_remaining_ms": 299769,
+          "parent_payload_bytes_limit": 16384,
+          "parent_payload_bytes_used": 3464,
+          "parent_payload_bytes_remaining": 12920
+        }
+      },
+      "old_job": {
+        "job_id": "e0dc94b6-0f50-400f-8cd6-e220265f003e",
+        "pane_session_id": "cf3c35c3-9d15-4749-80f4-e9cbb9aa3caf",
+        "pane_id": "wC:p3",
+        "phase": "failed",
+        "data_state": "retained",
+        "result_ready": false,
+        "job_ended": true,
+        "action_mode": null,
+        "mode_revision": null,
+        "action_state": "available",
+        "wait_timed_out": false,
+        "error": "session_changed",
+        "budget": {
+          "deadline_ms": 300000,
+          "deadline_remaining_ms": 299764,
+          "parent_payload_bytes_limit": 16384,
+          "parent_payload_bytes_used": 3953,
+          "parent_payload_bytes_remaining": 12431
+        }
+      },
+      "closed": {
+        "error": "herdr_rejected"
+      },
+      "recreated": {
+        "target": {
+          "pane_id": "wC:p4",
+          "terminal_id": "term_65b850d6efb8013",
+          "workspace_id": "wC",
+          "tab_id": "wC:t4"
+        },
+        "pane_session_id": "f2e545f4-8a8a-4f50-9ce7-6088d4b4bbe3",
+        "action_mode": 2,
+        "mode_revision": 1,
+        "observed_connection": {
+          "kind": "local",
+          "local_ssh_process_ids": [],
+          "remote_identity_authenticated": false
+        },
+        "context": {
+          "cwd": "<disposable-cwd>",
+          "foreground_cwd": "<disposable-cwd>",
+          "agent_status": "unknown"
+        },
+        "supported_profiles": [
+          "passive",
+          "local_posix"
+        ],
+        "action_supported": true,
+        "automatic_modes_supported": true
+      }
+    }
+  ],
+  "stale_wire_attempts": 0
+}

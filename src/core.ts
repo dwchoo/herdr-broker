@@ -67,7 +67,7 @@ export async function startCore(options: CoreOptions) {
           const session = await sessions.observe(pane);
           const actionSupported = sessions.ready(session) && !session.process.foreground_processes.some(item => item.pid === process.pid);
           authority.verify();
-          return result({ target: { pane_id, terminal_id, workspace_id, tab_id }, context: Object.fromEntries(Object.entries(context).filter(([key]) => key !== 'pane_id').map(([key, value]) => [key, sanitize(value ?? '', options.redactionPatterns).text.slice(0, 1024)])), supported_profiles: actionSupported ? ['passive', 'local_posix'] : ['passive'], action_supported: actionSupported, automatic_modes_supported: actionSupported });
+          return result({ target: { pane_id, terminal_id, workspace_id, tab_id }, pane_session_id: session.id, action_mode: session.mode, mode_revision: session.revision, observed_connection: session.connection, context: Object.fromEntries(Object.entries(context).filter(([key]) => key !== 'pane_id').map(([key, value]) => [key, sanitize(value ?? '', options.redactionPatterns).text.slice(0, 1024)])), supported_profiles: actionSupported ? ['passive', 'local_posix'] : ['passive'], action_supported: actionSupported, automatic_modes_supported: actionSupported });
         } catch (error) { return result({ error: error instanceof BrokerError ? error.code : 'internal_error' }); }
       });
       const safe = async (work: () => object | string | null | Promise<object | string | null>) => {

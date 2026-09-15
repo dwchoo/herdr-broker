@@ -173,7 +173,7 @@ test('Two consumers and two jobs keep independent cursor baselines and survive a
   assert.ok((await c.call('pane_describe', { pane_id: pane.pane_id })).target);
 });
 
-test('View changes track gaps, Pane Session and redaction rules while ignoring title and revision metadata', async t => {
+test('Views track gaps and redaction while a changed Pane Session requires a new job', async t => {
   const patterns = [];
   let terminal = pane.terminal_id;
   let title = 'before';
@@ -197,11 +197,14 @@ test('View changes track gaps, Pane Session and redaction rules while ignoring t
   assert.equal(gap.delta.kind, 'replace');
   assert.ok(gap.snapshot.gaps.includes('herdr_truncated'));
   terminal = 'replacement-terminal';
-  const session = await client.call('job_wait', { job_id: first.job_id, cursor: gap.cursor, wait_ms: 1000 });
+  const changed = await client.call('job_wait', { job_id: first.job_id, cursor: gap.cursor, wait_ms: 1000 });
+  assert.equal(changed.error, 'session_changed');
+  assert.equal(changed.job_ended, true);
+  const session = await observe(client);
   assert.equal(session.delta.kind, 'replace');
   assert.notEqual(session.pane_session_id, first.pane_session_id);
   patterns.push('nonmatching-literal');
-  const rules = await client.call('job_wait', { job_id: first.job_id, cursor: session.cursor, wait_ms: 1000 });
+  const rules = await client.call('job_wait', { job_id: session.job_id, cursor: session.cursor, wait_ms: 1000 });
   assert.equal(rules.delta.kind, 'replace');
   assert.notEqual(rules.snapshot.redaction.pattern_digest, session.snapshot.redaction.pattern_digest);
   assert.notEqual(rules.snapshot.snapshot_id, session.snapshot.snapshot_id);
@@ -316,7 +319,7 @@ test('A failed observation cannot mix a new Pane Session with the previous Snaps
     socket.write(JSON.stringify(response) + '\n');
   };
   const failure = await client.call('job_wait', { job_id: first.job_id, cursor: first.cursor, wait_ms: 1000 });
-  assert.equal(failure.error, 'memory_budget_exhausted');
+  assert.equal(failure.error, 'session_changed');
   assert.equal(failure.pane_session_id, first.pane_session_id);
   assert.equal(failure.result_ready, false);
   for (const key of ['result', 'delta', 'snapshot', 'observation']) assert.equal(failure[key], undefined, key);
