@@ -26,7 +26,7 @@ export async function harness(t, options = {}) {
         const result = request.method === 'ping' ? { type: 'pong', version: '0.9.0', protocol: 22 }
           : request.method === 'pane.get' ? { type: 'pane_info', pane }
           : request.method === 'pane.process_info' ? { type: 'pane_process_info', process_info: { pane_id: pane.pane_id, shell_pid: 1000, foreground_process_group_id: 1000, foreground_processes: [{ pid: 1000, name: 'sh', argv0: 'sh' }] } }
-          : { type: 'pane_read', read: { pane_id: pane.pane_id, workspace_id: pane.workspace_id, tab_id: pane.tab_id, text: state.text, source: 'recent', format: 'ansi', truncated: false, revision: 0 } };
+          : { type: 'pane_read', read: { pane_id: pane.pane_id, workspace_id: pane.workspace_id, tab_id: pane.tab_id, text: state.text, source: request.params.source, format: 'ansi', truncated: false, revision: 0 } };
         const reply = { id: request.id, result };
         if (state.respond) state.respond(socket, request, reply);
         else socket.write(JSON.stringify(reply) + '\n');

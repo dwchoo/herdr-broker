@@ -6,13 +6,13 @@
 
 ## Broker Console 시작과 재접속
 
-Herdr에서 이 프로젝트를 연 Codex에게 `$herdr-broker`를 요청한다. Skill은 새 **Broker Console**을 열거나 기존 Console ID에 재접속한다. 새 Console은 전용 Herdr workspace 안에 사용자 조작 pane과 실제 Target terminal을 함께 만든다. 사용자는 Target terminal에 직접 입력하고 Codex는 같은 terminal을 Broker로 읽고 조작한다.
+Herdr에서 이 프로젝트를 연 Codex에게 `$herdr-broker`를 요청한다. Skill은 새 **Broker Console**을 열거나 기존 Console ID에 재접속한다. 새 Console은 **Codex와 같은 tab**에서 오른쪽에 실제 Target terminal을, 그 아래에 작은 사용자 조작 pane을 split한다. 사용자는 Codex와 대화하면서 옆 terminal을 보고 직접 입력할 수 있고 Codex는 같은 terminal을 Broker로 읽고 조작한다.
 
 | 위치 | 역할 |
 | --- | --- |
 | Parent Pane | 프로젝트의 Codex CLI. 하나의 Console에 연결 |
-| Console workspace의 조작 pane | 독립 core, 소유 pane 목록, 승인·모드·복구 |
-| 같은 workspace의 Target Pane | 사용자와 Codex가 공유하는 실제 local/SSH shell |
+| 같은 tab의 조작 pane | 독립 core, 소유 pane 목록, 승인·모드·복구 |
+| 같은 tab의 Target Pane | 사용자와 Codex가 공유하는 실제 local/SSH shell |
 
 Console마다 core와 Control State가 독립적이다. Broker가 새로 만든 terminal만 등록하며 기존 외부 pane 가져오기는 제공하지 않는다. Worker는 필요할 때 core가 실행하므로 별도 pane이 필요 없다.
 
@@ -32,11 +32,13 @@ node .agents/skills/herdr-broker/scripts/run.mjs setup
 node .agents/skills/herdr-broker/scripts/run.mjs parent
 ```
 
-MCP가 처음 연결될 때는 terminal이나 core를 만들지 않는다. Skill의 `console_open`이 workspace와 core를 자동으로 시작하며, `console_attach`는 기존 Console을 검증해 연결한다. 사용자가 별도 `serve` 명령을 먼저 실행할 필요가 없다. 한 Console에 Parent 하나만 연결된다.
+MCP가 처음 연결될 때는 terminal이나 core를 만들지 않는다. Skill의 `console_open`이 기존 Parent pane 옆에 terminal과 조작 pane을 만들고 core를 자동으로 시작한다. workspace나 tab을 새로 만들지 않는다. `console_attach`는 기존 Console과 Parent가 같은 tab에 있는지 검증해 연결한다. 사용자가 별도 `serve` 명령을 먼저 실행할 필요가 없다. 한 Console에 Parent 하나만 연결된다.
 
-Codex의 정상 종료·강제 종료 뒤에도 Console과 shell/SSH는 유지된다. 재접속할 Codex에 `$herdr-broker Console <ID>에 이어 붙어줘`라고 요청한다. ID를 모르면 Skill이 목록을 조회한다. 새 Parent는 실행 결과와 hold를 확인한 뒤 새 Job으로 관찰을 이어간다. 이전 command를 재전송하지 않는다.
+Codex의 정상 종료·강제 종료 뒤에도 Console과 shell/SSH는 유지된다. **기존 Console과 같은 tab의 프로젝트 shell**에서 Codex를 다시 시작하고 `$herdr-broker Console <ID>에 이어 붙어줘`라고 요청한다. ID를 모르면 Skill이 tab 정보가 포함된 목록을 조회한다. 다른 tab에서는 `console_tab_required`로 거부한다. 새 Parent는 실행 결과와 hold를 확인한 뒤 새 Job으로 관찰을 이어간다. 이전 command를 재전송하지 않는다.
 
-조작 pane에서 `panes`는 대상과 실행 기록을 보여 주고, `new`는 같은 workspace의 새 tab에 소유 terminal을 추가한다(최대 8개). Herdr에서 수동으로 만든 pane은 등록되지 않는다. `quit`는 core만 중지하고 terminal은 유지한다. 다시 접속하면 기존 조작 pane이 idle shell일 때 같은 Control State로 core를 재시작한다. **작업 공간 전체를 끝내려면 사용자가 Herdr workspace를 닫는다.** 닫힌 workspace를 이전 Console ID로 자동 재생성하지 않는다.
+조작 pane에서 `panes`는 대상과 실행 기록을 보여 주고, `new`는 같은 tab의 Target을 split해 소유 terminal을 추가한다(최대 8개). Herdr에서 수동으로 만든 pane은 등록되지 않는다. `quit`는 core만 중지하고 terminal은 유지한다. 다시 접속하면 기존 조작 pane이 idle shell일 때 같은 Control State로 core를 재시작한다. **작업을 끝내려면 필요한 pane을 사용자가 직접 닫는다.** 닫힌 controller를 이전 Console ID로 자동 재생성하지 않는다.
+
+Parent·controller·Target을 다른 tab으로 옮기면 기존 연결이나 소유권을 자동으로 따라 옮기지 않는다. tab 정보 없이 생성된 이전 Console은 `console_layout_upgrade_required`를 반환한다. 기존 pane과 Control State는 보존되며, 수정된 배치를 사용하려면 원하는 Codex pane에서 새 Console을 연다.
 
 기본 설정 파일은 OS 계정 home의 `~/.config/herdr-broker/config.json`이며 없어도 기본 경로를 사용한다. 사용자 소유 regular file, mode 0600이어야 한다.
 

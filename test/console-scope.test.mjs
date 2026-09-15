@@ -6,10 +6,10 @@ import { createConnection } from 'node:net';
 import { actionHarness, action, job } from './action-harness.mjs';
 
 const consoleId = 'd4f50e8a-59df-4a84-b87a-8253e48fb5f6';
-const scope = () => ({ workspace_id: pane.workspace_id, terminals: new Map([[pane.pane_id, pane.terminal_id]]) });
+const scope = () => ({ workspace_id: pane.workspace_id, tab_id: pane.tab_id, terminals: new Map([[pane.pane_id, pane.terminal_id]]) });
 
 test('A Parent can describe its Console terminal and cannot inspect an outside pane', async t => {
-  const h = await harness(t, { core: { scope: { workspace_id: pane.workspace_id, terminals: new Map([[pane.pane_id, pane.terminal_id]]) } } });
+  const h = await harness(t, { core: { scope: { workspace_id: pane.workspace_id, tab_id: pane.tab_id, terminals: new Map([[pane.pane_id, pane.terminal_id]]) } } });
   const client = await h.connect();
   assert.equal((await client.call('pane_describe', { pane_id: pane.pane_id })).target.terminal_id, pane.terminal_id);
   const before = h.calls.length;
@@ -53,13 +53,13 @@ test('A Console accepts only one Parent connection at a time', async t => {
   try { await closed; } finally { clearTimeout(deadline); }
 });
 
-test('Moving an owned terminal after proposing refuses submission without sending input', async t => {
+test('Moving an owned terminal to another tab after proposing refuses submission without sending input', async t => {
   const h = await actionHarness(t, { core: { consoleId, scope: scope() } });
   const client = await h.connect();
   const current = await job(client);
   const proposed = await client.call('action_propose', action(current.job_id));
   h.state.respond = (socket, request, response) => {
-    if (request.method === 'pane.get') response.result.pane = { ...pane, workspace_id: 'outside' };
+    if (request.method === 'pane.get') response.result.pane = { ...pane, tab_id: 'outside' };
     socket.write(JSON.stringify(response) + '\n');
   };
   assert.equal((await client.call('action_submit', { proposal_id: proposed.proposal_id })).error, 'pane_outside_console');

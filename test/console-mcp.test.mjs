@@ -2,8 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:net';
 import { once } from 'node:events';
+import { readFile, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { harness, connect } from './harness.mjs';
+import { consoleProcess } from './console-harness.mjs';
 import { Consoles } from '../dist/consoles.js';
 import { startConsoleMcp } from '../dist/console-mcp.js';
 import { startCore } from '../dist/core.js';
@@ -11,21 +13,26 @@ import { startCore } from '../dist/core.js';
 async function consoleHarness(t) {
   const h = await harness(t);
   await h.core.close();
-  const config = { endpoint: h.endpoint, stateRoot: join(h.root, 'consoles-state'), project: resolve('.') };
+  const config = { endpoint: h.endpoint, stateRoot: join(h.root, 'consoles-state'), project: resolve('.'), herdrContext: { HERDR_PANE_ID: 'parent', HERDR_WORKSPACE_ID: 'workspace-1', HERDR_TAB_ID: 'tab-1' } };
   const consoles = new Consoles(config);
   const panes = new Map(), cores = [], gateways = [];
   let sequence = 0;
-  const create = workspace_id => {
+  const create = (workspace_id, tab_id = `tab-${sequence + 1}`) => {
     const id = ++sequence;
-    const pane = { pane_id: `ws${workspace_id}:p${id}`, terminal_id: `terminal-${id}`, workspace_id, tab_id: `t${id}`, cwd: config.project, agent_status: 'unknown' };
+    const pane = { pane_id: `ws${workspace_id}:p${id}`, terminal_id: `terminal-${id}`, workspace_id, tab_id, cwd: config.project, agent_status: 'unknown' };
     panes.set(pane.pane_id, pane);
     return pane;
   };
+  const parent = { pane_id: 'parent', terminal_id: 'parent-terminal', workspace_id: 'workspace-1', tab_id: 'tab-1', cwd: config.project, agent_status: 'unknown' };
+  panes.set(parent.pane_id, parent);
   h.state.respond = async (socket, request, response) => {
     const params = request.params;
     if (request.method === 'workspace.create') response.result = { type: 'workspace_created', root_pane: create(`workspace-${sequence}`) };
-    else if (request.method === 'pane.split' || request.method === 'tab.create') response.result = { type: 'pane_created', [request.method === 'pane.split' ? 'pane' : 'root_pane']: create(params.workspace_id) };
-    else if (request.method === 'pane.get') response.result = { type: 'pane_info', pane: panes.get(params.pane_id) };
+    else if (request.method === 'pane.split' || request.method === 'tab.create') response.result = { type: 'pane_created', [request.method === 'pane.split' ? 'pane' : 'root_pane']: create(params.workspace_id, panes.get(params.target_pane_id)?.tab_id) };
+    else if (request.method === 'pane.get') {
+      response.result = { type: 'pane_info', pane: panes.get(params.pane_id) };
+      h.state.afterGet?.(params.pane_id);
+    }
     else if (request.method === 'pane.process_info') {
       const starting = h.state.starting > 0;
       if (starting) h.state.starting--;
@@ -33,27 +40,28 @@ async function consoleHarness(t) {
       response.result = { type: 'pane_process_info', process_info: { pane_id: params.pane_id, shell_pid: 1000, foreground_process_group_id: starting ? 1001 : 1000, foreground_processes: [{ pid: starting ? 1001 : 1000, name, argv0: name }] } };
     }
     else if (request.method === 'pane.read') {
+      if (h.state.beforeRead) await h.state.beforeRead();
       const pane = panes.get(params.pane_id);
-      response.result = { type: 'pane_read', read: { ...pane, source: 'recent', format: 'ansi', text: 'shared terminal output', truncated: false, revision: 0 } };
+      response.result = { type: 'pane_read', read: { ...pane, source: params.source, format: 'ansi', text: 'shared terminal output', truncated: false, revision: 0 } };
     } else if (request.method === 'pane.send_input') {
       const match = / 'serve' '([a-f0-9-]+)'$/.exec(params.text);
       if (match) {
         const record = await consoles.get(match[1]);
-        cores.push(await startCore({ ...config, consoleId: record.console_id, scope: { workspace_id: record.workspace_id, terminals: new Map(record.panes.map(pane => [pane.pane_id, pane.terminal_id])) } }));
+        cores.push(await startCore({ ...config, consoleId: record.console_id, verifyParent: async paneId => { await consoles.verifyParent(record, paneId); await consoles.verify(record); }, scope: { workspace_id: record.workspace_id, tab_id: record.tab_id, terminals: new Map(record.panes.map(pane => [pane.pane_id, pane.terminal_id])) } }));
       }
       response.result = { type: 'ok' };
     }
     socket.write(JSON.stringify(response) + '\n');
   };
   const endpoint = join(h.root, 'gateway.sock');
-  const server = createServer(socket => gateways.push(startConsoleMcp(config, socket, socket)));
+  const server = createServer(socket => gateways.push(startConsoleMcp({ ...config, herdrContext: { ...config.herdrContext } }, socket, socket)));
   server.listen(endpoint); await once(server, 'listening');
   t.after(async () => {
     for (const close of gateways) await close();
     await new Promise(resolve => server.close(resolve));
     for (const core of cores) await core.close();
   });
-  return { ...h, config, consoles, cores, panes, connect: () => connect(endpoint, t) };
+  return { ...h, config, consoles, cores, panes, parent, connect: () => connect(endpoint, t) };
 }
 
 test('The project MCP skill opens one persistent Console and resumes its shared terminal', async t => {
@@ -66,6 +74,13 @@ test('The project MCP skill opens one persistent Console and resumes its shared 
   assert.equal((await first.call('pane_describe', { pane_id: 'outside' })).error, 'console_attach_required');
   const created = await first.call('console_open', { label: 'shared work' });
   assert.equal(created.created, true, JSON.stringify(created));
+  assert.equal(created.workspace_id, 'workspace-1');
+  assert.equal(created.tab_id, 'tab-1');
+  const record = await h.consoles.get(created.console_id);
+  assert.equal(h.panes.get(record.controller.pane_id).tab_id, 'tab-1');
+  assert.equal(h.panes.get(created.panes[0].pane_id).tab_id, 'tab-1');
+  assert.equal(h.calls.filter(call => call.method === 'workspace.create' || call.method === 'tab.create').length, 0);
+  assert.equal((await first.call('pane_describe', { pane_id: h.parent.pane_id })).error, 'pane_outside_console');
   assert.equal(h.cores.length, 1);
   const paneId = created.panes[0].pane_id;
   assert.equal((await first.call('pane_describe', { pane_id: paneId })).target.pane_id, paneId);
@@ -96,7 +111,7 @@ test('Reattaching a stopped Console restarts its core and retains the same termi
   assert.equal(resumed.console_id, created.console_id);
   assert.deepEqual(resumed.panes, created.panes);
   assert.equal(h.cores.length, 2);
-  assert.equal(h.calls.filter(call => call.method === 'workspace.create').length, 1);
+  assert.equal(h.calls.filter(call => call.method === 'workspace.create').length, 0);
   const started = await first.call('job_start', { pane_id: resumed.panes[0].pane_id, objective: 'read after restart' });
   const ready = await first.call('job_wait', { job_id: started.job_id, wait_ms: 1000 });
   const invalid = await first.call('job_status', { job_id: started.job_id, extra: true });
@@ -111,15 +126,19 @@ test('Two Consoles own disjoint terminals and a Parent cannot switch or read acr
   const b = await second.call('console_open', { label: 'B' });
   assert.notEqual(a.console_id, b.console_id);
   assert.equal(h.cores.length, 2);
-  const reads = h.calls.length;
+  const foreignReads = () => h.calls.filter(call => call.params?.pane_id === b.panes[0].pane_id).length;
+  const reads = foreignReads();
   assert.equal((await first.call('pane_describe', { pane_id: b.panes[0].pane_id })).error, 'pane_outside_console');
   assert.equal((await first.call('job_start', { pane_id: b.panes[0].pane_id, objective: 'foreign' })).error, 'pane_outside_console');
-  assert.equal(h.calls.length, reads);
+  assert.equal(foreignReads(), reads);
   assert.equal((await first.call('console_attach', { console_id: b.console_id })).error, 'console_already_bound');
   const target = h.panes.get(a.panes[0].pane_id);
-  target.workspace_id = b.workspace_id;
+  target.workspace_id = 'outside-workspace';
   assert.equal((await first.call('pane_describe', { pane_id: target.pane_id })).error, 'pane_outside_console');
   target.workspace_id = a.workspace_id;
+  target.tab_id = 'outside-tab';
+  assert.equal((await first.call('pane_describe', { pane_id: target.pane_id })).error, 'pane_outside_console');
+  target.tab_id = a.tab_id;
   target.terminal_id = 'replaced';
   assert.equal((await first.call('pane_describe', { pane_id: target.pane_id })).error, 'pane_outside_console');
 });
@@ -143,6 +162,7 @@ test('Console discovery pages every registration within the UTF-8 response limit
     const page = await client.call('console_list', cursor ? { cursor } : {});
     assert.ok(Buffer.byteLength(client.deliveries.at(-1)) <= 8192);
     assert.ok(page.consoles.length <= 20);
+    assert.ok(page.consoles.every(record => record.workspace_id === 'workspace-1' && record.tab_id === 'tab-1'));
     found.push(...page.consoles.map(record => record.console_id));
     cursor = page.next;
     assert.equal(page.truncated, cursor !== null);
@@ -150,7 +170,7 @@ test('Console discovery pages every registration within the UTF-8 response limit
   assert.deepEqual(found.sort(), expected.sort());
 });
 
-test('A closed Console workspace cannot be recreated by reattaching its saved ID', async t => {
+test('A closed Console controller cannot be recreated by reattaching its saved ID', async t => {
   const h = await consoleHarness(t), first = await h.connect();
   const created = await first.call('console_open', { label: 'closed workspace' });
   const record = await h.consoles.get(created.console_id);
@@ -158,6 +178,123 @@ test('A closed Console workspace cannot be recreated by reattaching its saved ID
   h.panes.delete(record.controller.pane_id);
   const next = await h.connect();
   assert.ok((await next.call('console_attach', { console_id: created.console_id })).error);
-  assert.equal(h.calls.filter(call => call.method === 'workspace.create').length, 1);
+  assert.equal(h.calls.filter(call => call.method === 'pane.split').length, 2);
   assert.equal(h.calls.filter(call => call.method === 'pane.send_input').length, 1, 'Only the original core startup was submitted');
+});
+
+test('A Parent in another tab cannot attach and can still open a Console beside itself', async t => {
+  const h = await consoleHarness(t), first = await h.connect();
+  const created = await first.call('console_open', { label: 'original tab' });
+  first.close();
+  await new Promise(resolve => setTimeout(resolve, 50));
+  h.panes.set('other-parent', { ...h.parent, pane_id: 'other-parent', terminal_id: 'other-parent-terminal', tab_id: 'tab-2' });
+  h.config.herdrContext = { ...h.config.herdrContext, HERDR_PANE_ID: 'other-parent', HERDR_TAB_ID: 'tab-2' };
+  const second = await h.connect();
+  assert.equal((await second.call('console_attach', { console_id: created.console_id })).error, 'console_tab_required');
+  assert.equal(h.cores[0].consoleStatus().parent_connected, false);
+  const opened = await second.call('console_open', { label: 'beside new Parent' });
+  assert.equal(opened.tab_id, 'tab-2', JSON.stringify(opened));
+});
+
+test('Moving the Parent to another tab disconnects its Console and ends unsubmitted jobs', async t => {
+  const h = await consoleHarness(t), client = await h.connect();
+  const created = await client.call('console_open', { label: 'moved Parent' });
+  const started = await client.call('job_start', { pane_id: created.panes[0].pane_id, objective: 'observe beside Parent' });
+  h.parent.tab_id = 'other-tab';
+  assert.equal((await client.call('job_status', { job_id: started.job_id })).error, 'console_tab_required');
+  await new Promise(resolve => setTimeout(resolve, 50));
+  assert.equal(h.cores[0].consoleStatus().parent_connected, false);
+  assert.equal(h.cores[0].summary().jobs.find(job => job.job_id === started.job_id).job_ended, true);
+  assert.equal(h.calls.filter(call => call.method === 'pane.send_input').length, 1);
+});
+
+test('Legacy Console records are preserved and cannot be silently adopted into the Parent tab', async t => {
+  const h = await consoleHarness(t), client = await h.connect();
+  const record = await h.consoles.create('legacy Console');
+  const path = join(h.config.stateRoot, 'consoles', record.console_id + '.json');
+  const { tab_id, ...legacy } = record;
+  const saved = JSON.stringify(legacy);
+  await writeFile(path, saved);
+  const before = h.calls.length;
+  assert.equal((await client.call('console_attach', { console_id: record.console_id })).error, 'console_layout_upgrade_required');
+  assert.equal(await readFile(path, 'utf8'), saved);
+  assert.equal(h.calls.length, before);
+});
+
+test('A controller moved to another tab cannot restart or keep serving the Parent', async t => {
+  const h = await consoleHarness(t), client = await h.connect();
+  const created = await client.call('console_open', { label: 'moved controller' });
+  const record = await h.consoles.get(created.console_id);
+  h.panes.get(record.controller.pane_id).tab_id = 'other-tab';
+  assert.equal((await client.call('console_status', {})).error, 'console_workspace_changed');
+  await h.cores[0].close();
+  assert.equal((await client.call('console_attach', { console_id: created.console_id })).error, 'console_workspace_changed');
+  assert.equal(h.calls.filter(call => call.method === 'pane.send_input').length, 1);
+});
+
+test('A Parent moved while job_wait is capturing receives no Evidence and loses its connection', async t => {
+  const h = await consoleHarness(t), client = await h.connect();
+  const created = await client.call('console_open', { label: 'pending observation' });
+  const started = await client.call('job_start', { pane_id: created.panes[0].pane_id, objective: 'observe together' });
+  const first = await client.call('job_wait', { job_id: started.job_id, wait_ms: 1000 });
+  const entered = Promise.withResolvers(), release = Promise.withResolvers();
+  h.state.beforeRead = async () => { entered.resolve(); await release.promise; };
+  const waiting = client.call('job_wait', { job_id: started.job_id, cursor: first.cursor, wait_ms: 1000 });
+  await entered.promise;
+  h.parent.tab_id = 'other-tab'; release.resolve();
+  assert.equal((await waiting).error, 'console_tab_required');
+  await new Promise(resolve => setTimeout(resolve, 50));
+  assert.equal(h.cores[0].consoleStatus().parent_connected, false);
+});
+
+for (const moving of ['Parent', 'controller']) test(`Moving the ${moving} during Action baseline capture prevents all Target input`, async t => {
+  const h = await consoleHarness(t), client = await h.connect();
+  const created = await client.call('console_open', { label: 'pending Action' });
+  const record = await h.consoles.get(created.console_id);
+  const described = await client.call('pane_describe', { pane_id: created.panes[0].pane_id });
+  const objective = 'Print together', cwd = h.config.project;
+  const started = await client.call('job_start', { pane_id: described.target.pane_id, objective, action_scope: { profile: 'local_posix', cwd, paths: [cwd], trusted: true } });
+  await client.call('job_wait', { job_id: started.job_id, wait_ms: 1000 });
+  const proposal = await client.call('action_propose', { job_id: started.job_id, target: described.target, objective, operation: 'execute', command: 'echo hello', cwd, env: {}, affected_paths: [cwd], risk: { classification: 'read', inspected: true, impact: 'Fixed terminal output', recovery: 'No persistent changes', uncertainties: [], categories: [] } });
+  assert.ok(proposal.proposal_id, JSON.stringify(proposal));
+  const entered = Promise.withResolvers(), release = Promise.withResolvers();
+  h.state.beforeRead = async () => { entered.resolve(); await release.promise; };
+  const submitting = client.call('action_submit', { proposal_id: proposal.proposal_id });
+  await entered.promise;
+  (moving === 'Parent' ? h.parent : h.panes.get(record.controller.pane_id)).tab_id = 'other-tab';
+  release.resolve();
+  assert.equal((await submitting).error, moving === 'Parent' ? 'console_tab_required' : 'console_workspace_changed');
+  assert.equal(h.calls.filter(call => call.method === 'pane.send_input' && call.params.pane_id === described.target.pane_id).length, 0);
+  assert.equal(h.cores[0].consoleStatus().control_record_count, 0);
+});
+
+test('The user console keeps adding same-tab terminals after the first Target is closed', async t => {
+  const h = await consoleHarness(t);
+  const record = await h.consoles.create('shared split terminals');
+  const controller = await consoleProcess(t, h, { consoleConfig: { ...h.config, consoleId: record.console_id } });
+  const client = await h.connect();
+  await client.call('console_attach', { console_id: record.console_id });
+  const second = await controller.command('new');
+  assert.equal(second.panes.length, 2, JSON.stringify(second));
+  h.panes.delete(record.panes[0].pane_id);
+  const third = await controller.command('new');
+  assert.equal(third.panes.length, 3, JSON.stringify(third));
+  const current = await client.call('console_status', {});
+  assert.deepEqual(current.panes, third.panes);
+  for (const target of current.panes.slice(1)) {
+    assert.equal((await client.call('pane_describe', { pane_id: target.pane_id })).target.tab_id, 'tab-1');
+  }
+  assert.equal(h.calls.filter(call => call.method === 'tab.create' || call.method === 'workspace.create').length, 0);
+});
+
+for (const reconnect of [false, true]) test(`Attach checks Parent location again before returning ${reconnect ? 'a new connection' : 'existing receipts'}`, async t => {
+  const h = await consoleHarness(t), first = await h.connect();
+  const created = await first.call('console_open', { label: 'attach race' });
+  const record = await h.consoles.get(created.console_id);
+  if (reconnect) { first.close(); await new Promise(resolve => setTimeout(resolve, 50)); }
+  const client = reconnect ? await h.connect() : first;
+  h.state.afterGet = paneId => { if (paneId === record.controller.pane_id) h.parent.tab_id = 'other-tab'; };
+  assert.equal((await client.call('console_attach', { console_id: created.console_id })).error, 'console_tab_required');
+  await new Promise(resolve => setTimeout(resolve, 50));
+  assert.equal(h.cores[0].consoleStatus().parent_connected, false);
 });

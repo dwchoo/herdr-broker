@@ -9,6 +9,19 @@ try {
     const report = await doctor({ endpoint, stateRoot, ...(clockPath && { consoleId: clockPath }) });
     process.stdout.write(JSON.stringify(report) + '\n');
     process.exitCode = report.ok ? 0 : 1;
+  } else if (mode === 'serve-console') {
+    const { Consoles } = await import('../dist/consoles.js');
+    const config = JSON.parse(readFileSync(endpoint, 'utf8'));
+    const consoles = new Consoles(config);
+    let record = await consoles.get(config.consoleId);
+    const scope = { workspace_id: record.workspace_id, tab_id: record.tab_id, terminals: new Map(record.panes.map(pane => [pane.pane_id, pane.terminal_id])) };
+    const core = await startCore({ ...config, scope, verifyParent: async paneId => { await consoles.verifyParent(record, paneId); await consoles.verify(record); } });
+    startConsole({ ...core, async addTerminal() {
+      record = await consoles.addTerminal(record);
+      for (const pane of record.panes) scope.terminals.set(pane.pane_id, pane.terminal_id);
+      return core.consoleStatus();
+    } }, process.stdin, process.stdout);
+    process.once('SIGTERM', () => void core.close());
   } else if (mode === 'serve') {
     const core = await startCore({ endpoint, stateRoot, ...(process.env.HB_TEST_SSH !== undefined && { sshEnabled: process.env.HB_TEST_SSH === 'true' }), ...(clockPath && { now: () => Number(readFileSync(clockPath, 'utf8')) }), ...(process.env.HB_TEST_REDACTION && { redactionPatterns: JSON.parse(process.env.HB_TEST_REDACTION) }), ...(process.env.HB_TEST_OBSERVATION_MS && { observationMs: Number(process.env.HB_TEST_OBSERVATION_MS) }), fault: point => {
       if (process.env.HB_TEST_FAULT === point) process.kill(process.pid, 'SIGKILL');

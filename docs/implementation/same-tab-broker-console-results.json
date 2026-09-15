@@ -1,0 +1,61 @@
+{
+  "date": "2026-09-16",
+  "base_commit": "d7253cf",
+  "verification": {
+    "tests_passed": 217,
+    "typecheck": "passed",
+    "skill_validator": "passed",
+    "standards_findings": 0,
+    "spec_findings": 0
+  },
+  "layout": {
+    "workspace_id": "w2",
+    "tab_id": "w2:t3",
+    "tab_label": "공유 작업",
+    "parent_pane_id": "w2:p7",
+    "controller_pane_id": "w2:pD",
+    "target_pane_id": "w2:pC",
+    "all_in_same_tab": true,
+    "console_id": "fda1cd6e-a7b3-4b17-8d2a-3b9766e567c3"
+  },
+  "receipt": {
+    "proposal_id": "569d2221-71d1-4cf9-bc1a-a362670883ee",
+    "terminal_id": "term_65b890eebd6e738",
+    "submission_state": "accepted",
+    "observation_state": "completion_observed",
+    "exit_code": 0,
+    "hold_reason": null,
+    "recovery": null,
+    "updated_at": 1789494142641
+  },
+  "parent_connected": true,
+  "held_terminal_count": 0,
+  "prior_live_check": {
+    "tab_id": "w2:t1",
+    "target_pane_id": "w2:p6",
+    "receipt_id": "492bb537-d9d4-437c-87cf-f231eefb0e20",
+    "submission_state": "accepted",
+    "observation_state": "completion_observed",
+    "exit_code": 0,
+    "new_terminal_created_by": "interactive new / pane.split"
+  },
+  "narrow_terminal_regression": {
+    "columns": 27,
+    "old_source": "recent",
+    "old_result": "outcome_unknown",
+    "fixed_action_source": "recent_unwrapped",
+    "original_unknown_receipt_preserved": true
+  },
+  "operator_incident": {
+    "method": "layout.apply",
+    "old_tab": "w2:t1",
+    "replacement_tab": "w2:t3",
+    "old_panes_terminated": true,
+    "old_shell_processes_restored": false,
+    "old_console_id": "2ffeca2d-3f83-4bfd-896f-20cd48e86bee",
+    "old_ledger_and_hold_preserved": true,
+    "codex_conversation_resumed": true,
+    "new_empty_test_panes_cleaned": true,
+    "product_uses_layout_apply": false
+  }
+}

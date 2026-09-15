@@ -21,7 +21,7 @@ async function doctor(endpoint, stateRoot, consoleId) {
 
 test('Doctor checks the selected Console storage and detects its unsafe ledger permissions', async t => {
   const consoleId = 'd4f50e8a-59df-4a84-b87a-8253e48fb5f6';
-  const h = await harness(t, { core: { consoleId, scope: { workspace_id: pane.workspace_id, terminals: new Map([[pane.pane_id, pane.terminal_id]]) } } });
+  const h = await harness(t, { core: { consoleId, scope: { workspace_id: pane.workspace_id, tab_id: pane.tab_id, terminals: new Map([[pane.pane_id, pane.terminal_id]]) } } });
   const directory = dirname(h.core.socketPath);
   const normal = await doctor(h.endpoint, join(h.root, 'state'), consoleId);
   assert.equal(normal.report.state.directory, directory);

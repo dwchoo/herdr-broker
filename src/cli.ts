@@ -28,8 +28,10 @@ try {
     let record = await consoles.get(extra[0]!);
     if (record.controller.pane_id !== config.herdrContext.HERDR_PANE_ID) throw new BrokerError('console_controller_required');
     await consoles.verify(record);
-    const scope = { workspace_id: record.workspace_id, terminals: new Map(record.panes.map(pane => [pane.pane_id, pane.terminal_id])) };
-    const core = await startCore({ ...config, consoleId: record.console_id, scope });
+    const scope = { workspace_id: record.workspace_id, tab_id: record.tab_id, terminals: new Map(record.panes.map(pane => [pane.pane_id, pane.terminal_id])) };
+    const core = await startCore({ ...config, consoleId: record.console_id, scope, verifyParent: async paneId => {
+      await consoles.verifyParent(record, paneId); await consoles.verify(record);
+    } });
     const close = startConsole({ ...core, async addTerminal() {
       record = await consoles.addTerminal(record);
       for (const pane of record.panes) scope.terminals.set(pane.pane_id, pane.terminal_id);

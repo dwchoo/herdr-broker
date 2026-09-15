@@ -85,13 +85,13 @@ export class Actions {
     if (!proposal || proposal.owner !== owner) throw new BrokerError('proposal_unavailable');
     return proposal.job;
   }
-  submit(owner: string, id: string) {
+  submit(owner: string, id: string, verifyParent?: () => Promise<void>) {
     const proposal = this.get(owner, this.jobFor(owner, id), id);
     if (this.submissions.has(id)) return this.submissions.get(id)!;
     if (proposal.receipt) return Promise.resolve(this.view(proposal));
     this.allowed(proposal);
     const terminal = proposal.target.terminal_id;
-    const task = (this.wires.get(terminal) ?? Promise.resolve()).catch(() => {}).then(() => this.dispatch(proposal));
+    const task = (this.wires.get(terminal) ?? Promise.resolve()).catch(() => {}).then(() => this.dispatch(proposal, verifyParent));
     this.wires.set(terminal, task);
     this.submissions.set(id, task);
     void task.finally(() => { this.submissions.delete(id); if (this.wires.get(terminal) === task) this.wires.delete(terminal); }).catch(() => {});
@@ -103,18 +103,19 @@ export class Actions {
     const decision = this.decision(proposal);
     if (!['user_approval', 'parent_risk_review', 'autonomous'].includes(decision.authorization)) throw new BrokerError(decision.reason ?? 'approval_required');
   }
-  private async dispatch(proposal: Proposal) {
+  private async dispatch(proposal: Proposal, verifyParent?: () => Promise<void>) {
     if (proposal.receipt) return this.view(proposal);
     const previous = this.options.ledger.get(proposal.id);
     if (previous) { proposal.receipt = previous; return this.view(proposal); }
     const job = this.jobs.actionContext(proposal.owner, proposal.job);
     this.allowed(proposal);
     const pane = await this.herdr.describe(proposal.target.pane_id, job.signal);
-    const baseline = await this.herdr.capture(pane, job.signal);
+    const baseline = await this.herdr.capture(pane, job.signal, 'recent_unwrapped');
     const verified = await this.herdr.describe(proposal.target.pane_id, job.signal);
     const session = await this.sessions.observe(verified, job.signal, true);
     if (!sameTarget(targetOf(pane), proposal.target) || !sameTarget(targetOf(verified), proposal.target) || session.id !== proposal.session) throw new BrokerError('target_changed');
     if (proposal.operation === 'execute' && !this.sessions.ready(session)) throw new BrokerError('shell_not_ready');
+    if (verifyParent) await verifyParent();
     this.allowed(proposal);
     if (proposal.operation === 'execute' && baseline.text.includes(proposal.nonce)) throw new BrokerError('baseline_marker_conflict');
     const payload = proposal.body!.payload;
@@ -185,7 +186,7 @@ export class Actions {
         const pane = await this.herdr.describe(proposal.target.pane_id, signal);
         const session = await this.sessions.observe(pane, signal);
         if (!sameTarget(targetOf(pane), proposal.target) || session.id !== proposal.session) throw new BrokerError('target_changed');
-        const capture = await this.herdr.capture(pane, signal);
+        const capture = await this.herdr.capture(pane, signal, 'recent_unwrapped');
         proposal.observation!.truncated ||= capture.truncated;
         const checked = await this.herdr.describe(proposal.target.pane_id, signal);
         const checkedSession = await this.sessions.observe(checked, signal);

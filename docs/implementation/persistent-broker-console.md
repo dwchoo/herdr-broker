@@ -1,5 +1,7 @@
 # 지속되는 Broker Console과 공유 terminal
 
+이 문서는 첫 구현과 검증 기록이다. 별도 workspace를 만드는 화면 배치는 사용자 정정에 따라 [같은 tab의 Console](same-tab-broker-console.md)로 변경한다. 아래 검증 결과는 변경 전 구현에 해당한다.
+
 2026-09-16. 사용자는 자신과 Codex가 같은 실제 terminal을 보고 조작하는 작업 공간을 원한다. Project skill이 Broker Console을 열고, 연결된 Codex는 그 Console이 소유한 Target Pane만 Broker를 통해 읽고 조작한다.
 
 ## 확정한 사용 계약

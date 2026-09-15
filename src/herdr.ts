@@ -13,7 +13,7 @@ const paneSchema = z.object({
   agent_status: z.string().max(64),
 });
 export type Pane = z.infer<typeof paneSchema>;
-export interface ConsoleScope { workspace_id: string; terminals: ReadonlyMap<string, string> }
+export interface ConsoleScope { workspace_id: string; tab_id: string; terminals: ReadonlyMap<string, string> }
 
 const processSchema = z.object({ pane_id: id, shell_pid: z.number().int().positive().nullable().default(null), foreground_process_group_id: z.number().int().positive().nullable().default(null),
   foreground_processes: z.array(z.object({ pid: z.number().int().positive(), name: z.string().max(256), argv0: z.string().max(4096).nullable().optional(), argv: z.array(z.string().max(65536)).max(256).nullable().optional() })).max(256).default([]), tty: z.string().max(4096).nullable().optional() });
@@ -29,7 +29,7 @@ export class Herdr {
   }
   private requireTarget(pane: Pane) {
     this.requirePane(pane.pane_id);
-    if (this.scope && (pane.workspace_id !== this.scope.workspace_id || this.scope.terminals.get(pane.pane_id) !== pane.terminal_id)) throw new BrokerError('pane_outside_console');
+    if (this.scope && (pane.workspace_id !== this.scope.workspace_id || pane.tab_id !== this.scope.tab_id || this.scope.terminals.get(pane.pane_id) !== pane.terminal_id)) throw new BrokerError('pane_outside_console');
   }
   private request(method: string, params: object, signal?: AbortSignal, submission?: SendHooks): Promise<unknown> {
     return new Promise((resolve, reject) => {
@@ -105,12 +105,12 @@ export class Herdr {
     if (parsed.data.process_info.pane_id !== paneId) throw new BrokerError('target_changed');
     return parsed.data.process_info;
   }
-  async capture(pane: Pane, signal?: AbortSignal) {
+  async capture(pane: Pane, signal?: AbortSignal, source: 'recent' | 'recent_unwrapped' = 'recent') {
     this.requireTarget(pane);
     const parsed = z.object({ type: z.literal('pane_read'), read: z.object({
       pane_id: id, workspace_id: id, tab_id: id, text: z.string().refine(text => text.isWellFormed()),
-      source: z.literal('recent'), format: z.literal('ansi'), truncated: z.boolean(), revision: z.number().int().nonnegative(),
-    }) }).safeParse(await this.request('pane.read', { pane_id: pane.pane_id, source: 'recent', lines: 1000, format: 'ansi', strip_ansi: false }, signal));
+      source: z.literal(source), format: z.literal('ansi'), truncated: z.boolean(), revision: z.number().int().nonnegative(),
+    }) }).safeParse(await this.request('pane.read', { pane_id: pane.pane_id, source, lines: 1000, format: 'ansi', strip_ansi: false }, signal));
     if (!parsed.success) throw new BrokerError('herdr_invalid_response');
     const read = parsed.data.read;
     if (read.pane_id !== pane.pane_id || read.workspace_id !== pane.workspace_id || read.tab_id !== pane.tab_id) throw new BrokerError('target_changed');
@@ -132,18 +132,9 @@ export class Herdr {
     this.requireTarget(result.data.pane);
     return result.data.pane;
   }
-  async createWorkspace(label: string, cwd: string) {
-    await this.check();
-    const result = z.object({ root_pane: paneSchema }).safeParse(await this.request('workspace.create', { label, cwd, focus: true }));
-    if (!result.success) throw new BrokerError('herdr_invalid_response');
-    return result.data.root_pane;
-  }
-  async createTerminal(workspaceId: string, cwd: string, targetPaneId?: string) {
-    const response = targetPaneId
-      ? await this.request('pane.split', { workspace_id: workspaceId, target_pane_id: targetPaneId, direction: 'right', cwd, focus: false })
-      : await this.request('tab.create', { workspace_id: workspaceId, cwd, label: 'Terminal', focus: false });
-    const result = (targetPaneId ? z.object({ pane: paneSchema }).transform(value => value.pane) : z.object({ root_pane: paneSchema }).transform(value => value.root_pane)).safeParse(response);
-    if (!result.success || result.data.workspace_id !== workspaceId) throw new BrokerError('herdr_invalid_response');
-    return result.data;
+  async splitPane(source: Pane, cwd: string, direction: 'right' | 'down', ratio = 0.5) {
+    const result = z.object({ pane: paneSchema }).safeParse(await this.request('pane.split', { workspace_id: source.workspace_id, target_pane_id: source.pane_id, direction, ratio, cwd, focus: false }));
+    if (!result.success || result.data.pane.workspace_id !== source.workspace_id || result.data.pane.tab_id !== source.tab_id) throw new BrokerError('herdr_invalid_response');
+    return result.data.pane;
   }
 }

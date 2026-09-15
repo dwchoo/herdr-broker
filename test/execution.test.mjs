@@ -36,6 +36,23 @@ test('Approved immutable input commits once before sending and observes exit ind
   assert.ok(!Buffer.concat([database, wal]).includes(Buffer.from('literal')));
 });
 
+test('Action completion remains observable in a terminal split to 27 columns', async t => {
+  const h = await executingHarness(t, { respond(socket, request, response) {
+    if (request.method === 'pane.read') {
+      response.result.read.source = request.params.source;
+      if (request.params.source !== 'recent_unwrapped') response.result.read.text = response.result.read.text.split('\n').map(row => row.match(/.{1,27}/g)?.join('\r\n') ?? '').join('\r\n');
+    }
+    socket.write(JSON.stringify(response) + '\n');
+  } });
+  const { client, job, proposal } = await approved(t, h, 'echo hello; exit 255', { observationMs: 300 });
+  await client.call('action_submit', { proposal_id: proposal.proposal_id });
+  await new Promise(resolve => setTimeout(resolve, 400));
+  const receipt = await client.call('action_status', { job_id: job.job_id, proposal_id: proposal.proposal_id });
+  assert.equal(receipt.observation_state, 'completion_observed');
+  assert.equal(receipt.exit_code, 255);
+  assert.equal(h.calls.filter(call => call.method === 'pane.send_input').length, 1);
+});
+
 test('No approval, changed mode, forged payload and cancellation before submission send no input', async t => {
   const h = await executingHarness(t), { console, client, job, proposal } = await approved(t, h);
   await console.command(`revoke ${proposal.proposal_id}`);
