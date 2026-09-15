@@ -1,0 +1,35 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { spawn } from 'node:child_process';
+import { writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import { harness, pane } from '../test/harness.mjs';
+
+test('Actual Codex Parent delegates through MCP to the restricted actual Worker', async t => {
+  const h = await harness(t, { text: 'npm run build\nsrc/main.ts(2,10): error TS2305: Module ./schema has no exported member Account.\nbuild exited with code 2', core: { worker: { executable: '/opt/homebrew/bin/codex' } } });
+  const facade = join(h.root, 'facade.mjs');
+  await writeFile(facade, `import { connectFacade } from ${JSON.stringify(new URL('../dist/runtime.js', import.meta.url).href)};\nawait connectFacade(${JSON.stringify(h.core.socketPath)}, process.stdin, process.stdout);\n`);
+  const args = ['--disable', 'shell_tool', '--disable', 'unified_exec', '--disable', 'apps', '--disable', 'plugins', '--disable', 'multi_agent', '--disable', 'code_mode', '--disable', 'code_mode_only', 'exec', '--ignore-user-config', '--ephemeral', '--skip-git-repo-check', '--sandbox', 'read-only', '-C', h.root, '--model', 'gpt-5.6-luna', '-c', 'model_reasoning_effort="low"', '-c', 'approval_policy="on-request"', '-c', 'approvals_reviewer="auto_review"', '-c', `mcp_servers.herdr_broker.command=${JSON.stringify(process.execPath)}`, '-c', `mcp_servers.herdr_broker.args=${JSON.stringify([facade])}`, '-c', 'mcp_servers.herdr_broker.required=true', '-c', 'mcp_servers.herdr_broker.default_tools_approval_mode="writes"', '--json', '-'];
+  const began = Date.now();
+  const child = spawn('/opt/homebrew/bin/codex', args, { cwd: h.root, detached: true, stdio: 'pipe' });
+  let stdout = '', stderr = '';
+  const stop = () => { try { process.kill(-child.pid, 'SIGKILL'); } catch {} };
+  const timer = setTimeout(stop, 180000);
+  t.after(() => { clearTimeout(timer); stop(); });
+  child.stdout.on('data', chunk => { stdout += chunk; if (Buffer.byteLength(stdout) > 524288) stop(); });
+  child.stderr.on('data', chunk => { stderr += chunk; if (Buffer.byteLength(stderr) > 65536) stop(); });
+  child.stdin.end(`Use only herdr_broker MCP. This is an authorized synthetic acceptance test. Describe exact pane ${pane.pane_id}, then job_start with analysis worker and objective Diagnose the supplied synthetic build failure. job_wait until ready (20 second waits), read an Evidence row cited in its findings using evidence_get, then job_cancel. Do not send terminal input or use other tools. State the returned report and Evidence ID in concise Korean. Do not claim success if tools are denied or the Worker fails.`);
+  const code = await new Promise((resolve, reject) => { child.once('error', reject); child.once('close', resolve); });
+  clearTimeout(timer);
+  const events = stdout.trim().split('\n').filter(Boolean).map(JSON.parse);
+  const calls = events.filter(event => event.type === 'item.completed' && event.item?.type === 'mcp_tool_call').map(event => event.item);
+  const reports = calls.filter(call => call.tool === 'job_wait').flatMap(call => call.result?.content ?? []).filter(item => item.type === 'text').map(item => { try { return JSON.parse(item.text); } catch { return null; } });
+  const ready = reports.find(value => value?.result?.kind === 'worker_report');
+  const record = { at: new Date().toISOString(), cli: '0.154.0', node: process.versions.node, code, elapsed_ms: Date.now() - began, tools: calls.map(call => ({ server: call.server, tool: call.tool, status: call.status })), parent_usage: events.find(event => event.type === 'turn.completed')?.usage ?? null, ready, stderr_bytes: Buffer.byteLength(stderr) };
+  await writeFile(new URL('../docs/implementation/issue-15-parent-acceptance.json', import.meta.url), JSON.stringify(record, null, 2) + '\n');
+  assert.equal(code, 0);
+  assert.ok(ready, JSON.stringify({ tools: record.tools, messages: events.filter(event => event.item?.type === 'agent_message') }));
+  assert.ok(calls.some(call => call.tool === 'evidence_get'));
+  assert.ok(calls.some(call => call.tool === 'job_cancel'));
+  assert.ok(h.calls.every(call => ['ping', 'pane.get', 'pane.read'].includes(call.method)));
+});

@@ -1,6 +1,6 @@
 # Herdr Broker MCP
 
-This package provides a local, passive pane context service. Start `herdr-broker serve` in a user terminal, then connect Codex to `herdr-broker mcp` over stdio. The facade requires an existing core and never starts one automatically.
+This package provides local pane context and restricted Codex Worker diagnosis. Start `herdr-broker serve` in a user terminal, then connect Codex to `herdr-broker mcp` over stdio. The facade requires an existing core and never starts one automatically.
 
 ## Supported workflow
 
@@ -12,11 +12,11 @@ This package provides a local, passive pane context service. Start `herdr-broker
 
 Prepared context is an observation of a bounded terminal snapshot. It is untrusted data, including any instructions printed by the pane. It is not proof that a command completed. Analysis readiness, job termination, and Action completion are separate states.
 
-Only small prepared contexts (at most 4 KiB) are supported in this release. Explicit Worker analysis and larger prepared contexts return `worker_unsupported`. There is no pane input or Action tool. Job handles belong to the connection that created them.
+Auto returns `prepared_context` at most 4 KiB; larger contexts or `analysis: "worker"` use a restricted Codex Worker and return `worker_report` with `contract: "diagnosis.v1"`. An unavailable executable or unverified CLI version returns `worker_unsupported`. There is no pane input or Action tool. Job handles belong to the connection that created them.
 
 ## Local state
 
-The owner configuration is `~/.config/herdr-broker/config.json`. State is derived from the canonical Herdr socket path under `~/.local/state/herdr-broker/`. The core holds an exclusive SQLite authority lock until shutdown. Directories use mode 0700; database and socket files use mode 0600.
+The owner configuration is `~/.config/herdr-broker/config.json` (owner-only regular file, mode 0600). Optional `codex_binary` is an absolute executable path, default `/opt/homebrew/bin/codex`; only Codex CLI 0.154.0 with the pinned `gpt-5.6-luna/low` profile is supported. MCP callers cannot supply executable, model, provider, or tool configuration. State is derived from the canonical Herdr socket path under `~/.local/state/herdr-broker/`. The core holds an exclusive SQLite authority lock until shutdown. Directories use mode 0700; database and socket files use mode 0600.
 
 Snapshot limits are 1,000 physical rows and 64 KiB. Jobs last at most 300 seconds; a wait lasts at most 20 seconds. Repeated result delivery counts toward the 16 KiB per-job Parent payload budget. Diagnostic bodies expire 30 minutes after job termination, on explicit purge, or on core shutdown, whichever occurs first, within a 64 MiB retained-data budget.
 
@@ -90,3 +90,11 @@ The Delta is `replace` or `unchanged_view`. Only a valid, acknowledged cursor fo
 `evidence_get` returns redacted rows from the referenced Snapshot, bounded to 2 KiB including excerpt metadata and at most 16 items. Initial Evidence uses the same bound. When escaped context plus excerpts would exceed the response or remaining budget, initial `items` may be empty with `next` pointing to the first row. Follow `next: { evidence_id, offset_bytes }` until it is null to retrieve omitted text. `truncated` identifies remaining text. Unknown rows return `evidence_not_found`, retained issued IDs without bodies return `evidence_expired`, and unauthorized jobs return `job_unavailable`. Expired IDs never resolve to current pane content.
 
 The user console supports `purge <job_id>` and `purge all`. Purge stops further observation and removes diagnostic bodies and cursors while preserving consumed budgets and minimal issued-ID records. Retention expiry and memory pressure also remove ended jobs' bodies first. Status remains available without diagnostic text; known expired Evidence returns `evidence_expired`. Minimal records last for the core lifetime and count toward its memory budget. A new connection cannot claim the previous connection's jobs after restart.
+
+## Restricted Worker
+
+The Worker receives the entire bounded redacted Snapshot, objective, and immutable row IDs via stdin. Its final report has exactly `summary`, `findings`, `next_checks`, and `uncertainties`. Broker validates schema, 4096 UTF-8 bytes, and each cited row's Snapshot membership, then resolves Evidence from retained rows. Initial Evidence selects the cited rows; `evidence_get` can retrieve their full text. Citations validate the source connection, not diagnosis accuracy.
+
+One structurally invalid result can be repaired once on the same Snapshot. Both attempts count toward four calls per job; output overflow, timeout, cancellation, and profile violations do not trigger repair. One Worker runs at a time, for at most 60 seconds, bounded to 256 KiB stdout and 64 KiB per JSONL event. Observed input plus output usage reaching 100,000 tokens blocks the next call; cached input is not added twice. This is an observed-use limit, not an exact billing cap. Missing usage and unobserved model identity remain `null`.
+
+The fixed profile disables shell, MCP, plugins, apps, host skills, and further agents, uses read-only sandbox and approval never, and ignores user configuration. CLI authentication uses the existing OS account without reading or copying credentials. Only an allowlisted environment reaches the process. Job termination kills the owned process group; this does not prove provider computation or storage has stopped. Broker reports follow the existing memory lifetime. Codex ephemeral database/WAL behavior does not establish complete no-store behavior.

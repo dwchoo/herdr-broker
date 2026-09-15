@@ -1,6 +1,7 @@
 import { randomUUID, createHash } from 'node:crypto';
 import { Herdr, BrokerError } from './herdr.js';
 import { prepareSnapshot, sanitize, excerpt } from './snapshot.js';
+import { CodexWorker, WorkerFailure, workerProfile, type Report, type Usage } from './worker.js';
 
 type Phase = 'observing' | 'result_ready' | 'failed' | 'cancelled' | 'deadline' | 'budget_exhausted' | 'purged';
 type DataState = 'retained' | 'purged' | 'expired' | 'evicted';
@@ -8,6 +9,7 @@ interface Budget { deadline_ms?: number | undefined; parent_payload_bytes?: numb
 interface SnapshotRecord {
   value?: ReturnType<typeof prepareSnapshot>; rowCount: number; cursor?: string; cursorExpires: number;
   digest?: string; scope?: string; prepared: boolean;
+  report?: Report;
 }
 interface Job {
   id: string; owner: string; paneId: string; objective: string; session: string;
@@ -17,13 +19,14 @@ interface Job {
   binding?: string; sequence: number; observedAt?: number;
   ended?: number; timer?: NodeJS.Timeout;
   error?: string;
+  analysis: string; workerCalls: number; workerUsage: Usage | null; workerKnown: number; workerElapsed: number;
 }
 const ended = (job: Job) => job.ended !== undefined;
 
 export class Jobs {
   private readonly jobs = new Map<string, Job>();
   private readonly maintenance: NodeJS.Timeout;
-  constructor(private readonly herdr: Herdr, private readonly patterns: string[] = [], private readonly now = Date.now, private readonly memoryLimit = 64 * 1024 * 1024) {
+  constructor(private readonly herdr: Herdr, private readonly patterns: string[] = [], private readonly now = Date.now, private readonly memoryLimit = 64 * 1024 * 1024, private readonly worker = new CodexWorker()) {
     this.maintenance = setInterval(() => this.sweep(), 1000);
     this.maintenance.unref();
   }
@@ -32,7 +35,7 @@ export class Jobs {
     this.reserve(16384);
     if ([...this.jobs.values()].filter(job => job.phase === 'observing').length >= 4) throw new BrokerError('observation_busy');
     const created = this.now();
-    const job: Job = { id: randomUUID(), owner, paneId, objective: sanitize(objective, this.patterns).text, session: randomUUID(), phase: 'observing', controller: new AbortController(), done: Promise.resolve(), created, deadline: created + (budget.deadline_ms ?? 300000), limit: budget.parent_payload_bytes ?? 16384, used: 0, noticeSent: false, memory: 16384, dataState: 'retained', snapshots: new Map(), sequence: 0 };
+    const job: Job = { id: randomUUID(), owner, paneId, objective: sanitize(objective, this.patterns).text, session: randomUUID(), phase: 'observing', controller: new AbortController(), done: Promise.resolve(), created, deadline: created + (budget.deadline_ms ?? 300000), limit: budget.parent_payload_bytes ?? 16384, used: 0, noticeSent: false, memory: 16384, dataState: 'retained', snapshots: new Map(), sequence: 0, analysis, workerCalls: 0, workerUsage: null, workerKnown: 0, workerElapsed: 0 };
     this.jobs.set(job.id, job);
     job.timer = setTimeout(() => this.stop(job, 'deadline'), job.deadline - created);
     job.timer.unref();
@@ -59,7 +62,7 @@ export class Jobs {
   private clearBodies(job: Job, reason: DataState) {
     if (job.dataState !== 'retained') return;
     for (const record of job.snapshots.values()) {
-      delete record.value; delete record.cursor; delete record.digest; delete record.scope;
+      delete record.value; delete record.cursor; delete record.digest; delete record.scope; delete record.report;
       record.cursorExpires = 0; record.prepared = false;
     }
     delete job.current;
@@ -69,7 +72,6 @@ export class Jobs {
   }
   private async observe(job: Job, analysis: string) {
     try {
-      if (analysis === 'worker') throw new BrokerError('worker_unsupported');
       if (!this.active(job)) return;
       const pane = await this.herdr.describe(job.paneId, job.controller.signal);
       if (!this.active(job)) return;
@@ -89,18 +91,51 @@ export class Jobs {
         const retained = 2048 + 2 * Buffer.byteLength(snapshot.rows.join('\n')) + 128 * snapshot.rows.length + 2 * Buffer.byteLength(snapshot.text);
         this.reserve(retained);
         job.memory += retained;
-        const record: SnapshotRecord = { value: Object.freeze(snapshot), rowCount: snapshot.rows.length, cursor: randomUUID(), cursorExpires: this.now() + 60000, digest, scope, prepared: Buffer.byteLength(snapshot.text) <= 4096 };
+        const record: SnapshotRecord = { value: Object.freeze(snapshot), rowCount: snapshot.rows.length, cursor: randomUUID(), cursorExpires: this.now() + 60000, digest, scope, prepared: analysis === 'auto' && Buffer.byteLength(snapshot.text) <= 4096 };
         job.snapshots.set(snapshot.metadata.snapshot_id, record);
         job.current = record;
       }
       job.session = session; job.binding = binding; job.sequence = sequence; job.observedAt = observedAt;
-      if (!job.current?.prepared) throw new BrokerError('worker_unsupported');
+      if (job.current && !job.current.prepared && !job.current.report) {
+        let previous: string | undefined;
+        for (let attempt = 0; attempt < 2; attempt++) {
+          if (!this.active(job)) return;
+          if (job.workerCalls >= 4) throw new BrokerError('worker_call_budget');
+          if (job.workerUsage && job.workerUsage.input_tokens + job.workerUsage.output_tokens >= 100000) throw new BrokerError('worker_token_budget');
+          job.workerCalls++;
+          const started = Date.now();
+          let result;
+          try { result = await this.worker.run(snapshot, job.objective, job.controller.signal, this.patterns, previous); }
+          catch (error) { this.recordUsage(job, error instanceof WorkerFailure ? error.usage : null); throw error; }
+          finally { job.workerElapsed += Date.now() - started; }
+          this.recordUsage(job, result.usage);
+          if (!this.active(job)) return;
+          if (result.report) {
+            const bytes = 2 * Buffer.byteLength(JSON.stringify(result.report));
+            this.reserve(bytes); job.memory += bytes;
+            job.current.report = result.report;
+            break;
+          }
+          previous = result.invalid;
+        }
+        if (!job.current.report) throw new BrokerError('worker_invalid_report');
+      }
       job.phase = 'result_ready';
     } catch (error) {
       if (!this.active(job)) return;
       job.error = error instanceof BrokerError ? error.code : 'internal_error';
       this.stop(job, 'failed');
     }
+  }
+  private recordUsage(job: Job, usage: Usage | null) {
+    if (!usage) return;
+    const before = job.workerUsage;
+    job.workerKnown++;
+    job.workerUsage = { input_tokens: (before?.input_tokens ?? 0) + usage.input_tokens, output_tokens: (before?.output_tokens ?? 0) + usage.output_tokens,
+      cached_input_tokens: usage.cached_input_tokens === null || before?.cached_input_tokens === null ? null : (before?.cached_input_tokens ?? 0) + usage.cached_input_tokens };
+  }
+  private workerStatus(job: Job) {
+    return { ...workerProfile, calls: job.workerCalls, usage: job.workerKnown === job.workerCalls ? job.workerUsage : null, elapsed_ms: job.workerElapsed };
   }
   private reserve(bytes: number) {
     const limit = Math.min(this.memoryLimit, 64 * 1024 * 1024);
@@ -114,7 +149,7 @@ export class Jobs {
   summary() {
     this.sweep();
     return {
-      jobs: [...this.jobs.values()].slice(-32).map(job => ({ job_id: job.id, phase: job.phase, data_state: job.dataState, job_ended: ended(job), result_ready: !job.error && job.phase !== 'observing' && !!job.current?.prepared, deadline_remaining_ms: Math.max(0, job.deadline - this.now()), parent_payload_bytes_remaining: job.limit - job.used, ...(job.ended !== undefined && { ended_at: new Date(job.ended).toISOString(), retention_expires_at: new Date(job.ended + 1800000).toISOString() }), snapshot: job.current?.value?.metadata })),
+      jobs: [...this.jobs.values()].slice(-32).map(job => ({ job_id: job.id, phase: job.phase, data_state: job.dataState, job_ended: ended(job), result_ready: !job.error && job.phase !== 'observing' && !!(job.current?.prepared || job.current?.report), deadline_remaining_ms: Math.max(0, job.deadline - this.now()), parent_payload_bytes_remaining: job.limit - job.used, ...(job.workerCalls > 0 && { worker: this.workerStatus(job) }), ...(job.ended !== undefined && { ended_at: new Date(job.ended).toISOString(), retention_expires_at: new Date(job.ended + 1800000).toISOString() }), snapshot: job.current?.value?.metadata })),
       job_count: this.jobs.size, memory_bytes: [...this.jobs.values()].reduce((sum, job) => sum + job.memory, 0), memory_limit_bytes: Math.min(this.memoryLimit, 64 * 1024 * 1024), retention_after_end_ms: 1800000,
       action_submission: 'unsupported', action_outcome: 'unsupported', action_mode: 'unavailable',
     };
@@ -138,9 +173,9 @@ export class Jobs {
     return this.deliver(job, false, { job_id: job.id, error: 'invalid_tool_arguments' });
   }
   private status(job: Job, waitTimedOut = false, cursor?: string) {
-    const base = { job_id: job.id, pane_session_id: job.session, pane_id: job.paneId, phase: job.phase, data_state: job.dataState, result_ready: !job.error && job.phase !== 'observing' && !!job.current?.prepared, job_ended: ended(job), action_state: 'unsupported', wait_timed_out: waitTimedOut, ...(job.error && { error: job.error }) };
+    const base = { job_id: job.id, pane_session_id: job.session, pane_id: job.paneId, phase: job.phase, data_state: job.dataState, result_ready: !job.error && job.phase !== 'observing' && !!(job.current?.prepared || job.current?.report), job_ended: ended(job), action_state: 'unsupported', wait_timed_out: waitTimedOut, ...(job.workerCalls > 0 && { worker: this.workerStatus(job) }), ...(job.error && { error: job.error }) };
     const current = job.current;
-    if (!current?.value || job.phase === 'observing' || (job.error && current.prepared)) return base;
+    if (!current?.value || job.phase === 'observing' || (job.error && (current.prepared || current.report))) return base;
     const baseline = [...job.snapshots.values()].find(record => record.cursor === cursor);
     const unchanged = baseline && baseline.cursorExpires > this.now() && baseline.scope === current.scope && baseline.digest === current.digest;
     if (current.cursorExpires <= this.now()) {
@@ -149,9 +184,10 @@ export class Jobs {
     }
     const view = { cursor: current.cursor, cursor_expires_at: new Date(current.cursorExpires).toISOString(), observation: { sequence: job.sequence, observed_at: new Date(job.observedAt!).toISOString() } };
     const snapshot = current.value;
+    const citedRows = current.report ? [...new Set(current.report.findings.flatMap(finding => finding.evidence_ids))].map(id => Number(id.split(':L')[1]) - 1) : undefined;
     if (unchanged) return { ...base, ...view, delta: { kind: 'unchanged_view', snapshot_id: snapshot.metadata.snapshot_id, history_complete: false } };
     return { ...base, ...view, delta: { kind: 'replace', history_complete: false }, snapshot: snapshot.metadata,
-      ...(current.prepared && { result: { kind: 'prepared_context', text: snapshot.text }, evidence: excerpt(snapshot.metadata.snapshot_id, snapshot.rows) }) };
+      ...((current.prepared || current.report) && { result: current.report ? { kind: 'worker_report', contract: 'diagnosis.v1', report: current.report } : { kind: 'prepared_context', text: snapshot.text }, evidence: excerpt(snapshot.metadata.snapshot_id, snapshot.rows, 0, 0, citedRows) }) };
   }
   private deliver(job: Job, waitTimedOut = false, body?: object, cursor?: string): string | null {
     if (job.noticeSent) return null;
@@ -171,8 +207,9 @@ export class Jobs {
       }
     };
     let text = encode();
-    if (view && 'evidence' in view && job.current?.value && (budget.parent_payload_bytes_used > job.limit - 512 || Buffer.byteLength(text) > 8192)) {
-      response = { ...view, evidence: { items: [], truncated: true, next: { evidence_id: `${job.current.value.metadata.snapshot_id}:L0001`, offset_bytes: 0 } }, budget };
+    const firstEvidenceId = job.current?.report?.findings[0]?.evidence_ids[0] ?? (job.current?.prepared && job.current.value ? `${job.current.value.metadata.snapshot_id}:L0001` : undefined);
+    if (view && 'evidence' in view && firstEvidenceId && (budget.parent_payload_bytes_used > job.limit - 512 || Buffer.byteLength(text) > 8192)) {
+      response = { ...view, evidence: { items: [], truncated: true, next: { evidence_id: firstEvidenceId, offset_bytes: 0 } }, budget };
       text = encode();
     }
     if (budget.parent_payload_bytes_used > job.limit - 512 || Buffer.byteLength(text) > 8192) {
@@ -190,7 +227,7 @@ export class Jobs {
     if (operation === 'wait' && this.active(job) && job.phase !== 'observing' && cursor !== undefined && cursor === job.current?.cursor && job.current.cursorExpires > this.now()) {
       if ([...this.jobs.values()].filter(other => other.phase === 'observing').length >= 4) return this.deliver(job, false, { job_id: job.id, error: 'observation_busy' });
       job.phase = 'observing';
-      job.done = this.observe(job, 'auto');
+      job.done = this.observe(job, job.analysis);
     }
     let waitTimedOut = false;
     if (operation === 'wait' && job.phase === 'observing') {
@@ -222,7 +259,11 @@ export class Jobs {
   }
   close() {
     clearInterval(this.maintenance);
-    for (const job of this.jobs.values()) this.stop(job, 'cancelled');
+    const pending = [...this.jobs.values()].map(job => {
+      this.stop(job, 'cancelled'); this.clearBodies(job, 'purged');
+      return job.done;
+    });
     this.jobs.clear();
+    return Promise.allSettled(pending);
   }
 }

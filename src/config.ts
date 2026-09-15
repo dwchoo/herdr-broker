@@ -6,6 +6,7 @@ import { BrokerError } from './herdr.js';
 
 const configuration = z.strictObject({
   herdr_socket: z.string().min(1).max(4096).refine(isAbsolute).optional(),
+  codex_binary: z.string().min(1).max(4096).refine(isAbsolute).optional(),
   redaction_patterns: z.array(z.string().min(1).max(256)).max(16).default([]),
 });
 export async function loadConfiguration() {
@@ -23,6 +24,6 @@ export async function loadConfiguration() {
   const parsed = configuration.safeParse(value);
   if (!parsed.success) throw new BrokerError('config_invalid');
   try {
-    return { endpoint: await realpath(parsed.data.herdr_socket ?? join(home, '.config/herdr/herdr.sock')), stateRoot: join(home, '.local/state/herdr-broker'), redactionPatterns: parsed.data.redaction_patterns };
+    return { endpoint: await realpath(parsed.data.herdr_socket ?? join(home, '.config/herdr/herdr.sock')), stateRoot: join(home, '.local/state/herdr-broker'), redactionPatterns: parsed.data.redaction_patterns, worker: { executable: parsed.data.codex_binary ?? '/opt/homebrew/bin/codex' } };
   } catch { throw new BrokerError('herdr_unavailable'); }
 }

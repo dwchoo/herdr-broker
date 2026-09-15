@@ -42,7 +42,7 @@ export async function harness(t, options = {}) {
   peer.listen(endpoint);
   await once(peer, 'listening');
   const { startCore } = await import('../dist/core.js');
-  core = await startCore({ endpoint, stateRoot: join(root, 'state'), ...options.core });
+  core = await startCore({ endpoint, stateRoot: join(root, 'state'), worker: { executable: join(root, 'unavailable-worker') }, ...options.core });
   return { root, endpoint, core, calls, state, connect: () => connect(core.socketPath, t) };
 }
 

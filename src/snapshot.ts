@@ -65,13 +65,15 @@ export function prepareSnapshot(raw: string, session: string, truncated: boolean
   };
 }
 
-export function excerpt(snapshotId: string, rows: readonly string[], firstRow = 0, offsetBytes = 0) {
+export function excerpt(snapshotId: string, rows: readonly string[], firstRow = 0, offsetBytes = 0, selectedRows?: readonly number[]) {
   const rowId = (index: number) => `${snapshotId}:L${String(index + 1).padStart(4, '0')}`;
   type Item = { evidence_id: string; text: string; offset_bytes: number };
   type Position = { evidence_id: string; offset_bytes: number };
   const items: Item[] = [];
   const wrap = (entries: Item[], next: Position | null) => ({ items: entries, truncated: next !== null, next });
-  let row = firstRow;
+  const positions = selectedRows ?? Array.from({ length: rows.length - firstRow }, (_, index) => firstRow + index);
+  let position = 0;
+  let row = positions[position] ?? rows.length;
   let offset = offsetBytes;
   while (row < rows.length && items.length < 16) {
     const bytes = Buffer.from(rows[row]!);
@@ -79,13 +81,13 @@ export function excerpt(snapshotId: string, rows: readonly string[], firstRow = 
     const candidate = (length: number) => {
       const text = characters.slice(0, length).join('');
       const next = length < characters.length ? { evidence_id: rowId(row), offset_bytes: offset + Buffer.byteLength(text) }
-        : row + 1 < rows.length ? { evidence_id: rowId(row + 1), offset_bytes: 0 } : null;
+        : positions[position + 1] !== undefined ? { evidence_id: rowId(positions[position + 1]!), offset_bytes: 0 } : null;
       return wrap([...items, { evidence_id: rowId(row), text, offset_bytes: offset }], next);
     };
     const full = candidate(characters.length);
     if (Buffer.byteLength(JSON.stringify(full)) <= 2048) {
       items.push(full.items[full.items.length - 1]!);
-      row++; offset = 0;
+      position++; row = positions[position] ?? rows.length; offset = 0;
       continue;
     }
     let lower = 0;

@@ -90,7 +90,7 @@ test('Snapshot enforces row and UTF-8 byte limits and routes oversized context t
   assert.equal((await observe('auto')).error, 'worker_unsupported');
   const before = h.calls.length;
   assert.equal((await observe('worker')).error, 'worker_unsupported');
-  assert.equal(h.calls.length, before);
+  assert.ok(h.calls.length > before); // Explicit Worker also captures the full bounded Snapshot.
 });
 
 test('Delegation Jobs enforce connection ownership, deadlines, wait timeout, and cumulative delivery', async t => {
@@ -221,5 +221,6 @@ test('Reported Parent usage equals wire text bytes across remaining-budget digit
     const bytes = Buffer.byteLength(client.deliveries.at(-1));
     assert.equal(response.budget.parent_payload_bytes_used, bytes, `limit=${limit}`);
     assert.equal(response.budget.parent_payload_bytes_remaining, limit - bytes);
+    await client.call('job_cancel', { job_id: response.job_id });
   }
 });
