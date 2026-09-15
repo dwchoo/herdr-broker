@@ -1,5 +1,5 @@
 {
-  "at": "2026-09-15T05:11:05.715Z",
+  "at": "2026-09-15T05:41:04.552Z",
   "cases": [
     {
       "scenario": "two jobs; fixed proposal dedup and terminal serialization",

@@ -28,3 +28,4 @@ Node standard library만 사용한다. `node prototypes/mvp-validation/probe.mjs
 - [품질 비교](QUALITY-REPORT.md): 네 합성 fixture, 세 경로, token·bytes·지연과 계약 보정.
 - [상태 demo](state-demo.html): 브라우저에서 직접 열어 ACK 유실·재시작·중복을 확인한다.
 - `report.schema.json`은 실험 당시의 후보 schema다. 최종 공개 report는 모호한 status를 제거한 `public-report.schema.json`을 사용한다. 기존 실험 결과는 수정하지 않았다.
+- 상태 demo는 초기화 binding을 수정하고 JavaScript 문법·DOM 대상과 순수 상태 전이를 확인했다. Browser URL 정책이 로컬 파일 열기를 차단해 실제 브라우저 클릭 검증은 수행하지 못했다. [점검 결과](results/ui-check.json)

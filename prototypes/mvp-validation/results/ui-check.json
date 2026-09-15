@@ -1,0 +1,6 @@
+{
+  "scriptSyntax": "valid",
+  "initialBinding": true,
+  "allDomTargetsExist": true,
+  "browserUiVerification": "Not performed: Browser URL policy blocked the local file URL. No alternate browser or URL workaround was attempted."
+}
