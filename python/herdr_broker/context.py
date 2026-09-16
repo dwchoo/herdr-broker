@@ -77,30 +77,31 @@ def is_descendant(processes: str, pid: int, shell: int, uid: int) -> bool:
 class Context:
     herdr: Herdr
     project: Path
-    workspace: str
-    caller: str
-    terminal: str
-    shell_pid: int
+    workspace: str | None
+    caller: str | None
+    terminal: str | None
+    shell_pid: int | None
     patterns: list[str]
 
     @classmethod
     async def load(cls, project: Path) -> Context:
         root = project_path(project)
-        if os.environ.get("HERDR_ENV") != "1" or any(not os.environ.get(k) for k in CONTEXT_KEYS):
+        inside = any(k in os.environ for k in CONTEXT_KEYS)
+        if inside and (os.environ.get("HERDR_ENV") != "1" or any(not os.environ.get(k) for k in CONTEXT_KEYS)):
             raise BrokerError("herdr_context_required")
         config = local_settings()
         default = Path(pwd.getpwuid(os.getuid()).pw_dir) / ".config/herdr/herdr.sock"
         try:
             endpoint = Path(config.get("herdr_socket", default)).resolve(strict=True)
-            if endpoint != Path(os.environ["HERDR_SOCKET_PATH"]).resolve(strict=True):
+            if inside and endpoint != Path(os.environ["HERDR_SOCKET_PATH"]).resolve(strict=True):
                 raise BrokerError("herdr_context_mismatch")
             herdr = Herdr(endpoint)
             await herdr.check()
+            if not inside:
+                return cls(herdr, root, None, None, None, None, config.get("redaction_patterns", []))
             pane = await herdr.pane(os.environ["HERDR_PANE_ID"])
-            if (
-                pane.workspace_id != os.environ["HERDR_WORKSPACE_ID"]
-                or pane.tab_id != os.environ["HERDR_TAB_ID"]
-            ):
+            # A live terminal can move tabs while retaining its inherited environment.
+            if pane.workspace_id != os.environ["HERDR_WORKSPACE_ID"]:
                 raise BrokerError("herdr_context_mismatch")
             shell = (await herdr.process_info(pane.pane_id)).get("shell_pid")
             if not isinstance(shell, int) or shell <= 1:
@@ -137,6 +138,9 @@ class Context:
 
     async def verify(self) -> None:
         project_path(self.project)
+        self.herdr.check_socket()
+        if self.caller is None:
+            return
         pane = await self.herdr.pane(self.caller)
         if pane.terminal_id != self.terminal or pane.workspace_id != self.workspace:
             raise BrokerError("herdr_context_changed")

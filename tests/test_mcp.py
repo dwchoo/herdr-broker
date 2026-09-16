@@ -24,6 +24,7 @@ async def test_inventory_metadata_only_and_all_roles(harness):
         "pane_send",
         "pane_rename",
         "tab_rename",
+        "workspace_list", "pane_layout", "pane_split", "pane_close", "pane_swap", "pane_move", "pane_reorient",
     }
     result = await call(server, "pane_list")
     assert [p["role"] for p in result["panes"]] == ["caller", "terminal", "agent"]
@@ -123,7 +124,8 @@ async def test_replacement_movement_caller_change(harness):
     )
     assert result["submission"] == "not_sent" and result["error"] == "target_changed"
     peer.panes[1]["workspace_id"] = "w2"
-    with pytest.raises(BrokerError, match="pane_outside_workspace"):
+    peer.panes[1]["pane_id"] = "w2:p2"
+    with pytest.raises(BrokerError, match="herdr_rejected"):
         await broker.pane_read("w1:p2", "replaced", "read", True, 0)
     peer.panes[0]["terminal_id"] = "new-caller"
     with pytest.raises(Exception, match="herdr_context_changed"):

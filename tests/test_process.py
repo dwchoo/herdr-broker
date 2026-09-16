@@ -22,7 +22,7 @@ async def test_public_stdio_tools_and_no_database(tmp_path):
         async with ClientSession(*streams) as client:
             await client.initialize()
             tools = (await client.list_tools()).tools
-            assert len(tools) == 6
+            assert len(tools) == 13
             result = await client.call_tool("pane_list", {})
             assert not result.is_error and len(result.structured_content["panes"]) == 3
             args = {"pane_id": "w1:p2", "terminal_id": "term_2", "request_id": "stdio", "text": "echo hi"}
@@ -35,8 +35,9 @@ async def test_public_stdio_tools_and_no_database(tmp_path):
     assert list(tmp_path.iterdir()) == []
 
 
-async def test_production_outside_herdr_rejected():
+async def test_production_partial_herdr_context_rejected():
     env = {k: v for k, v in os.environ.items() if k not in CONTEXT_KEYS}
+    env["HERDR_ENV"] = "1"
     process = await asyncio.create_subprocess_exec(
         sys.executable,
         "-m",
@@ -64,7 +65,8 @@ def test_process_ancestry_rejects_copied_env_and_other_user():
 async def test_project_boundary_and_missing_context(tmp_path, monkeypatch):
     with pytest.raises(BrokerError, match="project_context_required"):
         await Context.load(tmp_path)
-    monkeypatch.delenv("HERDR_ENV", raising=False)
+    monkeypatch.setenv("HERDR_ENV", "1")
+    monkeypatch.delenv("HERDR_PANE_ID", raising=False)
     with pytest.raises(BrokerError, match="herdr_context_required"):
         await Context.load(ROOT)
 

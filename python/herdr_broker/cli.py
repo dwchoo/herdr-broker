@@ -92,7 +92,7 @@ def setup(project: Path) -> dict[str, Any]:
             Path(staging).unlink(missing_ok=True)
     return {
         "project_config": str(path),
-        "next": "Start a new Codex in this project's Herdr shell and invoke $broker.",
+        "next": "Start a new Codex in this project and invoke $broker. Outside Herdr, select a workspace from workspace_list.",
     }
 
 
@@ -123,7 +123,8 @@ def main() -> None:
             print(json.dumps(setup(args.project)))
         elif args.command == "check":
             context = asyncio.run(Context.load(args.project))
-            print(json.dumps({"ok": True, "workspace_id": context.workspace, "pane_id": context.caller}))
+            print(json.dumps({"ok": True, "connection": "herdr" if context.caller else "local",
+                              "workspace_id": context.workspace, "pane_id": context.caller}))
         else:
             asyncio.run(serve(args.project))
     except (KeyboardInterrupt, asyncio.CancelledError):

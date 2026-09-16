@@ -43,6 +43,17 @@ class Tab(BaseModel):
     pane_count: int
 
 
+class Workspace(BaseModel):
+    model_config = ConfigDict(strict=True)
+    workspace_id: str
+    number: int
+    label: str
+    focused: bool
+    pane_count: int
+    tab_count: int
+    active_tab_id: str
+
+
 class Herdr:
     def __init__(self, endpoint: Path, timeout: float = 5):
         self.endpoint = endpoint
@@ -146,6 +157,15 @@ class Herdr:
             if any(t.workspace_id != workspace for t in tabs):
                 raise BrokerError("herdr_invalid_response")
             return tabs
+        except ValidationError as exc:
+            raise BrokerError("herdr_invalid_response") from exc
+
+    async def workspaces(self) -> list[Workspace]:
+        result = await self.request("workspace.list", {})
+        try:
+            if result.get("type") != "workspace_list" or not isinstance(result.get("workspaces"), list):
+                raise BrokerError("herdr_invalid_response")
+            return [Workspace.model_validate(row) for row in result["workspaces"]]
         except ValidationError as exc:
             raise BrokerError("herdr_invalid_response") from exc
 

@@ -1,4 +1,5 @@
 import asyncio
+import copy
 import json
 import os
 from contextlib import asynccontextmanager
@@ -53,6 +54,25 @@ class Peer:
         self.failure_code = "synthetic_failure"
         self.process_overrides = {}
         self.read_overrides = {}
+        self.layouts = {
+            "w1:t1": {
+                "type": "split",
+                "direction": "right",
+                "ratio": 0.5,
+                "first": {"type": "pane", "pane_id": "w1:p1"},
+                "second": {"type": "pane", "pane_id": "w1:p2"},
+            },
+            "w1:t2": {"type": "pane", "pane_id": "w1:p3"},
+        }
+        self.zoomed = set()
+        self.next_pane = 4
+        self.next_tab = 3
+        self.drop_after = None
+        self.drop_move_number = None
+        self.fail_move_number = None
+        self.move_count = 0
+        self.after_move = None
+        self.after_export = None
         self.delay_send = 0
         self.arrived = asyncio.Event()
         self.handlers = set()
@@ -64,25 +84,79 @@ class Peer:
             request = json.loads(await reader.readline())
             method, params = request["method"], request["params"]
             self.calls.append((method, params))
-            if method == "pane.send_input":
+            if method in {"pane.send_input", "pane.split", "pane.close", "pane.swap", "pane.move"}:
                 self.arrived.set()
                 await asyncio.sleep(self.delay_send)
             if self.drop == method:
                 return
             error = None
-            current = next((p for p in self.panes if p["pane_id"] == params.get("pane_id")), None)
+            current = next(
+                (
+                    p
+                    for p in self.panes
+                    if p["pane_id"] == params.get("pane_id", params.get("target_pane_id"))
+                ),
+                None,
+            )
             if self.failure == method:
                 error = {"code": self.failure_code}
             elif method == "ping":
                 result = {"type": "pong", "version": "0.9.0", "protocol": 22}
+            elif method == "workspace.list":
+                result = {
+                    "type": "workspace_list",
+                    "workspaces": [
+                        dict(
+                            workspace_id=w,
+                            number=i + 1,
+                            label=f"Workspace {i + 1}",
+                            focused=i == 0,
+                            pane_count=len([p for p in self.panes if p["workspace_id"] == w]),
+                            tab_count=len([t for t in self.tabs if t["workspace_id"] == w]),
+                            active_tab_id=next(t["tab_id"] for t in self.tabs if t["workspace_id"] == w),
+                        )
+                        for i, w in enumerate(dict.fromkeys(t["workspace_id"] for t in self.tabs))
+                    ],
+                }
             elif method == "pane.list":
-                result = {"type": "pane_list", "panes": self.panes}
+                result = {
+                    "type": "pane_list",
+                    "panes": [p for p in self.panes if p["workspace_id"] == params["workspace_id"]],
+                }
             elif method == "tab.list":
-                result = {"type": "tab_list", "tabs": self.tabs}
+                result = {
+                    "type": "tab_list",
+                    "tabs": [t for t in self.tabs if t["workspace_id"] == params["workspace_id"]],
+                }
             elif method == "tab.rename":
                 tab = next(t for t in self.tabs if t["tab_id"] == params["tab_id"])
                 tab["label"] = params["label"]
                 result = {"type": "tab_info", "tab": tab}
+            elif method == "pane.swap":
+                a, b = params["source_pane_id"], params["target_pane_id"]
+                source = next(p for p in self.panes if p["pane_id"] == a)
+                tree = self.layouts[source["tab_id"]]
+
+                def swap(node):
+                    if node["type"] == "pane":
+                        node["pane_id"] = (
+                            b if node["pane_id"] == a else a if node["pane_id"] == b else node["pane_id"]
+                        )
+                    else:
+                        swap(node["first"])
+                        swap(node["second"])
+
+                swap(tree)
+                result = {
+                    "type": "pane_swap",
+                    "swap": {
+                        "changed": a != b,
+                        "reason": "same_pane" if a == b else None,
+                        "source_pane_id": a,
+                        "target_pane_id": b,
+                        "focused_pane_id": a,
+                    },
+                }
             elif not current:
                 error = {"code": "pane_not_found"}
             elif method == "pane.get":
@@ -93,7 +167,9 @@ class Peer:
                     "process_info": {
                         "pane_id": current["pane_id"],
                         "shell_pid": os.getpid(),
-                        "foreground_processes": self.process_overrides.get(current["pane_id"], [{"name": "zsh"}]),
+                        "foreground_processes": self.process_overrides.get(
+                            current["pane_id"], [{"name": "zsh"}]
+                        ),
                     },
                 }
             elif method == "pane.read":
@@ -114,8 +190,74 @@ class Peer:
                 result = {"type": "pane_info", "pane": current}
             elif method == "pane.send_input":
                 result = {"type": "ok"}
+            elif method == "layout.export":
+                result = {
+                    "type": "layout_export",
+                    "layout": {
+                        "workspace_id": current["workspace_id"],
+                        "tab_id": current["tab_id"],
+                        "zoomed": current["tab_id"] in self.zoomed,
+                        "focused_pane_id": current["pane_id"],
+                        "root": copy.deepcopy(self.layouts[current["tab_id"]]),
+                    },
+                }
+                if self.after_export:
+                    self.after_export(self)
+            elif method == "pane.split":
+                created = pane(self.next_pane, current["tab_id"])
+                created["label"] = None
+                self.next_pane += 1
+                self.panes.append(created)
+                self.insert(current, created, params["direction"], params["ratio"])
+                result = {"type": "pane_info", "pane": created}
+            elif method == "pane.close":
+                self.detach(current)
+                self.panes.remove(current)
+                result = {"type": "ok"}
+            elif method == "pane.move":
+                self.move_count += 1
+                if self.move_count == self.fail_move_number:
+                    error = {"code": "target_pane_not_found"}
+                else:
+                    dest = params["destination"]
+                    same = dest["type"] == "tab" and dest["tab_id"] == current["tab_id"]
+                    zoomed = current["tab_id"] in self.zoomed or dest.get("tab_id") in self.zoomed
+                    changed = not same and not zoomed
+                    if changed:
+                        self.detach(current)
+                        if dest["type"] == "new_tab":
+                            tab_id = f"w1:t{self.next_tab}"
+                            self.next_tab += 1
+                            self.tabs.append(
+                                dict(
+                                    tab_id=tab_id,
+                                    workspace_id=current["workspace_id"],
+                                    label="temporary",
+                                    number=self.next_tab,
+                                    pane_count=1,
+                                )
+                            )
+                            current["tab_id"] = tab_id
+                            self.layouts[tab_id] = {"type": "pane", "pane_id": current["pane_id"]}
+                        else:
+                            target = next(p for p in self.panes if p["pane_id"] == dest["target_pane_id"])
+                            current["tab_id"] = target["tab_id"]
+                            self.insert(target, current, dest["split"], dest["ratio"])
+                    result = {
+                        "type": "pane_move",
+                        "move_result": {
+                            "changed": changed,
+                            "reason": "same_tab" if same else "zoomed_tab" if zoomed else None,
+                            "previous_pane_id": current["pane_id"],
+                            "pane": copy.deepcopy(current),
+                        },
+                    }
+                    if self.after_move:
+                        self.after_move(self, current)
             else:
                 error = {"code": "method_not_found"}
+            if self.drop_after == method or (method == "pane.move" and self.move_count == self.drop_move_number):
+                return
             response = {"id": request["id"], **({"error": error} if error else {"result": result})}
             writer.write(json.dumps(response).encode() + b"\n")
             await writer.drain()
@@ -123,6 +265,38 @@ class Peer:
             writer.close()
             await writer.wait_closed()
             self.handlers.discard(task)
+
+    def detach(self, pane):
+        def remove(node):
+            if node["type"] == "pane":
+                return None if node["pane_id"] == pane["pane_id"] else node
+            a, b = remove(node["first"]), remove(node["second"])
+            return b if a is None else a if b is None else {**node, "first": a, "second": b}
+
+        tree = remove(self.layouts[pane["tab_id"]])
+        if tree is None:
+            self.layouts.pop(pane["tab_id"])
+            self.tabs = [t for t in self.tabs if t["tab_id"] != pane["tab_id"]]
+        else:
+            self.layouts[pane["tab_id"]] = tree
+
+    def insert(self, target, new, direction, ratio):
+        def add(node):
+            if node["type"] == "pane":
+                return (
+                    {
+                        "type": "split",
+                        "direction": direction,
+                        "ratio": ratio,
+                        "first": node,
+                        "second": {"type": "pane", "pane_id": new["pane_id"]},
+                    }
+                    if node["pane_id"] == target["pane_id"]
+                    else node
+                )
+            return {**node, "first": add(node["first"]), "second": add(node["second"])}
+
+        self.layouts[target["tab_id"]] = add(self.layouts[target["tab_id"]])
 
 
 @asynccontextmanager

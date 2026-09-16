@@ -2,6 +2,8 @@
 
 상태: 승인됨. 2026-09-16 사용자 계획을 구현 기준으로 삼는다.
 
+후속 범위 변경(2026-09-16): 사용자가 pane 생성·종료·이동·좌우/상하 전환·위치 교환, workspace 조회와 Herdr 밖의 로컬 Codex 지원을 요청했다. 아래의 초기 “pane 생성·분할·종료·이동 제외”와 “실제 Herdr shell 필수” 조건은 이 요청으로 확장된다. 현재 동작과 Herdr 0.9.0의 방향 전환 제약은 [운영 문서](../operations.md#pane-생성과-배치)와 [MCP 계약](../mcp.md)에 기록한다. Parent 승인 정책과 terminal identity 검증은 유지한다.
+
 ## 결정
 
 기본 실행 경로를 Python stdio MCP로 바꾼다. Herdr가 terminal과 이름을 유지하고, MCP는 현재 workspace의 tab·pane 조회, 화면 읽기, 텍스트·키 입력, 이름 변경을 제공한다. 실제 Herdr 프로젝트 shell의 부모 프로세스 관계와 terminal identity를 검증한다. 현재 workspace의 자기 자신·다른 agent pane도 탐색·조작 대상이다.
