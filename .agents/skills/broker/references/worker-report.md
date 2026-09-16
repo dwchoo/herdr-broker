@@ -2,7 +2,7 @@
 
 For specific facts, send analysis requested_items, e.g. ["OS", "CPU", "RAM"], plus a short objective. The fixed report returns every item once with a value, basis (observed/inferred/unknown), and evidence references. Unknown RAM means the captured screen does not establish RAM, not that RAM is absent. The Worker does not generate the next command. Parent chooses actions and approvals.
 
-Status is the small Luna/low check (8 lines / 1 KiB); analysis uses Luna/medium. Both use new independent one-turn threads in the reused SDK. analysis_id groups only task identity, never model history. Supply only relevant context in the current objective.
+Choose by the immediate decision: status checks the current program and input state before a planned input (Luna/low, 8 lines / 1 KiB); analysis extracts answers or interprets output (Luna/medium). Keep hardware extraction out of an input-state objective. An analysis that already establishes current input state does not need a redundant status call. Both use new independent one-turn threads in the reused SDK. analysis_id groups only task identity, never model history. Supply only relevant context in the current objective.
 
 - Normal: inspect item answers and Broker-extracted original evidence. full delivery is not a guarantee the claim is true.
 - Empty: expect empty evidence and an explicit empty observation. Do not infer readiness.
