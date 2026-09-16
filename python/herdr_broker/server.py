@@ -23,7 +23,7 @@ def create_server(broker: Broker) -> MCPServer[Any]:
         "herdr-broker",
         version="0.2.0",
         log_level="WARNING",
-        instructions="Use workspace_list and pane_list to interpret names and imperfect references. Outside Herdr choose an explicit workspace_id for listing. Select exact pane_id and terminal_id. Use pane_split for a new terminal; pane_layout, pane_swap, pane_move and pane_reorient arrange live panes. pane_close ends a terminal. Work through visible pane commands. Read uses 80 recent lines: purpose=status selects Luna/low; analysis (default) selects Luna/high. Continue the same task with analysis_id and release it when done. Include the user objective to assess existing results before rerunning work. Apply your own approval policy; no Broker approval or attachment is required.",
+        instructions="Use workspace_list and pane_list to interpret names and imperfect references. Outside Herdr choose an explicit workspace_id for listing. Select exact pane_id and terminal_id. Use pane_split for a new terminal; pane_layout, pane_swap, pane_move and pane_reorient arrange live panes. pane_close ends a terminal. Work through visible pane commands. Status reads 8 recent lines / 1 KiB with Luna/low; analysis reads 80 lines with Luna/high. Expand max_lines explicitly only when the tail is insufficient. Continue the same task with analysis_id and release it when done. Include the user objective to assess existing results before rerunning work. Apply your own approval policy; no Broker approval or attachment is required.",
     )
     read = ToolAnnotations(read_only_hint=True, destructive_hint=False)
     rename = ToolAnnotations(read_only_hint=False, destructive_hint=False, idempotent_hint=True)
@@ -66,7 +66,7 @@ def create_server(broker: Broker) -> MCPServer[Any]:
         purpose: Purpose = "analysis",
         analysis_id: Id | None = None,
     ) -> dict[str, Any]:
-        """Read 80 recent lines with Luna: status uses low for prompt/pending input/running state; analysis defaults to high for interpretation and diagnosis. Explicit effort overrides apply per turn. Include the user objective and assess existing results before rerunning commands. Carry analysis_id only for the same task/target; expired IDs require rediscovery and a new read. Evidence belongs to the current observation, never input echo. Expand max_lines up to 1000 when needed. Raw is only for requested original text and never changes analysis context. No automatic input, retry, delta or model fallback."""
+        """Read with Luna: status uses low and 8 recent lines / 1 KiB for prompt/pending input/running state; analysis uses high and 80 lines / 64 KiB for interpretation. Explicit effort overrides apply per turn. Include the user objective and assess existing results before rerunning commands. Carry analysis_id only for the same task/target; expired IDs require rediscovery and a new read. Evidence belongs to the current observation, never input echo. Expand max_lines up to 1000 when needed. Raw is only for requested original text and never changes analysis context. No automatic input, retry, delta or model fallback."""
         return await invoke(broker.pane_read, pane_id, terminal_id, objective, raw, offset,
                             effort, max_lines, purpose, analysis_id)
 

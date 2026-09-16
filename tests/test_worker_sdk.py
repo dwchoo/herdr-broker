@@ -42,11 +42,13 @@ async def provider(monkeypatch, tmp_path):
                 state["release"].wait(10)
                 return
             current_report = copy.deepcopy(report)
+            latest = None
             for item in request.get("input", []):
                 for content in item.get("content", []) if isinstance(item, dict) else []:
                     try:
                         observation = json.loads(content.get("text", ""))
                         if isinstance(observation, dict) and "screen" in observation:
+                            latest = observation
                             current_report["findings"][0]["evidence_ids"] = [next(iter(observation["screen"]))]
                     except (ValueError, TypeError, AttributeError):
                         pass
@@ -64,13 +66,29 @@ async def provider(monkeypatch, tmp_path):
                     }
                 ]
             else:
+                # Support the previous wire format too, for same-input baseline probes.
+                compact = latest and "observation_id" in request.get("text", {}).get("format", {}).get("schema", {}).get("properties", {})
+                if compact:
+                    current_report["observation_id"] = latest["observation_id"]
+                    if latest["purpose"] == "status":
+                        current_report = {"observation_id": latest["observation_id"],
+                                          "summary": "현재 상태 확인", "lines": [1], "uncertainty": ""}
                 if state["mode"] == "invalid-evidence":
-                    current_report["findings"][0]["evidence_ids"] = ["L9999"]
+                    if "lines" in current_report:
+                        current_report["lines"] = [9999]
+                    else:
+                        current_report["findings"][0]["evidence_ids"] = ["L9999"]
                 if state["mode"] == "large":
                     current_report["summary"] = "가" * 600
                 if state["mode"] == "stale":
-                    current_report["findings"][0]["evidence_ids"] = [state["previous_evidence"]]
-                state["previous_evidence"] = current_report["findings"][0]["evidence_ids"][0]
+                    if compact:
+                        current_report["observation_id"] = state["previous_observation"]
+                    else:
+                        current_report["findings"][0]["evidence_ids"] = [state["previous_evidence"]]
+                if compact:
+                    state["previous_observation"] = latest["observation_id"]
+                else:
+                    state["previous_evidence"] = current_report["findings"][0]["evidence_ids"][0]
                 text = '{"bad":true}' if state["mode"] == "invalid" else json.dumps(current_report)
                 output = [
                     {
@@ -174,9 +192,12 @@ async def test_sdk_requested_effort_no_tools_and_evidence(provider, worker, effo
         assert request["model"] == "gpt-5.6-luna"
         assert request["reasoning"]["effort"] == effort
         schema = request["text"]["format"]["schema"]
-        assert schema["$defs"]["Finding"]["properties"]["evidence_ids"]["items"]["pattern"] == (
-            f"^{result['observation_id']}:(?:L0001)$"
-        )
+        assert schema["properties"]["observation_id"]["enum"] == [result["observation_id"]]
+        assert schema["$defs"]["Finding"]["properties"]["evidence_ids"]["items"]["pattern"] == r"^L[0-9]{4}$"
+    sizes = result['input_sizes']
+    assert sizes['schema_bytes'] == len(json.dumps(schema, ensure_ascii=False, separators=(',', ':')).encode())
+    assert sizes['broker_request_bytes'] == sizes['prompt_bytes'] + sizes['schema_bytes'] + sizes['instructions_bytes']
+    assert result['input_bytes'] == sizes['screen_bytes'] + sizes['objective_bytes']
     assert worker.runtime.process.poll() is None
     assert result["effort"] == effort
     assert all(value >= 0 for value in result["timings_ms"].values())
@@ -196,11 +217,28 @@ async def test_sdk_reuses_process_and_task_changes_effort(provider, worker):
     assert [r["reasoning"]["effort"] for r in provider["requests"]] == ["low", "high"]
     assert second["sdk_reused"] and second["context_reused"]
     assert first["observation_id"] != second["observation_id"]
-    patterns = [r["text"]["format"]["schema"]["$defs"]["Finding"]["properties"]["evidence_ids"]["items"]["pattern"]
+    observations = [r["text"]["format"]["schema"]["properties"]["observation_id"]["enum"]
                 for r in provider["requests"]]
-    assert patterns[0] != patterns[1]
+    assert observations[0] != observations[1]
     assert (await worker.release(first["analysis_id"]))["released"]
     assert not worker.sessions and process.poll() is None
+
+
+async def test_status_request_has_no_repeated_observation_or_analysis_schema(provider, worker):
+    text = '\n'.join(f'old hardware output {i}' for i in range(72)) + '\nuser@host$'
+    result = await worker.analyze(screen(text), '지금 입력 가능한지 확인', [], purpose='status')
+    request = provider['requests'][-1]
+    prompts = [part['text'] for item in request['input'] if isinstance(item, dict)
+               for part in item.get('content', []) if part.get('type') == 'input_text'
+               and 'observation_id' in part.get('text', '')]
+    prompt = prompts[-1]
+    schema = json.dumps(request['text']['format']['schema'], ensure_ascii=False, separators=(',', ':'))
+    print(json.dumps({'prompt_bytes': len(prompt.encode()), 'schema_bytes': len(schema.encode()),
+                      'request_bytes': len(json.dumps(request, ensure_ascii=False).encode()),
+                      'uuid_occurrences': prompt.count(result['observation_id'])}))
+    assert prompt.count(result['observation_id']) == 1
+    assert 'findings' not in request['text']['format']['schema']['properties']
+    assert len(schema.encode()) < 1000
 
 
 @pytest.mark.parametrize("mode,error", [("invalid", "worker_invalid_report"),
@@ -290,7 +328,7 @@ async def test_current_evidence_and_status_budget_are_enforced(provider, worker)
     with pytest.raises(BrokerError, match="worker_invalid_evidence"):
         await worker.analyze(screen("second"), "분석", [], analysis_id=first["analysis_id"])
     provider["mode"] = "large"
-    with pytest.raises(BrokerError, match="worker_report_too_large"):
+    with pytest.raises(BrokerError, match="worker_invalid_report"):
         await worker.analyze(screen("screen"), "상태", [], purpose="status")
     assert (await worker.analyze(screen("screen"), "분석", []))["report_bytes"] > 1024
 

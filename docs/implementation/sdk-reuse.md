@@ -2,6 +2,8 @@
 
 2026-09-16 승인된 구현 기준. 이전 [수명 검토](sdk-reuse-lifecycle-analysis.md)의 후보 정책을 이 문서로 확정한다.
 
+후속 상태 확인 입력 축소는 [status 입력 개선](status-input.md)을 따른다. 아래의 기존 80줄 공통 기본값과 UUID를 행마다 반복하는 Worker 입력은 status 8줄·1 KiB, 단일 관찰 ID와 짧은 행 번호, 전용 status 응답으로 변경한다. SDK·thread 수명 정책은 유지한다.
+
 ## 동작과 계약
 
 - 검증된 MCP 시작 시 SDK 하나를 백그라운드에서 준비한다. 모델 호출 없이 초기화하며 metadata·입력은 기다리지 않는다. 정상 SDK는 idle 시간이나 누적 생성 횟수로 종료하지 않는다.

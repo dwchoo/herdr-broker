@@ -19,7 +19,7 @@ setup은 `.codex/config.toml`의 Broker MCP 블록만 갱신하고 승인 설정
 
 1. `$broker 현재 pane이 뭐야?` — workspace 전체의 tab·pane 이름과 실제 ID를 읽는다. 목록 조회는 화면 수집·분석·입력·이름 변경을 하지 않는다.
 2. `1008 · 서버에서 상태 확인해줘` — Parent가 최신 목록과 대화 맥락에서 대상을 선택하고 사용자에게 알린다. 번호·이름이 불명확하면 후보와 위치를 확인한다.
-3. `pane_read` — 출력 길이와 관계없이 `gpt-5.6-luna`가 화면만 분석한다. 기본 `purpose="analysis"`는 Luna/high, `purpose="status"`는 prompt 복귀·미완성 입력·실행 중 여부를 Luna/low로 확인한다. 최근 80줄을 읽으며 필요하면 `max_lines`를 최대 1,000으로 넓힌다. 명시적 effort 지정은 유지한다. 첫 objective에 사용자 질문과 현재 프로그램·미완성 입력 확인을 함께 담아, 이미 있는 결과로 답할 수 있는지도 살핀다. Worker는 파일·shell·MCP 도구를 사용하지 않는다. 사용자가 원문을 요청했을 때만 raw 읽기를 사용한다.
+3. `pane_read` — 출력 길이와 관계없이 `gpt-5.6-luna`가 화면만 분석한다. 기본 `purpose="analysis"`는 Luna/high, `purpose="status"`는 prompt 복귀·미완성 입력·실행 중 여부를 Luna/low로 확인한다. status는 최근 8줄·1 KiB, analysis는 80줄·64 KiB를 기본으로 읽는다. 문맥이 부족하면 `max_lines`를 명시해 최대 1,000줄·64 KiB로 넓힌다. 명시적 effort 지정은 유지한다. 첫 objective에 사용자 질문과 현재 프로그램·미완성 입력 확인을 함께 담아, 이미 있는 결과로 답할 수 있는지도 살핀다. Worker는 파일·shell·MCP 도구를 사용하지 않는다. 사용자가 원문을 요청했을 때만 raw 읽기를 사용한다.
 4. `pane_execute` — 실행할 명령과 Enter 하나를 같은 요청으로 보낸다. 입력만 하거나 TUI의 특정 키를 누를 때는 기존 `pane_send`를 사용한다. SSH 여부에 따라 별도 준비 절차를 두지 않는다.
 5. 최신 확인이 필요한 때만 실행하고, 최근 화면을 다시 읽어 결과와 prompt 복귀를 확인한다. 이전 출력 재사용 시 그 결과가 현재 값이라고 추측하지 않는다. ACK는 입력 접수이며 실행 완료·성공·exit code를 뜻하지 않는다.
 
@@ -64,4 +64,6 @@ Parent 대화와 완료 Job 이력은 보관하지 않는다. 화면·질문·�
 
 ## 읽기 지연 확인
 
-`pane_read`의 `timings_ms`는 수집·SDK 준비 대기·thread 생성·turn 접수·첫 event 대기·나머지 stream·보고 검증·정리·최종 identity 확인과 전체 시간을 제공한다. 모델 서비스의 queue·입력 처리·추론 내부 시간은 SDK가 구분하지 않으므로 측정한 것처럼 표시하지 않는다. 실패 시에도 내용 없는 timing 진단을 stderr로 남긴다. 최근 80줄이 부족하면 범위를 넓혀 관찰하며, 실제 delta나 장기 화면 cache는 유지하지 않는다. 사용자가 원문을 요청한 raw 읽기는 기존 1,000줄 기본을 유지한다. 검증 방법과 결과는 [화면 분석 지연 개선](implementation/read-latency.md)을 따른다.
+`pane_read`의 `timings_ms`는 수집·SDK 준비 대기·thread 생성·turn 접수·첫 event 대기·나머지 stream·보고 검증·정리·최종 identity 확인과 전체 시간을 제공한다. 모델 서비스의 queue·입력 처리·추론 내부 시간은 SDK가 구분하지 않으므로 측정한 것처럼 표시하지 않는다. 실패 시에도 내용 없는 timing 진단을 stderr로 남긴다. 선택한 최근 범위가 부족하면 명시적으로 넓혀 관찰하며, 실제 delta나 장기 화면 cache는 유지하지 않는다. 사용자가 원문을 요청한 raw 읽기는 기존 1,000줄 기본을 유지한다. 검증 방법과 결과는 [화면 분석 지연 개선](implementation/read-latency.md)을 따른다.
+
+상태 확인의 입력 크기와 SDK token 수는 [status 입력 개선](implementation/status-input.md)을 따른다. `input_bytes`는 화면+목적만, `input_sizes`는 조립 prompt·schema·고정 지침을 구분해 보여 준다. SDK가 추가하는 문맥과 이전 turn은 이 bytes 합계에 포함되지 않으며, 실제 모델 입력은 `usage`를 확인한다.

@@ -4,6 +4,27 @@ from test_mcp import call
 IDENTITY = {"pane_id": "w1:p2", "terminal_id": "term_2"}
 
 
+async def test_status_reads_small_tail_with_pending_input_and_explicit_expansion(harness):
+    peer, _, server, worker = harness
+    peer.text = '\n'.join(f'old hardware output {i}' for i in range(72)) + '\nuser@host$ unfinished'
+    result = await call(server, 'pane_read', **IDENTITY, purpose='status')
+    assert len(worker.calls[-1][0].split('\n')) == 8
+    assert worker.calls[-1][0].endswith('user@host$ unfinished')
+    assert result['max_lines'] == 8 and result['truncated']
+    assert [p['lines'] for m, p in peer.calls if m == 'pane.read'] == [8]
+    expanded = await call(server, 'pane_read', **IDENTITY, purpose='status', max_lines=80)
+    assert worker.calls[-1][0] == peer.text and expanded['max_lines'] == 80
+
+
+async def test_status_bounds_bytes_even_with_long_lines(harness):
+    peer, _, server, worker = harness
+    peer.text = '가' * 6000 + '\nuser@host$ unfinished'
+    result = await call(server, 'pane_read', **IDENTITY, purpose='status')
+    assert len(worker.calls[-1][0].encode()) <= 1024
+    assert worker.calls[-1][0].endswith('user@host$ unfinished')
+    assert result['truncated']
+
+
 async def test_default_read_limits_history_but_preserves_pending_input(harness):
     peer, _, server, worker = harness
     peer.text = '\n'.join(f'old build {i}' for i in range(1000)) + '\nuser@host:~$ unfinished'

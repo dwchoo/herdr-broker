@@ -141,7 +141,7 @@ class Broker:
         }
 
     async def capture(
-        self, pane_id: str, terminal_id: str, max_lines: int = 1000
+        self, pane_id: str, terminal_id: str, max_lines: int = 1000, max_bytes: int = 65536
     ) -> tuple[str, dict[str, Any]]:
         pane = await self.target(pane_id, terminal_id)
         result = await self.herdr.request(
@@ -170,7 +170,7 @@ class Broker:
         await self.target(pane_id, terminal_id)
         text = clean(capture["text"], self.context.patterns)
         recent = "\n".join(text.split("\n")[-max_lines:])
-        cropped = recent.encode()[-65536:].decode(errors="ignore")
+        cropped = recent.encode()[-max_bytes:].decode(errors="ignore")
         metadata = {
             "pane_id": pane_id,
             "terminal_id": terminal_id,
@@ -179,6 +179,7 @@ class Broker:
             "truncated": bool(capture.get("truncated")) or cropped != text,
             "history_complete": False,
             "max_lines": max_lines,
+            "max_bytes": max_bytes,
             "captured_lines": len(cropped.split("\n")),
             "captured_bytes": len(cropped.encode()),
         }
@@ -190,7 +191,8 @@ class Broker:
         purpose: Purpose = "analysis", analysis_id: str | None = None,
     ) -> dict[str, Any]:
         started = perf_counter()
-        lines = max_lines if max_lines is not None else (1000 if raw else 80)
+        lines = max_lines if max_lines is not None else (1000 if raw else 8 if purpose == "status" else 80)
+        byte_limit = 1024 if purpose == "status" and max_lines is None and not raw else 65536
         if raw:
             cropped, metadata = await self.capture(pane_id, terminal_id, lines)
             excerpt = bounded(cropped[offset:], 8192)
@@ -207,7 +209,7 @@ class Broker:
         metadata = {}
 
         async def capture() -> str:
-            text, observed = await self.capture(pane_id, terminal_id, lines)
+            text, observed = await self.capture(pane_id, terminal_id, lines, byte_limit)
             metadata.update(observed)
             return text
 
