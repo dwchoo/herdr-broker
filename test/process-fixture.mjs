@@ -9,6 +9,18 @@ try {
     const report = await doctor({ endpoint, stateRoot, ...(clockPath && { consoleId: clockPath }) });
     process.stdout.write(JSON.stringify(report) + '\n');
     process.exitCode = report.ok ? 0 : 1;
+  } else if (mode === 'core-console' || mode === 'manage-console') {
+    const { Consoles } = await import('../dist/consoles.js');
+    const config = JSON.parse(readFileSync(endpoint, 'utf8'));
+    const consoles = new Consoles(config), record = await consoles.get(config.consoleId);
+    if (mode === 'core-console') {
+      const { startBrokerService } = await import('../dist/service.js');
+      const core = await startBrokerService(consoles, record, config);
+      process.stdout.write('READY\n'); process.once('SIGTERM', () => void core.close());
+    } else {
+      const { runManagement } = await import('../dist/management.js');
+      await runManagement(consoles, record, process.env.HB_TEST_CONSOLE_FORMAT === 'dashboard' ? undefined : 'json');
+    }
   } else if (mode === 'serve-console') {
     const { Consoles } = await import('../dist/consoles.js');
     const config = JSON.parse(readFileSync(endpoint, 'utf8'));

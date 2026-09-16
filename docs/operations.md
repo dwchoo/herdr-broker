@@ -4,17 +4,17 @@
 
 검증 기준은 macOS arm64, Node 24, Herdr 0.9.0/protocol 22, Codex CLI 0.154.0이다. Worker는 `gpt-5.6-luna`/low를 사용하며 로컬 Codex 계정의 기존 인증으로 실행한다. 원격에 AI runtime이나 credential을 설치하지 않는다. SSH 실행은 사용자 준비 확인이 필요한 `ssh_posix` profile로 제공한다. [SSH acceptance](implementation/issue-24-ssh-acceptance.md)는 #24 artifact의 기록이며, 현재 checkout의 실행 문맥과 검증 절차는 [project skill 검증](implementation/project-skill-herdr-context.md)을 따른다.
 
-## Broker Console 시작과 재접속
+## Broker 시작·접속과 공유 terminal
 
-Herdr에서 이 프로젝트를 연 Codex에게 `$herdr-broker`를 요청한다. Skill은 새 **Broker Console**을 열거나 기존 Console ID에 재접속한다. 새 Console은 **Codex와 같은 tab**에서 오른쪽에 실제 Target terminal을, 그 아래에 작은 사용자 조작 pane을 split한다. 사용자는 Codex와 대화하면서 옆 terminal을 보고 직접 입력할 수 있고 Codex는 같은 terminal을 Broker로 읽고 조작한다.
+Herdr의 이 프로젝트 Codex에게 `$herdr-broker`를 요청한다. Broker는 같은 tab의 terminal 묶음을 관리하는 백그라운드 core다. 평소에는 일반 shell에서 사용자와 Codex가 함께 작업하며, 관리 화면은 요청할 때만 임시 pane으로 연다. Codex나 관리 화면 종료는 core·terminal 종료가 아니다.
 
-| 위치 | 역할 |
-| --- | --- |
-| Parent Pane | 프로젝트의 Codex CLI. 하나의 Console에 연결 |
-| 같은 tab의 조작 pane | 독립 core, 소유 pane 목록, 승인·모드·복구 |
-| 같은 tab의 Target Pane | 사용자와 Codex가 공유하는 실제 local/SSH shell |
+Broker와 terminal은 로컬 등록소에서 겹치지 않는 4자리 번호를 받는다. “7316에 연결해”, “4821에서 실행해”처럼 요청한다. 번호는 재시작·이름 변경 후에도 유지한다. 정확하지 않은 번호나 “아까 빌드하던 pane”은 Codex가 목록과 대화 맥락을 보고 판단한다. 자동 prefix·오타 교정 규칙은 없다.
 
-Console마다 core와 Control State가 독립적이다. Broker가 새로 만든 terminal만 등록하며 기존 외부 pane 가져오기는 제공하지 않는다. Worker는 필요할 때 core가 실행하므로 별도 pane이 필요 없다.
+“현재 pane이 뭐야?”라고 물으면 연결 전에도 `pane_list`로 현재 Herdr workspace의 모든 tab을 조회한다. 번호·이름·위치·process·소유 Broker와 조작 가능 여부를 볼 수 있다. 이 조회는 출력 수집이나 terminal 등록·실행을 하지 않는다. 조회 실패와 닫힌 등록 대상은 따로 표시한다.
+
+같은 tab의 기존 terminal은 명시적으로 등록할 수 있다. 실행 중인 shell·SSH는 유지한다. 다른 Broker 소유 pane, Codex 대화 pane과 관리 pane은 Target으로 등록하지 않는다. 등록된 제목은 `4821 · 빌드`처럼 표시한다. 모든 Target이 닫힌 경우에도 새 terminal을 추가할 수 있다.
+
+한 Broker에는 Parent 하나씩 연결한다. 다른 Codex는 기존 연결이 종료된 뒤 같은 번호로 이어받는다. 같은 Codex에서 같은 tab의 다른 Broker로 전환할 수 있지만 실행 중인 Action이 있으면 보류한다. 연결을 바꿔도 이전 명령을 재전송하지 않는다. Broker 중지는 관리 화면의 별도 `stop` 명령이며 공유 shell은 유지한다.
 
 Node 24로 checkout을 준비한다.
 
@@ -24,21 +24,7 @@ npm run build
 node .agents/skills/herdr-broker/scripts/run.mjs setup
 ```
 
-`setup`은 이 checkout의 `.codex/config.toml`에 MCP 실행 경로를 설정한다. 전역 설정은 바꾸지 않는다. 기존 파일의 설정은 보존하며 이미 다른 `herdr_broker` 설정이 있으면 덮어쓰지 않는다. 새 파일의 승인 정책은 `on-request`이며 기존 approval reviewer를 사용한다. 이 설정 단계는 Herdr 밖에서도 가능하지만 Broker 도구 사용은 실제 Herdr 문맥을 요구한다. 실행 경로가 바뀌면 setup을 다시 실행한다.
-
-이후 Herdr의 이 프로젝트 shell에서 Codex를 새로 시작해 `$herdr-broker`를 사용한다. 현재 실행 중인 Codex에는 새 MCP 설정이 소급 적용되지 않는다. 이번 실행에만 연결하려면 다음 helper도 사용할 수 있다.
-
-```sh
-node .agents/skills/herdr-broker/scripts/run.mjs parent
-```
-
-MCP가 처음 연결될 때는 terminal이나 core를 만들지 않는다. Skill의 `console_open`이 기존 Parent pane 옆에 terminal과 조작 pane을 만들고 core를 자동으로 시작한다. workspace나 tab을 새로 만들지 않는다. `console_attach`는 기존 Console과 Parent가 같은 tab에 있는지 검증해 연결한다. 사용자가 별도 `serve` 명령을 먼저 실행할 필요가 없다. 한 Console에 Parent 하나만 연결된다.
-
-Codex의 정상 종료·강제 종료 뒤에도 Console과 shell/SSH는 유지된다. **기존 Console과 같은 tab의 프로젝트 shell**에서 Codex를 다시 시작하고 `$herdr-broker Console <ID>에 이어 붙어줘`라고 요청한다. ID를 모르면 Skill이 tab 정보가 포함된 목록을 조회한다. 다른 tab에서는 `console_tab_required`로 거부한다. 새 Parent는 실행 결과와 hold를 확인한 뒤 새 Job으로 관찰을 이어간다. 이전 command를 재전송하지 않는다.
-
-조작 pane에서 `panes`는 대상과 실행 기록을 보여 주고, `new`는 같은 tab의 Target을 split해 소유 terminal을 추가한다(최대 8개). Herdr에서 수동으로 만든 pane은 등록되지 않는다. `quit`는 core만 중지하고 terminal은 유지한다. 다시 접속하면 기존 조작 pane이 idle shell일 때 같은 Control State로 core를 재시작한다. **작업을 끝내려면 필요한 pane을 사용자가 직접 닫는다.** 닫힌 controller를 이전 Console ID로 자동 재생성하지 않는다.
-
-Parent·controller·Target을 다른 tab으로 옮기면 기존 연결이나 소유권을 자동으로 따라 옮기지 않는다. tab 정보 없이 생성된 이전 Console은 `console_layout_upgrade_required`를 반환한다. 기존 pane과 Control State는 보존되며, 수정된 배치를 사용하려면 원하는 Codex pane에서 새 Console을 연다.
+setup은 이 프로젝트의 MCP 설정만 갱신한다. Herdr 밖에서는 MCP·core·관리 화면을 실행할 수 없다. Herdr 프로젝트 shell에서 새 Codex를 시작하거나 `node .agents/skills/herdr-broker/scripts/run.mjs parent`를 사용한다.
 
 기본 설정 파일은 OS 계정 home의 `~/.config/herdr-broker/config.json`이며 없어도 기본 경로를 사용한다. 사용자 소유 regular file, mode 0600이어야 한다.
 
@@ -50,11 +36,13 @@ Parent·controller·Target을 다른 tab으로 옮기면 기존 연결이나 소
 }
 ```
 
-`redaction_patterns`는 정규식이 아닌 literal 문자열이다. 재시작 때 적용한다. HOME/XDG·MCP 인자·`--state-dir`로 state 영역을 바꿀 수 없다. core는 OS 계정 home의 `~/.local/state/herdr-broker/<endpoint와 Console ID의 digest>/`를 사용한다. Console 등록 정보는 같은 root의 `consoles/`에 저장한다. directory는 0700, DB·identity·core socket은 0600이다.
+`redaction_patterns`는 정규식이 아닌 literal 문자열이다. 재시작 때 적용한다. HOME/XDG·MCP 인자·`--state-dir`로 state 영역을 바꿀 수 없다. core는 OS 계정 home의 `~/.local/state/herdr-broker/<endpoint와 Console ID의 digest>/`를 사용한다. 숫자 주소와 소유권은 같은 root의 `registry.sqlite`에 원자적으로 저장한다. 기존 `consoles/*.json`은 처음 조회할 때 UUID를 유지해 가져오고 원본을 보존한다. directory는 0700, DB·identity·core socket은 0600이다.
+
+기존 Broker를 shell에서 다시 시작하려면 `node dist/cli.js start <번호>`를 사용한다. 관리 화면은 `node dist/cli.js manage <번호>` 또는 Parent의 `console_manage`로 연다. 이미 실행 중이면 재사용한다. 기존 고정 controller를 전환할 때는 진행 중인 Action이 없는 것을 확인하고 이전 Console process만 정상 종료한 뒤 `start`로 전환한다. 기존 shell과 terminal ID는 유지한다. 이미 닫힌 controller는 종료 상태로 남고, 새 terminal을 추가할 수 있다.
 
 ## Console 상태판
 
-interactive terminal에서는 Console이 실시간 상태판으로 열린다. Parent → Console → Target은 소유 범위를 표시하며, 각 Target의 진행 중인 Job·Worker 분석·Action은 별도 상태로 보인다. 입력 접수는 실행 완료와 구분하고, 승인 대기·미확정 실행의 보류를 요약한다. Parent 연결 끊김, pane 종료·이동·교체, 확인 실패는 각각 표시한다. `확인 필요`인 Mode는 현재 Pane Session을 아직 확인하지 못했다는 뜻이다.
+요청한 임시 관리 pane에서 연결·terminal과 승인 상태를 확인한다. 상세 작업 목록은 별도 보기로 유지한다. Parent → Console → Target은 소유 범위를 표시하며, 각 Target의 진행 중인 Job·Worker 분석·Action은 별도 상태로 보인다. 입력 접수는 실행 완료와 구분하고, 승인 대기·미확정 실행의 보류를 요약한다. Parent 연결 끊김, pane 종료·이동·교체, 확인 실패는 각각 표시한다. `확인 필요`인 Mode는 현재 Pane Session을 아직 확인하지 못했다는 뜻이다.
 
 | 키 | 조작 |
 | --- | --- |
@@ -62,12 +50,13 @@ interactive terminal에서는 Console이 실시간 상태판으로 열린다. Pa
 | `a` | 선택한 Target의 proposal 검토 후 명시적 승인·거절 |
 | `m` | 현재 세션 확인 후 Mode 선택 |
 | `n` | 같은 tab에 소유 Target 추가 |
+| `w` | workspace 전체 pane 목록. 다음 페이지는 `:workspace <cursor>` |
 | `l`, `?`, `Esc` | 최근 이벤트, 도움말, 돌아가기 |
-| `:` | 아래의 기존 명령 입력 (`status`, `inspect`, `ssh-ready`, `recover`, `quit` 등) |
+| `:` | 아래의 기존 명령 입력 (`status`, `inspect`, `ssh-ready`, `recover`, `quit`, `workspace`, `stop` 등) |
 
 작은 pane에서는 연결과 승인·보류 상태가 먼저 보인다. 상세는 같은 Console 화면에서 열리며 pane 배치를 변경하지 않는다. 최근 상태 변경 50개는 core 실행 동안 유지되고, 영속 실행 기록은 상세에서 확인한다. 상태판을 켜 두는 것만으로 terminal 출력 수집·Job·Worker 실행·승인 소비가 발생하지 않는다. 자동 갱신은 입력 중인 명령이나 검토 대상을 바꾸지 않는다.
 
-기존 JSON 출력을 쓰려면 소유 controller에서 `herdr-broker serve <console_id> --format json`으로 시작한다. non-TTY와 `TERM=dumb`도 JSON을 사용하며 pipe에서는 사용자 승인·Mode 상향 권한을 얻지 못한다. 이미 실행 중인 core는 업데이트로 재시작하지 않는다. 다음 실행에 상태판이 적용되고 기존 terminal과 Control State를 이어받는다.
+기존 JSON 출력을 쓰려면 소유 controller에서 `herdr-broker serve <console_id> --format json`으로 시작한다. non-TTY와 `TERM=dumb`도 JSON을 사용하며 pipe에서는 사용자 승인·Mode 상향 권한을 얻지 못한다. 관리 화면의 `quit`는 관리 pane만 닫고 core는 유지한다. 기존 고정 controller는 명시적 전환 시 공유 shell이 되며 UUID·Control State를 이어받는다.
 
 ## 진단과 Action
 
@@ -84,7 +73,7 @@ interactive terminal에서는 Console이 실시간 상태판으로 열린다. Pa
 | 2 Agent Risk Review | 확인된 저위험/제한 변경은 Parent 판단으로 허용. 고위험·불확실·누락 판단은 사용자 승인 |
 | 3 Autonomous | 선언한 범위 안에서 개별 승인 없이 허용 |
 
-모드 상향은 `serve`의 실제 interactive console에서만 한다. 세 모드 모두 같은 대상·예산·취소·영속 hold 검사를 사용한다. mode는 같은 OS 사용자의 직접 CLI/socket 접근을 막는 격리가 아니다.
+모드 상향은 `manage`의 실제 interactive 관리 화면에서만 한다. 세 모드 모두 같은 대상·예산·취소·영속 hold 검사를 사용한다. mode는 같은 OS 사용자의 직접 CLI/socket 접근을 막는 격리가 아니다.
 
 ```text
 status
@@ -147,7 +136,7 @@ purge는 Snapshot·report·Evidence·pending payload를 제거한다. 제거된 
 | `herdr_unsupported` / `worker_unsupported` | pinned Herdr/Codex version과 binary 경로 |
 | `core_unavailable` / `authority_busy` | 해당 Console의 조작 pane과 core |
 | `console_busy_or_disconnected` | 기존 Parent를 종료하고 다시 접속 |
-| `console_already_bound` | 이 MCP 연결은 이미 Console 하나에 결합됨. 다른 Console은 새 Parent에서 접속 |
+| `console_already_bound` | 새 Broker 생성 전에 `console_detach`. 기존 Broker는 정확한 번호로 `console_attach`하여 전환 |
 | `pane_outside_console` | 해당 Console이 등록한 pane·terminal·workspace만 사용 |
 | `console_workspace_changed` / `console_controller_busy` | 조작 pane의 mapping과 실행 중인 process를 사용자와 확인 |
 | `config_invalid` / `state_permissions` | 소유권·regular file·권한·strict 설정 field |

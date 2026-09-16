@@ -5,7 +5,8 @@ import { sameTarget } from './sessions.js';
 
 export interface ConsoleCore {
   socketPath: string; close(): Promise<void>; summary(): object; purge(id: string): object;
-  actions?: Actions; consoleView?: ConsoleView; consoleStatus?(): object; addTerminal?(): Promise<object>;
+  actions?: Actions; consoleView?: ConsoleView; consoleStatus?(): object; addTerminal?(): Promise<object>; workspace?(cursor?: string): Promise<object>; stopBroker?(): Promise<void>;
+  resolvePane?(ref: string): Promise<string>;
 }
 export const encodeConsole = (value: unknown) => JSON.stringify(value).replace(/[\u007f-\u009f\u202a-\u202e\u2066-\u2069]/g, char => `\\u${char.charCodeAt(0).toString(16).padStart(4, '0')}`);
 export class ConsoleCommands {
@@ -18,6 +19,8 @@ export class ConsoleCommands {
   private closed = false;
   constructor(private readonly core: ConsoleCore, private readonly interactive: boolean, private readonly quit: () => Promise<void>) {
     if (core.addTerminal) this.commands.unshift('panes', 'new');
+    if (core.workspace) this.commands.unshift('workspace [cursor]');
+    if (core.stopBroker) this.commands.push('stop');
   }
   idle() { return this.pending; }
   stop() { this.closed = true; this.reviewed = undefined; this.inspected = undefined; this.modeInspection = undefined; }
@@ -33,6 +36,13 @@ export class ConsoleCommands {
     if (this.closed) return null;
     if (command.length > 1024) throw new BrokerError('console_input_too_large');
     if (command === 'quit') { await this.quit(); return null; }
+    if (command === 'stop' && this.core.stopBroker) {
+      if (!this.interactive) throw new BrokerError('interactive_console_required');
+      if (this.core.actions?.executing()) throw new BrokerError('action_in_progress');
+      await this.core.stopBroker(); return null;
+    }
+    const workspace = /^workspace(?: (\S{1,256}))?$/.exec(command);
+    if (workspace && this.core.workspace) return this.core.workspace(workspace[1]);
     if (command === 'panes' && this.core.consoleStatus) return this.core.consoleStatus();
     if (command === 'new' && this.core.addTerminal) {
       if (!this.interactive) throw new BrokerError('interactive_console_required');
@@ -43,7 +53,7 @@ export class ConsoleCommands {
     const recover = /^recover ([0-9a-f-]{36}) (.+)$/.exec(command);
     if (inspect || recover || sshReady) {
       if (!this.interactive || !this.core.actions) throw new BrokerError('interactive_console_required');
-      if (inspect) { this.inspected = await this.core.actions.inspect(inspect[1]!); this.modeInspection = this.inspected; return this.inspected; }
+      if (inspect) { this.inspected = await this.core.actions.inspect(this.core.resolvePane ? await this.core.resolvePane(inspect[1]!) : inspect[1]!); this.modeInspection = this.inspected; return this.inspected; }
       if (!this.inspected) throw new BrokerError('inspect_required');
       const previous = this.inspected; this.inspected = undefined; this.modeInspection = undefined; this.reviewed = undefined;
       return sshReady ? this.core.actions.confirmSSH(previous, sshReady[1]!, sshReady[2]!) : this.core.actions.recover(previous, recover![1]!, recover![2]!);
@@ -68,6 +78,7 @@ export class ConsoleCommands {
       if (['approve', 'reject'].includes(operation!) && this.reviewed && this.reviewed.proposal_id === id) {
         const review = this.reviewed; this.reviewed = undefined;
         const current = await actions.inspect(review.target.pane_id);
+        if (this.closed) throw new BrokerError('management_disconnected');
         if (!sameTarget(current.target, review.target) || current.pane_session_id !== review.pane_session_id || current.mode_revision !== review.mode_revision) throw new BrokerError('review_stale');
         return actions.approve(id!, review.payload_digest, operation === 'reject');
       }

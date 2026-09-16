@@ -6,11 +6,12 @@ import type { Ledger, Control } from './ledger.js';
 
 export interface ParentConnection { pane_id: string | null; terminal_id: string | null; state: 'disconnected' | 'verifying' | 'connected' | 'invalid'; error: string | null }
 export const connectionLabel = (state: ParentConnection['state']) => ({ disconnected: '연결 끊김', verifying: '연결 확인 중', connected: '연결됨', invalid: '검증 실패' })[state];
-export interface ConsoleInfo { label: string; controller: { pane_id: string; terminal_id: string } }
+export interface ConsoleInfo { label: string; controller: { pane_id: string; terminal_id: string } | null; console_code?: string; paneCodes?: Map<string, string> }
 type BindingState = 'checking' | 'ready' | 'missing' | 'moved' | 'replaced' | 'unavailable';
 interface Metadata { state: BindingState; checked_at: number | null; error: string | null; pane?: Pane; process?: ProcessInfo }
 export interface ConsolePane {
   pane_id: string; terminal_id: string; metadata: Metadata;
+  pane_code?: string;
   connection: 'local' | 'ssh' | null;
   session: { pane_session_id: string; action_mode: number; mode_revision: number } | null;
   jobs: ReturnType<Jobs['summary']>['jobs'];
@@ -18,9 +19,9 @@ export interface ConsolePane {
   receipts: Control[]; held: string | null;
 }
 export interface ConsoleSnapshot {
-  console_id: string; label: string; tab_id: string;
+  console_id: string; console_code?: string; label: string; tab_id: string;
   parent: ParentConnection & { metadata: Metadata | null };
-  controller: ConsoleInfo['controller'] & { metadata: Metadata };
+  controller: (NonNullable<ConsoleInfo['controller']> & { metadata: Metadata }) | null;
   panes: ConsolePane[]; pending_approvals: number; held_count: number;
   events: { at: number; text: string }[];
 }
@@ -69,7 +70,7 @@ export class ConsoleView {
     const { scope, info } = this.options;
     const parent = this.options.parent();
     const targets = [...scope.terminals].map(([pane_id, terminal_id]) => ({ pane_id, terminal_id, process: true }));
-    const identities = [...targets, { ...info.controller, process: false }, ...(parent.pane_id && parent.state !== 'disconnected' ? [{ pane_id: parent.pane_id, terminal_id: parent.terminal_id, process: false }] : [])];
+    const identities = [...targets, ...(info.controller ? [{ ...info.controller, process: false }] : []), ...(parent.pane_id && parent.state !== 'disconnected' ? [{ pane_id: parent.pane_id, terminal_id: parent.terminal_id, process: false }] : [])];
     const known = new Set(identities.map(item => item.pane_id));
     for (const id of this.metadata.keys()) if (!known.has(id)) this.metadata.delete(id);
     await Promise.all(identities.map(async identity => {
@@ -98,20 +99,20 @@ export class ConsoleView {
       const held = ledger.held(terminal_id) ?? null;
       const receipts = control.receipts.filter(receipt => receipt.terminal_id === terminal_id);
       if (held && !receipts.some(receipt => receipt.proposal_id === held)) { const receipt = ledger.get(held); if (receipt) receipts.unshift(receipt); }
-      return { pane_id, terminal_id, metadata, connection: observed?.connection ?? null, session: observed?.session ?? null,
+      return { pane_id, terminal_id, ...(info.paneCodes?.has(pane_id) && { pane_code: info.paneCodes.get(pane_id)! }), metadata, connection: observed?.connection ?? null, session: observed?.session ?? null,
         jobs: status.jobs.filter(job => job.pane_id === pane_id), proposals: proposals.filter(proposal => proposal.target.pane_id === pane_id), receipts, held };
     });
-    const controller = { ...info.controller, metadata: this.metadata.get(info.controller.pane_id) ?? unchecked() };
+    const controller = info.controller ? { ...info.controller, metadata: this.metadata.get(info.controller.pane_id) ?? unchecked() } : null;
     const parentMeta = parent.pane_id ? this.metadata.get(parent.pane_id) ?? null : null;
     const changes = new Map<string, string>([
       ['parent', `Codex ${parent.pane_id ?? '—'} · ${connectionLabel(parent.state)}${parentMeta && parentMeta.state !== 'ready' ? ` · ${bindingLabel(parentMeta.state)}` : ''}`],
-      ['controller', `Console ${controller.pane_id} · ${bindingLabel(controller.metadata.state)}`],
+      ['controller', controller ? `Console ${controller.pane_id} · ${bindingLabel(controller.metadata.state)}` : '관리 화면 닫힘'],
       ...panes.map(pane => [pane.pane_id, `${pane.pane_id} · ${bindingLabel(pane.metadata.state)} · ${pane.session ? `Mode ${pane.session.action_mode}` : '확인 필요'} · ${paneActivity(pane)}${pane.receipts[0] ? ` · ${receiptLabel(pane.receipts[0])}` : ''}`] as const),
     ]);
     for (const [key, text] of changes) if (this.previous.get(key) !== text) this.events.push({ at: Date.now(), text });
     this.previous = changes;
     if (this.events.length > 50) this.events.splice(0, this.events.length - 50);
-    return { console_id: this.options.consoleId, label: info.label, tab_id: scope.tab_id, parent: { ...parent, metadata: parentMeta }, controller, panes,
+    return { console_id: this.options.consoleId, ...(info.console_code && { console_code: info.console_code }), label: info.label, tab_id: scope.tab_id, parent: { ...parent, metadata: parentMeta }, controller, panes,
       pending_approvals: proposals.filter(proposal => proposal.authorization === 'approval_required').length, held_count: control.held_terminal_count, events: [...this.events] };
   }
   async close() { this.stop.abort(); await this.pending; }

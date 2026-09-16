@@ -20,6 +20,7 @@ const within = (value: string, roots: string[]) => value.startsWith('/') && posi
 
 export interface ActionOptions { ledger: Ledger; verifyAuthority: () => void; now?: (() => number) | undefined; observationMs?: number | undefined; fault?: ((point: FaultPoint) => void) | undefined }
 export class Actions {
+  executing() { return this.wires.size > 0 || this.observers.size > 0; }
   private readonly proposals = new Map<string, Proposal>();
   private readonly submissions = new Map<string, Promise<object>>();
   private readonly wires = new Map<string, Promise<unknown>>();

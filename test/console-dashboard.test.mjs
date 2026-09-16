@@ -13,7 +13,8 @@ import { risk } from './action-harness.mjs';
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 async function dashboard(t, options = {}) {
   const h = await consoleHarness(t);
-  const record = await h.consoles.create('공유 작업 👩🏽‍💻');
+  const record = await h.controllerRecord('공유 작업 👩🏽‍💻');
+  for (let i = h.calls.length - 1; i >= 0; i--) if (h.calls[i].method === 'pane.send_input') h.calls.splice(i, 1); // Exclude management startup input.
   const clockPath = join(h.root, 'clock');
   const { clock, coreOptions, ...display } = options;
   if (clock !== undefined) await writeFile(clockPath, String(clock));
@@ -47,7 +48,9 @@ test('Dashboard read model uses verified Parent identities and observes without 
   assert.deepEqual(status.controller, (await h.consoles.get(created.console_id)).controller);
   const before = core.summary();
   await view.refresh(); view.snapshot(); await view.refresh();
-  assert.deepEqual(core.summary(), before);
+  const { console: beforeConsole, ...beforeData } = before;
+  const { console: afterConsole, ...afterData } = core.summary();
+  assert.deepEqual(afterData, beforeData);
   assert.equal(h.calls.filter(call => ['pane.read', 'pane.send_input'].includes(call.method) && call.params.pane_id === created.panes[0].pane_id).length, 0);
   assert.equal(view.snapshot().panes[0].session, null);
   const started = await client.call('job_start', { pane_id: created.panes[0].pane_id, objective: 'diagnose' });

@@ -35,6 +35,7 @@ export async function harness(t, options = {}) {
   });
   let core;
   t.after(async () => {
+    await state.beforeClose?.();
     await core?.close();
     for (const socket of sockets) socket.destroy();
     if (peer.listening) await new Promise(resolve => peer.close(resolve));

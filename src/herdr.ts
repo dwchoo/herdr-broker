@@ -11,6 +11,7 @@ const paneSchema = z.object({
   pane_id: id, terminal_id: id, workspace_id: id, tab_id: id,
   cwd: z.string().max(4096).optional(), foreground_cwd: z.string().max(4096).optional(),
   agent_status: z.string().max(64),
+  label: z.string().max(1024).nullable().optional(), title: z.string().max(4096).nullable().optional(), terminal_title_stripped: z.string().max(4096).nullable().optional(),
 });
 export type Pane = z.infer<typeof paneSchema>;
 export interface ConsoleScope { workspace_id: string; tab_id: string; terminals: ReadonlyMap<string, string> }
@@ -141,4 +142,13 @@ export class Herdr {
     if (!result.success || result.data.pane.workspace_id !== source.workspace_id || result.data.pane.tab_id !== source.tab_id) throw new BrokerError('herdr_invalid_response');
     return result.data.pane;
   }
+  async list(workspaceId: string) {
+    await this.check();
+    const result = z.object({ type: z.literal('pane_list'), panes: z.array(paneSchema).max(4096) }).safeParse(await this.request('pane.list', { workspace_id: workspaceId }));
+    if (!result.success || result.data.panes.some(pane => pane.workspace_id !== workspaceId)) throw new BrokerError('herdr_invalid_response');
+    return result.data.panes;
+  }
+  async renamePane(paneId: string, label: string) { await this.request('pane.rename', { pane_id: paneId, label }); }
+  async closePane(paneId: string) { await this.request('pane.close', { pane_id: paneId }); }
+  async notify(title: string, body: string) { await this.request('notification.show', { title, body, sound: 'none' }); }
 }

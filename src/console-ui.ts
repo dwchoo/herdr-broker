@@ -1,6 +1,6 @@
 import { emitKeypressEvents, type Key } from 'node:readline';
 import stringWidth from 'string-width';
-import { ConsoleCommands } from './console-commands.js';
+import type { ConsoleCommands } from './console-commands.js';
 import { bindingLabel, connectionLabel, paneActivity, receiptLabel, type ConsoleSnapshot, type ConsoleView } from './console-view.js';
 
 const segments = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
@@ -29,7 +29,8 @@ const jsonLines = (value: unknown) => (JSON.stringify(value, null, 2) ?? '응답
 const time = (at: number) => new Date(at).toTimeString().slice(0, 8);
 function responseLines(value: unknown): string[] {
   if (typeof value !== 'object' || value === null) return jsonLines(value);
-  if ('error' in value) return ['조작을 적용하지 못했습니다.', `사유: ${value.error}`];
+  if ('error' in value && value.error) return ['조작을 적용하지 못했습니다.', `사유: ${value.error}`];
+  if ('panes' in value && Array.isArray(value.panes) && !('console_id' in value)) return ['현재 workspace pane', ...value.panes.map(pane => `${pane.pane_code} · ${pane.name || pane.role} · ${pane.tab_id} · ${pane.state} · ${pane.can_operate ? '조작 가능' : pane.console_code ? `소유 ${pane.console_code}` : '미등록'}`), ...('next' in value && value.next ? [`다음 페이지: :workspace ${value.next}`] : [])];
   if ('action_mode' in value && 'pane_session_id' in value && !('target' in value)) return [`Mode ${value.action_mode} 적용`, `Pane Session: ${value.pane_session_id}`];
   if ('authorization' in value && !('payload' in value)) {
     if (value.authorization === 'user_approval') return ['승인 완료 · 아직 제출되지 않음', 'Parent가 action_submit으로 제출하면 실행합니다.'];
@@ -54,8 +55,8 @@ const initialState = (): UIState => ({ page: 'overview', selected: null, scroll:
 function detailLines(snapshot: ConsoleSnapshot, state: UIState) {
   const pane = snapshot.panes.find(pane => pane.pane_id === state.selected);
   if (state.page === 'help') return [
-    '↑↓ Target 선택 / 상세 스크롤', 'Enter 상세 / 선택 확정', 'a 승인 대기 proposal 검토', 'm 현재 세션 확인 후 Mode 변경', 'n 같은 tab에 Target 추가', 'l 최근 이벤트 (최대 50개)', ': 기존 명령 입력', 'Esc 상태판으로 돌아가기',
-    'PageUp/PageDown, Home/End 상세 탐색', '검토: 끝까지 확인한 뒤 y 승인 / n 거절', '명령: ←→ 이동, Backspace 삭제, Enter 실행', '붙여넣기는 명령 입력에서만 텍스트로 삽입', 'Ctrl+C 또는 :quit: core 중지', 'Target terminal과 영속 실행 기록은 유지',
+    '↑↓ Target 선택 / 상세 스크롤', 'Enter 상세 / 선택 확정', 'a 승인 대기 proposal 검토', 'm 현재 세션 확인 후 Mode 변경', 'n 같은 tab에 Target 추가', 'l 최근 이벤트 (최대 50개)', 'w workspace 전체 pane 목록', ': 기존 명령 입력', 'Esc 상태판으로 돌아가기',
+    'PageUp/PageDown, Home/End 상세 탐색', '검토: 끝까지 확인한 뒤 y 승인 / n 거절', '명령: ←→ 이동, Backspace 삭제, Enter 실행', '붙여넣기는 명령 입력에서만 텍스트로 삽입', 'Ctrl+C 또는 :quit: 현재 화면 종료', ':stop: Broker 중지 (terminal 유지)', 'Target terminal과 영속 실행 기록은 유지',
   ];
   if (state.page === 'events') return [...snapshot.events].reverse().map(event => `${time(event.at)} ${event.text}`);
   if (state.page === 'review') return jsonLines(state.body);
@@ -67,8 +68,8 @@ function detailLines(snapshot: ConsoleSnapshot, state: UIState) {
     `Console: ${snapshot.console_id}`, `Tab: ${snapshot.tab_id}`,
     `Parent: ${snapshot.parent.pane_id ?? '—'} · ${parentLabel(snapshot.parent)} · ${age(snapshot.parent.metadata?.checked_at ?? null)}`,
     ...(snapshot.parent.error || snapshot.parent.metadata?.error ? [`Parent 오류: ${snapshot.parent.error ?? snapshot.parent.metadata?.error}`] : []),
-    `Controller: ${snapshot.controller.pane_id} · ${bindingLabel(snapshot.controller.metadata.state)} · ${age(snapshot.controller.metadata.checked_at)}`,
-    ...(snapshot.controller.metadata.error ? [`Controller 오류: ${snapshot.controller.metadata.error}`] : []),
+    snapshot.controller ? `Controller: ${snapshot.controller.pane_id} · ${bindingLabel(snapshot.controller.metadata.state)} · ${age(snapshot.controller.metadata.checked_at)}` : '관리 화면 닫힘',
+    ...(snapshot.controller?.metadata.error ? [`Controller 오류: ${snapshot.controller?.metadata.error}`] : []),
     `Target: ${pane.pane_id}`, `Terminal: ${pane.terminal_id}`,
     `연결: ${bindingLabel(pane.metadata.state)} · ${age(pane.metadata.checked_at)}`, ...(pane.metadata.error ? [`오류: ${pane.metadata.error}`] : []),
     `환경: ${pane.connection ?? '확인 필요'}`, `Mode: ${pane.session?.action_mode ?? '확인 필요'}`, `Pane Session: ${pane.session?.pane_session_id ?? '확인 필요'}`,
@@ -84,9 +85,9 @@ function frame(snapshot: ConsoleSnapshot, state: UIState, columns: number, rows:
   const pane = snapshot.panes[index];
   let lines: string[];
   if (state.page === 'overview') {
-    lines = [`BROKER · ${snapshot.label}`, `Codex ${snapshot.parent.pane_id ?? '—'} · ${parentLabel(snapshot.parent)}`, `  → Console ${snapshot.controller.pane_id}${snapshot.controller.metadata.state !== 'ready' ? ` · ${bindingLabel(snapshot.controller.metadata.state)}` : ''}`, `승인 ${snapshot.pending_approvals} · 보류 ${snapshot.held_count} · Target ${snapshot.panes.length ? index + 1 : 0}/${snapshot.panes.length}`];
+    lines = [`BROKER ${snapshot.console_code ?? ""} · ${snapshot.label}`, `Codex ${snapshot.parent.pane_id ?? '—'} · ${parentLabel(snapshot.parent)}`, snapshot.controller ? `  → Console ${snapshot.controller.pane_id}${snapshot.controller.metadata.state !== 'ready' ? ` · ${bindingLabel(snapshot.controller.metadata.state)}` : ''}` : '  → 백그라운드 Broker', `승인 ${snapshot.pending_approvals} · 보류 ${snapshot.held_count} · Target ${snapshot.panes.length ? index + 1 : 0}/${snapshot.panes.length}`];
     if (height < 7) {
-      const topology = `${snapshot.parent.pane_id ?? '—'} → ${snapshot.controller.pane_id} · ${parentLabel(snapshot.parent)}`;
+      const topology = `${snapshot.parent.pane_id ?? '—'} → ${snapshot.console_code ?? snapshot.controller?.pane_id ?? "—"} · ${parentLabel(snapshot.parent)}`;
       lines = height >= 4 ? [lines[0]!, topology] : [topology];
       if (height >= 5) lines.push(`승인 ${snapshot.pending_approvals} · 보류 ${snapshot.held_count}`);
     }
@@ -97,7 +98,7 @@ function frame(snapshot: ConsoleSnapshot, state: UIState, columns: number, rows:
     for (const target of snapshot.panes.slice(offset, offset + room)) {
       const status = target.metadata.state === 'ready' ? paneActivity(target) : `${bindingLabel(target.metadata.state)} · ${age(target.metadata.checked_at)}`;
       const mode = target.session ? `M${target.session.action_mode}` : '확인 필요';
-      const row = expanded ? `${cell(target.pane_id, 20)}  ${cell(target.connection ?? '?', 6)}  ${cell(mode, 10)}  ${status}` : `${target.pane_id}  ${target.connection ?? '?'}  ${mode}  ${status}`;
+      const row = expanded ? `${cell(target.pane_code ?? target.pane_id, 20)}  ${cell(target.connection ?? '?', 6)}  ${cell(mode, 10)}  ${status}` : `${target.pane_code ?? target.pane_id}  ${target.connection ?? '?'}  ${mode}  ${status}`;
       lines.push(`${target.pane_id === pane?.pane_id ? '>' : ' '} ${row}`);
     }
     if (pane?.receipts[0] && lines.length < height - 1) lines.push(`최근 실행: ${receiptLabel(pane.receipts[0])}`);
@@ -131,7 +132,7 @@ function frame(snapshot: ConsoleSnapshot, state: UIState, columns: number, rows:
   return lines.slice(0, height).map(line => clip(line, width));
 }
 
-export function startDashboard(view: ConsoleView, commands: ConsoleCommands, quit: () => Promise<void>) {
+export function startDashboard(view: Pick<ConsoleView, 'snapshot' | 'refresh'>, commands: Pick<ConsoleCommands, 'run'>, quit: () => Promise<void>) {
   const input = process.stdin, output = process.stdout;
   const state = initialState();
   let snapshot = view.snapshot(), closed = false, lastFrame = '', pasting = false;
@@ -212,6 +213,7 @@ export function startDashboard(view: ConsoleView, commands: ConsoleCommands, qui
       if (key.name === 'return' || key.name === 'enter') open('detail');
       if (text === '?') open('help');
       if (text === 'l') open('events');
+      if (text === 'w') response(await execute('workspace'));
       if (text === ':') open('command');
       if (text === 'n') { response(await execute('new')); metadata(); }
       if (text === 'a') {

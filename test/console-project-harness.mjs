@@ -5,6 +5,7 @@ import { harness, connect } from './harness.mjs';
 import { Consoles } from '../dist/consoles.js';
 import { startConsoleMcp } from '../dist/console-mcp.js';
 import { startCore } from '../dist/core.js';
+import { startBrokerService } from '../dist/service.js';
 
 export async function consoleHarness(t) {
   const h = await harness(t);
@@ -12,6 +13,7 @@ export async function consoleHarness(t) {
   const config = { endpoint: h.endpoint, stateRoot: join(h.root, 'consoles-state'), project: resolve('.'), herdrContext: { HERDR_PANE_ID: 'parent', HERDR_WORKSPACE_ID: 'workspace-1', HERDR_TAB_ID: 'tab-1' } };
   const consoles = new Consoles(config);
   const panes = new Map(), cores = [], gateways = [];
+  config.launchCore = async record => { cores.push(await startBrokerService(consoles, record, config)); };
   let sequence = 0;
   const create = (workspace_id, tab_id = `tab-${sequence + 1}`) => {
     const id = ++sequence;
@@ -25,6 +27,10 @@ export async function consoleHarness(t) {
     const params = request.params;
     if (request.method === 'workspace.create') response.result = { type: 'workspace_created', root_pane: create(`workspace-${sequence}`) };
     else if (request.method === 'pane.split' || request.method === 'tab.create') response.result = { type: 'pane_created', [request.method === 'pane.split' ? 'pane' : 'root_pane']: create(params.workspace_id, panes.get(params.target_pane_id)?.tab_id) };
+    else if (request.method === 'pane.list') response.result = { type: 'pane_list', panes: [...panes.values()].filter(pane => pane.workspace_id === params.workspace_id) };
+    else if (request.method === 'pane.rename') { panes.get(params.pane_id).label = params.label; response.result = { type: 'ok' }; }
+    else if (request.method === 'pane.close') { panes.delete(params.pane_id); response.result = { type: 'ok' }; }
+    else if (request.method === 'notification.show') response.result = { type: 'ok' };
     else if (request.method === 'pane.get') {
       if (panes.has(params.pane_id)) response.result = { type: 'pane_info', pane: panes.get(params.pane_id) };
       else { delete response.result; response.error = { code: 'pane_not_found' }; }
@@ -53,10 +59,10 @@ export async function consoleHarness(t) {
   const endpoint = join(h.root, 'gateway.sock');
   const server = createServer(socket => gateways.push(startConsoleMcp({ ...config, herdrContext: { ...config.herdrContext } }, socket, socket)));
   server.listen(endpoint); await once(server, 'listening');
-  t.after(async () => {
+  h.state.beforeClose = async () => {
     for (const close of gateways) await close();
     await new Promise(resolve => server.close(resolve));
     for (const core of cores) await core.close();
-  });
-  return { ...h, config, consoles, cores, panes, parent, connect: () => connect(endpoint, t) };
+  };
+  return { ...h, config, consoles, cores, panes, parent, create, async controllerRecord(label) { return consoles.openManager(await consoles.create(label)); }, connect: () => connect(endpoint, t) };
 }

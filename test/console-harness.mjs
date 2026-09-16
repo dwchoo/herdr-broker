@@ -3,13 +3,13 @@ import { once } from 'node:events';
 import { join } from 'node:path';
 import { writeFile } from 'node:fs/promises';
 
-export async function consoleProcess(t, h, { tty = true, clockPath, fault, observationMs, beforeWireConsole, redactionPatterns, executable, sshEnabled, consoleConfig, format = 'json', columns = 80, rows = 24, term = 'xterm-256color' } = {}) {
+export async function consoleProcess(t, h, { tty = true, clockPath, fault, observationMs, beforeWireConsole, redactionPatterns, executable, sshEnabled, consoleConfig, remoteManagement = false, format = 'json', columns = 80, rows = 24, term = 'xterm-256color' } = {}) {
   await h.core.close();
   let args = executable ? [executable, 'serve'] : ['test/process-fixture.mjs', 'serve', h.endpoint, join(h.root, 'state'), ...(clockPath ? [clockPath] : [])];
   if (consoleConfig) {
     const path = join(h.root, 'console-config.json');
     await writeFile(path, JSON.stringify(consoleConfig), { mode: 0o600 });
-    args = ['test/process-fixture.mjs', 'serve-console', path];
+    args = ['test/process-fixture.mjs', remoteManagement ? 'manage-console' : 'serve-console', path];
   }
   const sizePath = join(h.root, 'console-size.json');
   await writeFile(sizePath, JSON.stringify({ columns, rows }));

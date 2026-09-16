@@ -12,7 +12,7 @@ try {
   if (cwd === '..' || cwd.startsWith('../') || isAbsolute(cwd)) fail('project_context_required');
   if (process.versions.node.split('.')[0] !== '24') fail('node_24_required');
   const [operation, ...extra] = process.argv.slice(2);
-  if (!['setup', 'check', 'serve', 'parent', 'mcp'].includes(operation) || (operation === 'serve' ? extra.length !== 1 : extra.length > 0)) fail('invalid_arguments');
+  if (!['setup', 'check', 'serve', 'start', 'manage', 'parent', 'mcp'].includes(operation) || (['serve', 'start', 'manage'].includes(operation) ? extra.length !== 1 : extra.length > 0)) fail('invalid_arguments');
   const cli = join(root, 'dist/cli.js');
   await access(cli).catch(() => fail('build_required'));
   const contextKeys = ['HERDR_ENV', 'HERDR_PANE_ID', 'HERDR_WORKSPACE_ID', 'HERDR_TAB_ID', 'HERDR_SOCKET_PATH'];
@@ -49,7 +49,7 @@ try {
       } finally { await unlink(staging).catch(error => { if (error.code !== 'ENOENT') throw error; }); }
     }
     process.stdout.write(JSON.stringify({ ok: true, project_config: path, next: 'Start a new Codex in this project inside Herdr, then invoke $herdr-broker.' }) + '\n');
-  } else if (operation === 'mcp' || operation === 'serve') {
+  } else if (['mcp', 'serve', 'start', 'manage'].includes(operation)) {
     process.argv = [process.execPath, cli, operation, ...extra];
     await import(pathToFileURL(cli).href);
   } else {

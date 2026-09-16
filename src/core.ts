@@ -18,7 +18,7 @@ import { CodexWorker, type WorkerOptions } from './worker.js';
 import { ConsoleView, type ConsoleInfo, type ParentConnection } from './console-view.js';
 
 export const result = (value: object | string | null): CallToolResult => value === null ? { content: [] } : ({ content: [{ type: 'text', text: typeof value === 'string' ? value : JSON.stringify(value) }] });
-export interface CoreOptions { endpoint: string; stateRoot: string; consoleId?: string; consoleInfo?: ConsoleInfo; scope?: ConsoleScope; verifyParent?: (paneId: string) => Promise<Pane>; sshEnabled?: boolean; redactionPatterns?: string[]; now?: () => number; memoryLimit?: number; worker?: WorkerOptions; observationMs?: number; fault?: (point: FaultPoint) => void }
+export interface CoreOptions { endpoint: string; stateRoot: string; consoleId?: string; consoleInfo?: ConsoleInfo; scope?: ConsoleScope; verifyParent?: (paneId: string) => Promise<Pane>; sshEnabled?: boolean; redactionPatterns?: string[]; now?: () => number; memoryLimit?: number; worker?: WorkerOptions; observationMs?: number; fault?: (point: FaultPoint) => void; refreshConsole?: () => Promise<void> }
 
 // Keep the strict public schema, but route validation failures through the job budget.
 function jobInput<S extends z.ZodType>(schema: S): StandardSchemaWithJSON<z.input<S>, { ok: true; args: z.output<S> } | { ok: false; jobId?: string; proposalId?: string }> {
@@ -60,7 +60,8 @@ export async function startCore(options: CoreOptions) {
   const consoleStatus = () => {
     authority.verify();
     const status = ledger.summary();
-    return { console_id: options.consoleId, workspace_id: options.scope?.workspace_id, tab_id: options.scope?.tab_id, panes: [...(options.scope?.terminals ?? [])].map(([pane_id, terminal_id]) => ({ pane_id, terminal_id })), parent_connected: parent.state === 'connected', parent: { ...parent }, controller: options.consoleInfo?.controller ?? null,
+    const metadata = consoleView?.snapshot().panes;
+    return { console_id: options.consoleId, console_code: options.consoleInfo?.console_code, action_in_progress: actions.executing(), workspace_id: options.scope?.workspace_id, tab_id: options.scope?.tab_id, panes: [...(options.scope?.terminals ?? [])].map(([pane_id, terminal_id]) => ({ pane_id, terminal_id, ...(options.consoleInfo?.paneCodes?.has(pane_id) && { pane_code: options.consoleInfo.paneCodes.get(pane_id)!, name: metadata?.find(pane => pane.pane_id === pane_id)?.metadata.pane?.label ?? null, workspace_id: options.scope?.workspace_id, tab_id: options.scope?.tab_id, state: metadata?.find(pane => pane.pane_id === pane_id)?.metadata.state ?? 'checking', can_operate: parent.state === 'connected' && metadata?.find(pane => pane.pane_id === pane_id)?.metadata.state === 'ready' }) })), parent_connected: parent.state === 'connected', parent: { ...parent }, controller: options.consoleInfo?.controller ?? null,
       held_terminal_count: status.held_terminal_count, held_terminals: status.held_terminals, held_terminals_truncated: status.held_terminals_truncated,
       control_record_count: status.control_record_count, receipts_truncated: status.control_record_count > 8,
       receipts: status.receipts.slice(0, 8).map(({ proposal_id, terminal_id, submission_state, observation_state, exit_code, hold_reason, recovery, updated_at }) => ({ proposal_id, terminal_id, submission_state, observation_state, exit_code, hold_reason, recovery, updated_at })),
@@ -93,9 +94,12 @@ export async function startCore(options: CoreOptions) {
         }
       } : undefined;
       let parentVerified = Promise.resolve();
+      let detaching = false;
       mcp.server.oninitialized = () => { if (verifyParent) parentVerified = verifyParent().catch(() => {}); };
       mcp.registerTool('pane_describe', brokerTools.pane_describe, async ({ pane_id }) => {
         try {
+          await options.refreshConsole?.();
+          if (detaching) throw new BrokerError('console_detached');
           authority.verify();
           const pane = await herdr.describe(pane_id);
           const { terminal_id, workspace_id, tab_id, ...context } = pane;
@@ -106,10 +110,11 @@ export async function startCore(options: CoreOptions) {
         } catch (error) { return result({ error: error instanceof BrokerError ? error.code : 'internal_error' }); }
       });
       const safe = async (work: () => object | string | null | Promise<object | string | null>) => {
-        try { authority.verify(); const value = await work(); authority.verify(); return result(value); }
+        try { await options.refreshConsole?.(); if (detaching) throw new BrokerError('console_detached'); authority.verify(); const value = await work(); authority.verify(); return result(value); }
         catch (error) { return result({ error: error instanceof BrokerError ? error.code : 'internal_error' }); }
       };
       if (options.consoleId) mcp.registerTool('console_status', { annotations: { readOnlyHint: true, destructiveHint: false }, description: 'Read verified Parent/controller identities, owned terminals and bounded durable receipts before continuing in this Console.', inputSchema: z.strictObject({}) }, () => safe(async () => { await parentVerified; return consoleStatus(); }));
+      if (options.consoleId) mcp.registerTool('console_detach', { description: 'End this Parent connection without stopping the Broker or terminals.', inputSchema: z.strictObject({}) }, () => safe(() => { if (actions.executing()) throw new BrokerError('action_in_progress'); detaching = true; jobs.disconnect(owner); return { detached: true }; }));
       mcp.registerTool('job_start', brokerTools.job_start, args => safe(() => {
         herdr.requirePane(args.pane_id);
         return jobs.start(owner, args.pane_id, args.objective, args.analysis, args.budget, args.action_scope);
@@ -165,5 +170,5 @@ export async function startCore(options: CoreOptions) {
     await once(server, 'listening');
     await chmod(socketPath, 0o600);
   } catch (error) { await close(); throw error; }
-  return { socketPath, close, ...(consoleView && { consoleView }), ...(options.consoleId && { consoleStatus }), summary: () => { const status = jobs.summary(); return { ...(options.consoleId && { console: consoleStatus() }), ...status, jobs: status.jobs.map(job => ({ ...job, ...actions.budget(job.job_id) })), ...sessions.summary(), ...actions.summary() }; }, actions, purge: (id: string) => { authority.verify(); return jobs.purge(id); } };
+  return { socketPath, close, isClosed: () => closed, parent: () => ({ ...parent }), ...(consoleView && { consoleView }), ...(options.consoleId && { consoleStatus }), summary: () => { const status = jobs.summary(); return { ...(options.consoleId && { console: consoleStatus() }), ...status, jobs: status.jobs.map(job => ({ ...job, ...actions.budget(job.job_id) })), ...sessions.summary(), ...actions.summary() }; }, actions, purge: (id: string) => { authority.verify(); return jobs.purge(id); } };
 }
