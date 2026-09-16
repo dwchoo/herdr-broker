@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { BrokerError, Herdr, type Pane, type ProcessInfo } from './herdr.js';
 
 const path = z.string().min(1).max(4096).refine(value => value.startsWith('/') && posix.normalize(value) === value && !value.includes('\0'));
-export const scopeSchema = z.strictObject({ profile: z.enum(['local_posix', 'ssh_posix']), cwd: path, paths: z.array(path).min(1).max(16), trusted: z.boolean() });
+export const scopeSchema = z.discriminatedUnion('profile', [z.strictObject({ profile: z.literal('terminal') }), z.strictObject({ profile: z.enum(['local_posix', 'ssh_posix']), cwd: path, paths: z.array(path).min(1).max(16), trusted: z.boolean() })]);
 export type Scope = z.infer<typeof scopeSchema>;
 export const targetSchema = z.strictObject({ pane_id: z.string().min(1).max(256), terminal_id: z.string().min(1).max(256), workspace_id: z.string().min(1).max(256), tab_id: z.string().min(1).max(256) });
 export type Target = z.infer<typeof targetSchema>;
@@ -70,6 +70,7 @@ export class Sessions {
     return { pane_session_id: id, mode_revision: session.revision, action_mode: session.mode, shell_ready: true, declaration: 'user_verified_ssh_posix', cwd, remote_identity_authenticated: false };
   }
   checkScope(session: Session, scope: Scope) {
+    if (scope.profile === 'terminal') return;
     if (scope.profile !== (session.connection.kind === 'ssh' ? 'ssh_posix' : 'local_posix')) throw new BrokerError('profile_mismatch');
     if (session.connection.kind === 'ssh' && (!session.ssh || session.ssh.cwd !== scope.cwd)) throw new BrokerError('ssh_scope_mismatch');
   }

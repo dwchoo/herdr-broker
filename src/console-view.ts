@@ -38,6 +38,7 @@ export function receiptLabel(receipt: Control) {
   if (receipt.submission_state === 'unknown') return '입력 접수 미확정';
   if (receipt.submission_state === 'rejected') return '입력 거부';
   if (receipt.submission_state === 'dispatching') return '입력 제출 중';
+  if (receipt.operation === 'input') return '입력 접수 · 결과는 화면에서 확인';
   return receipt.operation === 'interrupt' ? '중단 입력 접수 · 종료 미확인' : '입력 접수 · 완료 관찰 중';
 }
 export function paneActivity(pane: ConsolePane) {

@@ -28,7 +28,7 @@ test('The project MCP skill opens one persistent Console and resumes its shared 
   assert.equal((await first.call('console_open', { label: 'accidental second' })).error, 'console_already_bound');
   const other = await h.connect();
   assert.equal((await other.call('console_attach', { console_id: created.console_id })).error, 'console_busy_or_disconnected');
-  const started = await first.call('job_start', { pane_id: paneId, objective: 'read shared output' });
+  const started = await first.call('job_start', { analysis: 'auto', pane_id: paneId, objective: 'read shared output' });
   await first.call('job_wait', { job_id: started.job_id, wait_ms: 1000 });
   first.close();
   await new Promise(resolve => setTimeout(resolve, 50));
@@ -53,7 +53,7 @@ test('Reattaching a stopped Console restarts its core and retains the same termi
   assert.deepEqual(resumed.panes, created.panes);
   assert.equal(h.cores.length, 2);
   assert.equal(h.calls.filter(call => call.method === 'workspace.create').length, 0);
-  const started = await first.call('job_start', { pane_id: resumed.panes[0].pane_id, objective: 'read after restart' });
+  const started = await first.call('job_start', { analysis: 'auto', pane_id: resumed.panes[0].pane_id, objective: 'read after restart' });
   const ready = await first.call('job_wait', { job_id: started.job_id, wait_ms: 1000 });
   const invalid = await first.call('job_status', { job_id: started.job_id, extra: true });
   assert.equal(invalid.error, 'invalid_tool_arguments');
@@ -70,7 +70,7 @@ test('Two Consoles own disjoint terminals and switching cannot bypass terminal s
   const foreignReads = () => h.calls.filter(call => call.params?.pane_id === b.panes[0].pane_id).length;
   const reads = foreignReads();
   assert.equal((await first.call('pane_describe', { pane_id: b.panes[0].pane_id })).error, 'pane_outside_console');
-  assert.equal((await first.call('job_start', { pane_id: b.panes[0].pane_id, objective: 'foreign' })).error, 'pane_outside_console');
+  assert.equal((await first.call('job_start', { analysis: 'auto', pane_id: b.panes[0].pane_id, objective: 'foreign' })).error, 'pane_outside_console');
   assert.equal(foreignReads(), reads);
   assert.equal((await first.call('console_attach', { console_id: b.console_id })).error, 'console_busy_or_disconnected');
   await first.call('console_attach', { console_id: a.console_id });
@@ -143,7 +143,7 @@ test('A Parent in another tab cannot attach and can still open a Console beside 
 test('Moving the Parent to another tab disconnects its Console and ends unsubmitted jobs', async t => {
   const h = await consoleHarness(t), client = await h.connect();
   const created = await client.call('console_open', { label: 'moved Parent' });
-  const started = await client.call('job_start', { pane_id: created.panes[0].pane_id, objective: 'observe beside Parent' });
+  const started = await client.call('job_start', { analysis: 'auto', pane_id: created.panes[0].pane_id, objective: 'observe beside Parent' });
   h.parent.tab_id = 'other-tab';
   assert.equal((await client.call('job_status', { job_id: started.job_id })).error, 'console_tab_required');
   await new Promise(resolve => setTimeout(resolve, 50));
@@ -179,7 +179,7 @@ test('A moved management pane does not transfer target scope or terminate the Pa
 test('A Parent moved while job_wait is capturing receives no Evidence and loses its connection', async t => {
   const h = await consoleHarness(t), client = await h.connect();
   const created = await client.call('console_open', { label: 'pending observation' });
-  const started = await client.call('job_start', { pane_id: created.panes[0].pane_id, objective: 'observe together' });
+  const started = await client.call('job_start', { analysis: 'auto', pane_id: created.panes[0].pane_id, objective: 'observe together' });
   const first = await client.call('job_wait', { job_id: started.job_id, wait_ms: 1000 });
   const entered = Promise.withResolvers(), release = Promise.withResolvers();
   h.state.beforeRead = async () => { entered.resolve(); await release.promise; };
@@ -197,7 +197,7 @@ for (const moving of ['Parent']) test(`Moving the ${moving} during Action baseli
   const record = await h.consoles.get(created.console_id);
   const described = await client.call('pane_describe', { pane_id: created.panes[0].pane_id });
   const objective = 'Print together', cwd = h.config.project;
-  const started = await client.call('job_start', { pane_id: described.target.pane_id, objective, action_scope: { profile: 'local_posix', cwd, paths: [cwd], trusted: true } });
+  const started = await client.call('job_start', { analysis: 'auto', pane_id: described.target.pane_id, objective, action_scope: { profile: 'local_posix', cwd, paths: [cwd], trusted: true } });
   await client.call('job_wait', { job_id: started.job_id, wait_ms: 1000 });
   const proposal = await client.call('action_propose', { job_id: started.job_id, target: described.target, objective, operation: 'execute', command: 'echo hello', cwd, env: {}, affected_paths: [cwd], risk: { classification: 'read', inspected: true, impact: 'Fixed terminal output', recovery: 'No persistent changes', uncertainties: [], categories: [] } });
   assert.ok(proposal.proposal_id, JSON.stringify(proposal));

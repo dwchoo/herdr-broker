@@ -109,7 +109,7 @@ export class Jobs {
         const retained = 2048 + 2 * Buffer.byteLength(snapshot.rows.join('\n')) + 128 * snapshot.rows.length + 2 * Buffer.byteLength(snapshot.text);
         this.reserve(retained);
         job.memory += retained;
-        const record: SnapshotRecord = { value: Object.freeze(snapshot), rowCount: snapshot.rows.length, cursor: randomUUID(), cursorExpires: this.now() + 60000, digest, scope, prepared: analysis === 'auto' && Buffer.byteLength(snapshot.text) <= 4096 };
+        const record: SnapshotRecord = { value: Object.freeze(snapshot), rowCount: snapshot.rows.length, cursor: randomUUID(), cursorExpires: this.now() + 60000, digest, scope, prepared: analysis === 'direct' || (analysis === 'auto' && Buffer.byteLength(snapshot.text) <= 4096) };
         job.snapshots.set(snapshot.metadata.snapshot_id, record);
         job.current = record;
       }
@@ -244,10 +244,11 @@ export class Jobs {
     }
     const view = { cursor: current.cursor, cursor_expires_at: new Date(current.cursorExpires).toISOString(), observation: { sequence: job.sequence, observed_at: new Date(job.observedAt!).toISOString() } };
     const snapshot = current.value;
+    const direct = job.analysis === 'direct' ? excerpt(snapshot.metadata.snapshot_id, snapshot.rows) : undefined;
     const citedRows = current.report ? [...new Set(current.report.findings.flatMap(finding => finding.evidence_ids))].map(id => Number(id.split(':L')[1]) - 1) : undefined;
     if (unchanged) return { ...base, ...view, delta: { kind: 'unchanged_view', snapshot_id: snapshot.metadata.snapshot_id, history_complete: false } };
     return { ...base, ...view, delta: { kind: 'replace', history_complete: false }, snapshot: snapshot.metadata,
-      ...((current.prepared || current.report) && { result: current.report ? { kind: 'worker_report', contract: 'diagnosis.v1', report: current.report } : { kind: 'prepared_context', text: snapshot.text }, evidence: excerpt(snapshot.metadata.snapshot_id, snapshot.rows, 0, 0, citedRows) }) };
+      ...((current.prepared || current.report) && { result: current.report ? { kind: 'worker_report', contract: 'diagnosis.v1', report: current.report } : { kind: 'prepared_context', text: direct ? direct.items.map(item => item.text).join('\n') : snapshot.text, ...(direct && { truncated: direct.truncated }) }, evidence: direct ?? excerpt(snapshot.metadata.snapshot_id, snapshot.rows, 0, 0, citedRows) }) };
   }
   private deliver(job: Job, waitTimedOut = false, body?: object, cursor?: string): string | null {
     if (job.noticeSent) return null;

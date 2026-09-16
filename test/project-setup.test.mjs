@@ -6,10 +6,10 @@ import { join } from 'node:path';
 
 async function fixture(t) {
   const root = await mkdtemp('/private/tmp/hb-setup-');
-  const project = join(root, 'project'), directory = join(project, '.agents/skills/herdr-broker/scripts');
+  const project = join(root, 'project'), directory = join(project, '.agents/skills/broker/scripts');
   await mkdir(directory, { recursive: true });
   const helper = join(directory, 'run.mjs');
-  await copyFile('.agents/skills/herdr-broker/scripts/run.mjs', helper);
+  await copyFile('.agents/skills/broker/scripts/run.mjs', helper);
   await mkdir(join(project, 'dist')); await writeFile(join(project, 'dist/cli.js'), '');
   t.after(() => rm(root, { recursive: true, force: true }));
   return { root, project, config: join(project, '.codex/config.toml'), run: () => spawnSync(process.execPath, [helper, 'setup'], { cwd: project, encoding: 'utf8', timeout: 5000 }) };

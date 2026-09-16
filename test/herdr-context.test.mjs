@@ -19,7 +19,7 @@ for (const command of ['--help', '--version']) test(`${command} remains availabl
 });
 
 test('The project skill refuses another project before starting a Parent', () => {
-  const result = spawnSync(process.execPath, [resolve('.agents/skills/herdr-broker/scripts/run.mjs'), 'parent'], {
+  const result = spawnSync(process.execPath, [resolve('.agents/skills/broker/scripts/run.mjs'), 'parent'], {
     cwd: tmpdir(), encoding: 'utf8', timeout: 10000,
   });
   assert.equal(result.status, 1);
@@ -29,7 +29,7 @@ test('The project skill refuses another project before starting a Parent', () =>
 
 test('The project skill refuses an outside Parent even in the right project', () => {
   const env = Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.startsWith('HERDR_')));
-  const result = spawnSync(process.execPath, ['.agents/skills/herdr-broker/scripts/run.mjs', 'parent'], {
+  const result = spawnSync(process.execPath, ['.agents/skills/broker/scripts/run.mjs', 'parent'], {
     env, encoding: 'utf8', timeout: 10000,
   });
   assert.equal(result.status, 1);

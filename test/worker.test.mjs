@@ -54,7 +54,7 @@ test('Large auto context uses the Worker and initial Evidence follows its cited 
   const text = [...Array.from({ length: 19 }, (_, index) => `unrelated ${index} ` + 'x'.repeat(240)), 'TS2305: missing export at the end'].join('\n');
   const h = await harness(t, { text, core: { worker: { executable: worker.executable } } });
   const client = await h.connect();
-  const start = await client.call('job_start', { pane_id: pane.pane_id, objective: 'diagnose the error at the end' });
+  const start = await client.call('job_start', { analysis: 'auto', pane_id: pane.pane_id, objective: 'diagnose the error at the end' });
   const ready = await client.call('job_wait', { job_id: start.job_id, wait_ms: 2000 });
   assert.equal(ready.result.kind, 'worker_report');
   assert.equal(ready.evidence.items[0].evidence_id, ready.result.report.findings[0].evidence_ids[0]);

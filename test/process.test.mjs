@@ -42,7 +42,7 @@ test('Console core survives facade exit, rejects a second process, and recovers 
   assert.equal((await client.listTools()).tools.length, 10);
   const described = await client.callTool({ name: 'pane_describe', arguments: { pane_id: pane.pane_id } });
   assert.equal(JSON.parse(described.content[0].text).target.pane_id, pane.pane_id);
-  const started = await client.callTool({ name: 'job_start', arguments: { pane_id: pane.pane_id, objective: 'process retention fixture' } });
+  const started = await client.callTool({ name: 'job_start', arguments: { analysis: 'auto', pane_id: pane.pane_id, objective: 'process retention fixture' } });
   const job = JSON.parse(started.content[0].text);
   const observed = await client.callTool({ name: 'job_wait', arguments: { job_id: job.job_id, wait_ms: 1000 } });
   const snapshot = JSON.parse(observed.content[0].text).snapshot;

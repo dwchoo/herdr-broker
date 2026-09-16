@@ -28,7 +28,7 @@ test('Authority loss during an asynchronous lookup prevents capture and prepared
     else socket.write(JSON.stringify(response) + '\n');
   } });
   const client = await h.connect();
-  const started = await client.call('job_start', { pane_id: pane.pane_id, objective: 'observe authority' });
+  const started = await client.call('job_start', { analysis: 'auto', pane_id: pane.pane_id, objective: 'observe authority' });
   await client.call('job_wait', { job_id: started.job_id, wait_ms: 10 });
   assert.ok(reply);
   const waiting = client.call('job_wait', { job_id: started.job_id, wait_ms: 500 });

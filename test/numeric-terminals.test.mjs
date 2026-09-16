@@ -141,7 +141,7 @@ test('Switch and detach are deferred while an Action is submitting and retain th
   const a=await client.call('console_open',{label:'작업 중'}), b=await h.consoles.create('다음');
   const described=await client.call('pane_describe',{pane_id:a.panes[0].pane_id});
   const objective='공유 출력', cwd=h.config.project;
-  const job=await client.call('job_start',{pane_id:a.panes[0].pane_id,objective,action_scope:{profile:'local_posix',cwd,paths:[cwd],trusted:true}});
+  const job=await client.call('job_start',{ analysis: 'auto',pane_id:a.panes[0].pane_id,objective,action_scope:{profile:'local_posix',cwd,paths:[cwd],trusted:true}});
   await client.call('job_wait',{job_id:job.job_id,wait_ms:1000});
   const proposal=await client.call('action_propose',{job_id:job.job_id,target:described.target,objective,operation:'execute',command:'echo hello',cwd,env:{},affected_paths:[cwd],risk:{classification:'read',inspected:true,impact:'Fixed text output',recovery:'No changes',uncertainties:[],categories:[]}});
   const entered=Promise.withResolvers(), release=Promise.withResolvers();

@@ -11,9 +11,13 @@ import { Sessions, targetSchema, targetOf, sameTarget, type Target } from './ses
 const text = z.string().min(1).max(1024);
 const riskSchema = z.strictObject({ classification: z.enum(['read', 'bounded_change', 'high', 'unknown']), inspected: z.boolean(), impact: text, recovery: text, uncertainties: z.array(text).max(5).describe('Unresolved safety, affected-scope or recovery risks. Command success is observed later and is not by itself a safety uncertainty. Never omit actual safety uncertainty to obtain automatic execution.'), categories: z.array(z.enum(['destructive', 'privilege', 'system_package', 'driver', 'kernel', 'disk', 'network', 'account', 'permissions', 'reboot', 'shutdown'])).max(12) });
 const declaredRisk = z.union([riskSchema, z.unknown()]).describe('Use the structured Parent assessment: classification, inspected, impact, recovery, uncertainties, categories. Invalid or missing assessments require user approval in mode 2.');
-export const proposalSchema = z.strictObject({ job_id: z.string().uuid(), target: targetSchema, objective: z.string().min(1).max(4096), operation: z.enum(['execute', 'interrupt']), command: z.string().min(1).max(4096).refine(value => !value.includes('\0')).optional(), original_proposal_id: z.string().uuid().optional(), cwd: z.string().min(1).max(4096), env: z.record(z.string().regex(/^[A-Za-z_][A-Za-z0-9_]{0,63}$/), z.string().max(1024).refine(value => !value.includes('\0'))).refine(value => Object.keys(value).length <= 16), affected_paths: z.array(z.string().min(1).max(4096)).min(1).max(16), risk: declaredRisk.optional() });
-type ProposalInput = z.infer<typeof proposalSchema>;
-interface Body { objective: string; payload: { text: string; keys: string[] }; risk: z.infer<typeof riskSchema> | null; affected_paths: string[]; cwd: string; env: Record<string, string> }
+const proposalBase = { job_id: z.string().uuid(), target: targetSchema, objective: z.string().min(1).max(4096), risk: declaredRisk.optional() };
+const inputProposal = z.strictObject({ ...proposalBase, operation: z.literal('input'), text: z.string().max(4096).refine(value => !value.includes('\0') && value.isWellFormed()), keys: z.array(z.string().min(1).max(64).regex(/^[\x20-\x7e]+$/)).max(16) }).refine(value => value.text.length > 0 || value.keys.length > 0);
+const shellProposal = z.strictObject({ ...proposalBase, operation: z.enum(['execute', 'interrupt']), command: z.string().min(1).max(4096).refine(value => !value.includes('\0')).optional(), original_proposal_id: z.string().uuid().optional(), cwd: z.string().min(1).max(4096), env: z.record(z.string().regex(/^[A-Za-z_][A-Za-z0-9_]{0,63}$/), z.string().max(1024).refine(value => !value.includes('\0'))).refine(value => Object.keys(value).length <= 16), affected_paths: z.array(z.string().min(1).max(4096)).min(1).max(16) });
+const proposalVariants = z.discriminatedUnion('operation', [inputProposal, shellProposal]);
+// MCP clients require an object at the tool schema root. Validate each operation's exact fields as well.
+export const proposalSchema = z.strictObject({ ...z.object(inputProposal.shape).partial().shape, ...shellProposal.partial().shape, ...proposalBase, operation: z.enum(['input', 'execute', 'interrupt']) }).refine(value => proposalVariants.safeParse(value).success);
+interface Body { objective: string; payload: { text: string; keys: string[] }; risk: z.infer<typeof riskSchema> | null; affected_paths?: string[]; cwd?: string; env?: Record<string, string> }
 interface Proposal { id: string; job: string; owner: string; session: string; revision: number; target: Target; operation: Control['operation']; original: string | null; digest: string; nonce: string; body?: Body; approval?: { issued: number; expires: number; revision: number; digest: string }; rejected: boolean; receipt?: Control; controlReserved?: boolean; submittedAt?: number; evidence?: ReturnType<typeof excerpt>; observation?: { method: string; truncated: boolean; baseline_digest: string } }
 const quote = (value: string) => `'${value.replaceAll("'", "'\\''")}'`;
 const within = (value: string, roots: string[]) => value.startsWith('/') && posix.normalize(value) === value && !value.includes('\0') && roots.some(root => value === root || value.startsWith(root === '/' ? '/' : root + '/'));
@@ -29,7 +33,8 @@ export class Actions {
   private readonly stop = new AbortController();
   private readonly now: () => number;
   constructor(private readonly herdr: Herdr, private readonly jobs: Jobs, private readonly sessions: Sessions, private readonly options: ActionOptions) { this.now = options.now ?? Date.now; }
-  async propose(owner: string, input: ProposalInput) {
+  async propose(owner: string, raw: z.infer<typeof proposalSchema>) {
+    const input = proposalVariants.parse(raw);
     const job = this.jobs.actionContext(owner, input.job_id);
     if (!job.active) throw new BrokerError('job_ended');
     if (!job.scope) throw new BrokerError('action_scope_required');
@@ -37,18 +42,27 @@ export class Actions {
     const pane = await this.herdr.describe(job.pane_id, job.signal);
     const session = await this.sessions.observe(pane, job.signal, true);
     if (session.id !== job.session || !sameTarget(targetOf(pane), input.target)) throw new BrokerError('target_changed');
-    if (input.operation === 'execute' && !this.sessions.ready(session)) throw new BrokerError('shell_not_ready');
-    this.sessions.checkScope(session, job.scope);
-    if (!within(input.cwd, [job.scope.cwd]) || !input.affected_paths.every(path => within(path, job.scope!.paths))) throw new BrokerError('outside_scope');
-    if (input.operation === 'execute' ? !input.command || input.original_proposal_id : input.command !== undefined || Object.keys(input.env).length) throw new BrokerError('invalid_operation');
-    if (input.operation === 'interrupt') this.options.ledger.requireInterruptTarget(input.original_proposal_id, session.target.terminal_id, session.id);
-    if ([input.command ?? '', input.cwd, ...Object.values(input.env)].some(value => /[\u0000-\u0009\u000b-\u001f\u007f-\u009f]/.test(value))) throw new BrokerError('terminal_control_unsupported');
     const parsed = riskSchema.safeParse(input.risk);
     const nonce = randomBytes(16).toString('hex');
-    const script = `cd ${quote(input.cwd)} && /usr/bin/env -i PATH=/usr/bin:/bin:/usr/sbin:/sbin ${Object.entries(input.env).map(([key, value]) => quote(`${key}=${value}`)).join(' ')} /bin/sh -c ${quote(input.command ?? '')}`;
-    const wrapper = `printf '\\n__HERDR_%s_%s__\\n' BEGIN ${quote(nonce)}; ( ${script}\n); herdr_broker_exit=$?; printf '\\n__HERDR_%s_%s__:%s\\n' END ${quote(nonce)} "$herdr_broker_exit"; exit "$herdr_broker_exit"`;
-    const body: Body = { objective: input.objective, payload: input.operation === 'interrupt' ? { text: '', keys: ['Ctrl+c'] } : { text: `/bin/sh -c ${quote(wrapper)}`, keys: ['Enter'] }, risk: parsed.success ? parsed.data : null, affected_paths: input.affected_paths, cwd: input.cwd, env: input.env };
-    const original = input.original_proposal_id ?? null;
+    let body: Body;
+    let original: string | null = null;
+    if (input.operation === 'input') {
+      if (job.scope.profile !== 'terminal') throw new BrokerError('profile_mismatch');
+      body = { objective: input.objective, payload: { text: input.text, keys: input.keys }, risk: parsed.success ? parsed.data : null };
+    } else {
+      const scope = job.scope;
+      if (scope.profile === 'terminal') throw new BrokerError('profile_mismatch');
+      if (input.operation === 'execute' && !this.sessions.ready(session)) throw new BrokerError('shell_not_ready');
+      this.sessions.checkScope(session, scope);
+      if (!within(input.cwd, [scope.cwd]) || !input.affected_paths.every(path => within(path, scope.paths))) throw new BrokerError('outside_scope');
+      if (input.operation === 'execute' ? !input.command || input.original_proposal_id : input.command !== undefined || Object.keys(input.env).length) throw new BrokerError('invalid_operation');
+      if (input.operation === 'interrupt') this.options.ledger.requireInterruptTarget(input.original_proposal_id, session.target.terminal_id, session.id);
+      if ([input.command ?? '', input.cwd, ...Object.values(input.env)].some(value => /[\u0000-\u0009\u000b-\u001f\u007f-\u009f]/.test(value))) throw new BrokerError('terminal_control_unsupported');
+      const script = `cd ${quote(input.cwd)} && /usr/bin/env -i PATH=/usr/bin:/bin:/usr/sbin:/sbin ${Object.entries(input.env).map(([key, value]) => quote(`${key}=${value}`)).join(' ')} /bin/sh -c ${quote(input.command ?? '')}`;
+      const wrapper = `printf '\\n__HERDR_%s_%s__\\n' BEGIN ${quote(nonce)}; ( ${script}\n); herdr_broker_exit=$?; printf '\\n__HERDR_%s_%s__:%s\\n' END ${quote(nonce)} "$herdr_broker_exit"; exit "$herdr_broker_exit"`;
+      body = { objective: input.objective, payload: input.operation === 'interrupt' ? { text: '', keys: ['Ctrl+c'] } : { text: `/bin/sh -c ${quote(wrapper)}`, keys: ['Enter'] }, risk: parsed.success ? parsed.data : null, affected_paths: input.affected_paths, cwd: input.cwd, env: input.env };
+      original = input.original_proposal_id ?? null;
+    }
     const proposal: Proposal = { id: randomUUID(), job: job.id, owner, session: session.id, revision: session.revision, target: session.target, operation: input.operation, original, nonce, body, digest: createHash('sha256').update(JSON.stringify([session.id, session.revision, job.id, session.target, input.operation, original, body])).digest('hex'), rejected: false };
     this.jobs.retainAction(owner, job.id, 4 * Buffer.byteLength(JSON.stringify(body)), 1024 + 2 * Buffer.byteLength(JSON.stringify({ ...proposal, body: undefined })), () => { delete proposal.body; delete proposal.approval; delete proposal.evidence; });
     this.proposals.set(proposal.id, proposal);
@@ -112,14 +126,14 @@ export class Actions {
     const job = this.jobs.actionContext(proposal.owner, proposal.job);
     this.allowed(proposal);
     const pane = await this.herdr.describe(proposal.target.pane_id, job.signal);
-    const baseline = await this.herdr.capture(pane, job.signal, 'recent_unwrapped');
+    const baseline = proposal.operation === 'execute' ? await this.herdr.capture(pane, job.signal, 'recent_unwrapped') : undefined;
     const verified = await this.herdr.describe(proposal.target.pane_id, job.signal);
     const session = await this.sessions.observe(verified, job.signal, true);
     if (!sameTarget(targetOf(pane), proposal.target) || !sameTarget(targetOf(verified), proposal.target) || session.id !== proposal.session) throw new BrokerError('target_changed');
     if (proposal.operation === 'execute' && !this.sessions.ready(session)) throw new BrokerError('shell_not_ready');
     if (verifyParent) await verifyParent();
     this.allowed(proposal);
-    if (proposal.operation === 'execute' && baseline.text.includes(proposal.nonce)) throw new BrokerError('baseline_marker_conflict');
+    if (proposal.operation === 'execute' && baseline!.text.includes(proposal.nonce)) throw new BrokerError('baseline_marker_conflict');
     const payload = proposal.body!.payload;
     const bytes = Buffer.byteLength(JSON.stringify(payload));
     this.jobs.actionBudget(proposal.owner, proposal.job, bytes);
@@ -129,7 +143,7 @@ export class Actions {
     }
     const created = this.now();
     const authorization = this.decision(proposal).authorization;
-    const receipt: Control = { proposal_id: proposal.id, job_id: proposal.job, pane_session_id: proposal.session, terminal_id: proposal.target.terminal_id, payload_digest: proposal.digest, mode_revision: proposal.revision, operation: proposal.operation, original_proposal_id: proposal.original, authorization, approval_expires: proposal.approval?.expires ?? null, approval_consumed: authorization === 'user_approval', submission_state: 'dispatching', observation_state: proposal.operation === 'execute' ? 'observing' : 'not_applicable', exit_code: null, created_at: created, updated_at: created, hold_reason: proposal.operation === 'execute' ? 'awaiting_outcome' : null, recovery: null };
+    const receipt: Control = { proposal_id: proposal.id, job_id: proposal.job, pane_session_id: proposal.session, terminal_id: proposal.target.terminal_id, payload_digest: proposal.digest, mode_revision: proposal.revision, operation: proposal.operation, original_proposal_id: proposal.original, authorization, approval_expires: proposal.approval?.expires ?? null, approval_consumed: authorization === 'user_approval', submission_state: 'dispatching', observation_state: proposal.operation === 'execute' ? 'observing' : 'not_applicable', exit_code: null, created_at: created, updated_at: created, hold_reason: proposal.operation === 'execute' ? 'awaiting_outcome' : proposal.operation === 'input' ? 'awaiting_ack' : null, recovery: null };
     const intent = this.options.ledger.intent(receipt);
     proposal.receipt = intent.control;
     if (!intent.fresh) return this.view(proposal);
@@ -137,7 +151,7 @@ export class Actions {
     this.jobs.actionBudget(proposal.owner, proposal.job, bytes, true);
     delete proposal.approval;
     this.options.fault?.('after_intent');
-    if (proposal.operation === 'execute') proposal.observation = { method: 'bounded_passive_marker', truncated: baseline.truncated, baseline_digest: createHash('sha256').update(baseline.text).digest('hex') };
+    if (proposal.operation === 'execute') proposal.observation = { method: 'bounded_passive_marker', truncated: baseline!.truncated, baseline_digest: createHash('sha256').update(baseline!.text).digest('hex') };
     this.options.fault?.('before_wire');
     proposal.submittedAt = Date.now();
     try {
@@ -157,8 +171,9 @@ export class Actions {
       }, onLateAck: () => {
         if (receipt.submission_state !== 'unknown') return;
         receipt.submission_state = 'accepted'; receipt.updated_at = this.now();
-        if (receipt.hold_reason === 'submission_unknown') receipt.hold_reason = 'awaiting_outcome';
-        try { this.options.ledger.update(receipt); } catch { receipt.hold_reason = 'ledger_write_failed'; }
+        if (proposal.operation === 'input') receipt.hold_reason = null;
+        else if (receipt.hold_reason === 'submission_unknown') receipt.hold_reason = 'awaiting_outcome';
+        try { this.options.ledger.update(receipt, proposal.operation === 'input'); } catch { receipt.hold_reason = 'ledger_write_failed'; }
       } });
       await sent;
       receipt.submission_state = 'accepted';
@@ -170,11 +185,13 @@ export class Actions {
     }
     this.options.fault?.('before_ack_record');
     receipt.updated_at = this.now();
-    try { this.options.ledger.update(receipt, receipt.submission_state === 'rejected'); }
+    const inputAccepted = proposal.operation === 'input' && receipt.submission_state === 'accepted';
+    if (inputAccepted) receipt.hold_reason = null;
+    try { this.options.ledger.update(receipt, receipt.submission_state === 'rejected' || inputAccepted); }
     catch { receipt.hold_reason = 'ledger_write_failed'; receipt.observation_state = proposal.operation === 'execute' ? 'outcome_unknown' : 'not_applicable'; return this.view(proposal); }
     this.options.fault?.('after_ack_record');
     if (receipt.submission_state !== 'rejected' && proposal.operation === 'execute') {
-      const observing = this.observe(proposal, job.scope?.trusted === true);
+      const observing = this.observe(proposal, job.scope?.profile !== 'terminal' && job.scope?.trusted === true);
       this.observers.add(observing);
       void observing.finally(() => this.observers.delete(observing));
     }
@@ -284,7 +301,8 @@ export class Actions {
     if (!objective.trim() || objective.length > 512 || /[\u0000-\u001f\u007f-\u009f]/.test(objective)) throw new BrokerError('invalid_objective');
     const current = await this.inspect(inspected.target.pane_id);
     if (!sameTarget(inspected.target, current.target) || inspected.pane_session_id !== current.pane_session_id || inspected.mode_revision !== current.mode_revision || inspected.held_proposal_id !== id || current.held_proposal_id !== id) throw new BrokerError('inspect_stale');
-    if (!inspected.shell_ready || !current.shell_ready) throw new BrokerError('shell_not_ready');
+    const held = this.options.ledger.get(id);
+    if (held?.operation !== 'input' && (!inspected.shell_ready || !current.shell_ready)) throw new BrokerError('shell_not_ready');
     if (this.wires.has(current.target.terminal_id)) throw new BrokerError('submission_in_progress');
     const session = this.sessions.get(current.pane_session_id);
     this.jobs.stopPane(current.target.pane_id);
@@ -295,7 +313,7 @@ export class Actions {
     if (proposal?.receipt) Object.assign(proposal.receipt, receipt);
     return { ...receipt, new_job_required: true, pane_session_id: current.pane_session_id, mode_revision: session.revision };
   }
-  budget(jobId: string) { return { ordinary_attempts_remaining: Math.max(0, 3 - this.options.ledger.count(jobId, 'execute')), interrupt_attempts_remaining: Math.max(0, 1 - this.options.ledger.count(jobId, 'interrupt')) }; }
+  budget(jobId: string) { return { ordinary_attempts_remaining: Math.max(0, 3 - this.options.ledger.ordinaryCount(jobId)), interrupt_attempts_remaining: Math.max(0, 1 - this.options.ledger.count(jobId, 'interrupt')) }; }
   summary() { return { ...this.options.ledger.summary(), proposals: [...this.proposals.values()].slice(-32).map(proposal => ({ ...this.view(proposal), evidence: undefined })) }; }
   consoleProposals(activeJobs: ReadonlySet<string>) {
     return [...this.proposals.values()].filter(proposal => !proposal.receipt && activeJobs.has(proposal.job)).map(proposal => this.view(proposal, true));

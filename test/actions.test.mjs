@@ -129,7 +129,7 @@ test('Approval expires no later than the original job deadline and cannot be tra
 test('Large scope, Session metadata and purged proposal records remain inside the shared memory budget', async t => {
   const h = await actionHarness(t, { core: { memoryLimit: 20000 } }), client = await h.connect();
   const huge = '/' + 'a'.repeat(3500);
-  const refused = await client.call('job_start', { pane_id: pane.pane_id, objective: 'diagnose', action_scope: { ...scope, paths: Array(16).fill(huge) } });
+  const refused = await client.call('job_start', { analysis: 'auto', pane_id: pane.pane_id, objective: 'diagnose', action_scope: { ...scope, paths: Array(16).fill(huge) } });
   assert.equal(refused.error, 'memory_budget_exhausted');
   const ready = await job(client);
   assert.ok(h.core.summary().memory_bytes <= 20000);
@@ -155,7 +155,7 @@ test('Cancelling a pending process observation cannot reset a live session from 
     if (request.method === 'pane.process_info') { blocked = true; return; }
     socket.write(JSON.stringify(response) + '\n');
   };
-  const pending = await client.call('job_start', { pane_id: pane.pane_id, objective: 'diagnose', action_scope: scope });
+  const pending = await client.call('job_start', { analysis: 'auto', pane_id: pane.pane_id, objective: 'diagnose', action_scope: scope });
   for (let n = 0; !blocked && n < 100; n++) await new Promise(resolve => setTimeout(resolve, 2));
   assert.ok(blocked);
   await client.call('job_cancel', { job_id: pending.job_id });
@@ -168,7 +168,7 @@ test('Cancelling a pending process observation cannot reset a live session from 
 test('Objective redaction preserves the original exact goal binding for proposals', async t => {
   const h = await actionHarness(t, { core: { redactionPatterns: ['private-project'] } }), client = await h.connect();
   const objective = 'repair private-project build';
-  const start = await client.call('job_start', { pane_id: pane.pane_id, objective, action_scope: scope });
+  const start = await client.call('job_start', { analysis: 'auto', pane_id: pane.pane_id, objective, action_scope: scope });
   await client.call('job_wait', { job_id: start.job_id, wait_ms: 1000 });
   const same = await client.call('action_propose', { ...action(start.job_id), objective });
   assert.ok(same.proposal_id, JSON.stringify(same));

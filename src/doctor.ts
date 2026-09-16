@@ -45,5 +45,5 @@ export async function doctor(options: CoreOptions) {
   try { await new CodexWorker(options.worker).check(); worker = { ok: true, ...workerProfile, profile: 'restricted_diagnosis', model_availability: 'not_probed', inference_performed: false }; }
   catch (error) { worker = { ok: false, error: reason(error), expected_cli_version: workerProfile.cli_version, model_availability: 'not_probed' }; }
   const storage = await state(options);
-  return { ok: runtime.supported && herdr.ok && worker.ok && storage.ok, runtime, herdr, worker, state: storage, profiles: { passive: herdr.ok, local_posix: herdr.ok, ssh_posix: herdr.ok, ssh_readiness: 'interactive_confirmation_required' }, limits: { parent_payload_bytes: 16384, worker_calls: 4, ordinary_actions: 3, interrupts: 1 }, privacy: { mode: 'broker_memory', complete_no_store: false }, pane_input_attempts: 0 };
+  return { ok: runtime.supported && herdr.ok && worker.ok && storage.ok, runtime, herdr, worker, state: storage, profiles: { passive: herdr.ok, terminal: herdr.ok, local_posix: herdr.ok, ssh_posix: herdr.ok, ssh_readiness: 'interactive_confirmation_required' }, limits: { parent_payload_bytes: 16384, worker_calls: 4, ordinary_actions: 3, interrupts: 1 }, privacy: { mode: 'broker_memory', complete_no_store: false }, pane_input_attempts: 0 };
 }

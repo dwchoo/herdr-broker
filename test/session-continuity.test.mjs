@@ -25,7 +25,7 @@ test('A changed SSH connection creates mode 2 and cannot resume the old job or p
   assert.equal(second.action_mode, 2);
   assert.notEqual(second.pane_session_id, first.pane_session_id);
   const description = await client.call('pane_describe', { pane_id: pane.pane_id });
-  assert.equal(description.action_supported, false);
+  assert.equal(description.shell_action_supported, false);
   assert.equal(description.observed_connection.kind, 'ssh');
   assert.equal(description.observed_connection.remote_identity_authenticated, false);
   assert.ok(!JSON.stringify(description).includes('fixture-b'));
@@ -71,7 +71,7 @@ test('Ordinary foreground commands preserve the local session; SSH entry and exi
   const busy = await client.call('pane_describe', { pane_id: pane.pane_id });
   assert.equal(busy.pane_session_id, first.pane_session_id);
   assert.equal(busy.action_mode, 3);
-  assert.equal(busy.action_supported, false);
+  assert.equal(busy.shell_action_supported, false);
   foreground = processInfo;
   assert.equal((await job(client)).pane_session_id, first.pane_session_id);
   foreground = { ...processInfo, foreground_process_group_id: 1200, foreground_processes: [{ pid: 1200, name: 'ssh', argv: ['ssh', 'fixture'] }] };
@@ -181,5 +181,5 @@ test('An SSH transport child of local git preserves its local session and mode',
   assert.equal(busy.pane_session_id, first.pane_session_id);
   assert.equal(busy.action_mode, 1);
   assert.equal(busy.observed_connection.kind, 'local');
-  assert.equal(busy.action_supported, false);
+  assert.equal(busy.shell_action_supported, false);
 });

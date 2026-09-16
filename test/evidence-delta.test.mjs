@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { harness, pane } from './harness.mjs';
 
 async function observe(client, objective = 'diagnose fixture') {
-  const start = await client.call('job_start', { pane_id: pane.pane_id, objective });
+  const start = await client.call('job_start', { analysis: 'auto', pane_id: pane.pane_id, objective });
   return client.call('job_wait', { job_id: start.job_id, wait_ms: 1000 });
 }
 
@@ -224,7 +224,7 @@ test('Memory pressure removes ended bodies before refusing active data and never
   assert.equal((await client.call('job_status', { job_id: first.job_id })).data_state, 'evicted');
   const id = `${first.snapshot.snapshot_id}:L0001`;
   assert.equal((await client.call('evidence_get', { job_id: first.job_id, evidence_id: id })).error, 'evidence_expired');
-  assert.equal((await client.call('job_start', { pane_id: pane.pane_id, objective: 'active overflow' })).error, 'memory_budget_exhausted');
+  assert.equal((await client.call('job_start', { analysis: 'auto', pane_id: pane.pane_id, objective: 'active overflow' })).error, 'memory_budget_exhausted');
   const purged = await console('purge all');
   assert.equal(purged.purged_job_count, 2);
   assert.equal((await client.call('job_status', { job_id: second.job_id })).data_state, 'purged');

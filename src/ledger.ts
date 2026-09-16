@@ -9,7 +9,7 @@ export type Submission = 'dispatching' | 'accepted' | 'rejected' | 'unknown';
 export type Observation = 'not_started' | 'observing' | 'completion_observed' | 'outcome_unknown' | 'not_applicable';
 export interface Control {
   proposal_id: string; job_id: string; pane_session_id: string; terminal_id: string;
-  payload_digest: string; mode_revision: number; operation: 'execute' | 'interrupt';
+  payload_digest: string; mode_revision: number; operation: 'input' | 'execute' | 'interrupt';
   original_proposal_id: string | null;
   authorization: string; approval_expires: number | null; approval_consumed: boolean;
   submission_state: Submission; observation_state: Observation; exit_code: number | null;
@@ -121,6 +121,7 @@ export class Ledger {
     return (this.db.prepare('SELECT proposal FROM holds WHERE terminal = ?').get(terminal) as { proposal: string } | undefined)?.proposal;
   }
   count(job: string, operation: string) { return (this.db.prepare('SELECT count(*) AS n FROM intents WHERE job = ? AND operation = ?').get(job, operation) as { n: number }).n; }
+  ordinaryCount(job: string) { return this.count(job, 'input') + this.count(job, 'execute'); }
   requireInterruptTarget(id: string | undefined, terminal: string, session: string) {
     const original = id ? this.get(id) : undefined;
     if (!original || original.operation !== 'execute' || original.terminal_id !== terminal || original.pane_session_id !== session || this.held(terminal) !== id || !['observing', 'outcome_unknown'].includes(original.observation_state)) throw new BrokerError('original_action_unavailable');
@@ -136,12 +137,12 @@ export class Ledger {
           return { fresh: false, control: existing };
         }
         if (this.db.prepare('SELECT id FROM consumed WHERE id = ?').get(control.proposal_id)) throw new BrokerError('proposal_consumed');
-        if (control.operation === 'execute' && this.held(control.terminal_id)) throw new BrokerError('terminal_held');
+        if (control.operation !== 'interrupt' && this.held(control.terminal_id)) throw new BrokerError('terminal_held');
         if (control.operation === 'interrupt') this.requireInterruptTarget(control.original_proposal_id ?? undefined, control.terminal_id, control.pane_session_id);
-        if (this.count(control.job_id, control.operation) >= (control.operation === 'execute' ? 3 : 1)) throw new BrokerError('action_budget_exhausted');
+        if (control.operation === 'interrupt' ? this.count(control.job_id, 'interrupt') >= 1 : this.ordinaryCount(control.job_id) >= 3) throw new BrokerError('action_budget_exhausted');
         this.db.prepare('INSERT INTO intents VALUES (?, ?, ?, ?, ?, ?)').run(control.proposal_id, control.job_id, control.terminal_id, control.operation, control.updated_at, JSON.stringify(control));
         this.db.prepare('INSERT INTO consumed VALUES (?, ?)').run(control.proposal_id, control.payload_digest);
-        if (control.operation === 'execute') this.db.prepare('INSERT INTO holds VALUES (?, ?)').run(control.terminal_id, control.proposal_id);
+        if (control.operation !== 'interrupt') this.db.prepare('INSERT INTO holds VALUES (?, ?)').run(control.terminal_id, control.proposal_id);
         this.fault('in_transaction'); this.verify();
         return { fresh: true, control };
       });
@@ -166,7 +167,7 @@ export class Ledger {
   recover(id: string, terminal: string) {
     const receipt = this.get(id);
     if (!receipt || this.held(terminal) !== id || receipt.terminal_id !== terminal) throw new BrokerError('hold_changed');
-    receipt.recovery = 'user_verified_ready_shell'; receipt.hold_reason = null; receipt.updated_at = this.now();
+    receipt.recovery = receipt.operation === 'input' ? 'user_verified_input_target' : 'user_verified_ready_shell'; receipt.hold_reason = null; receipt.updated_at = this.now();
     if (receipt.observation_state === 'observing') receipt.observation_state = 'outcome_unknown';
     this.update(receipt, true);
     return receipt;

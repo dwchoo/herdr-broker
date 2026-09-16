@@ -16,26 +16,26 @@ async function ssh(t, { enabled = true, tty = true } = {}) {
   return { h, state, terminal, client };
 }
 
-test('An unconfirmed SSH shell remains passive; current interactive confirmation binds profile and cwd', async t => {
+test('Unconfirmed SSH offers generic terminal input; legacy wrapper current interactive confirmation binds profile and cwd', async t => {
   const { h, terminal, client } = await ssh(t);
   const before = await client.call('pane_describe', { pane_id: pane.pane_id });
-  assert.deepEqual(before.supported_profiles, ['passive']);
+  assert.deepEqual(before.supported_profiles, ['passive', 'terminal']);
   const scopeSSH = { ...scope, profile: 'ssh_posix' };
-  const start = await client.call('job_start', { pane_id: pane.pane_id, objective: 'diagnose', action_scope: scopeSSH });
+  const start = await client.call('job_start', { analysis: 'auto', pane_id: pane.pane_id, objective: 'diagnose', action_scope: scopeSSH });
   await client.call('job_wait', { job_id: start.job_id, wait_ms: 1000 });
   assert.equal((await client.call('action_propose', action(start.job_id))).error, 'shell_not_ready');
   assert.equal((await terminal.command(`ssh-ready ${before.pane_session_id} /fixture`)).error, 'inspect_required');
   await terminal.command(`inspect ${pane.pane_id}`);
   assert.equal((await terminal.command(`ssh-ready ${before.pane_session_id} /fixture`)).shell_ready, true);
   const after = await client.call('pane_describe', { pane_id: pane.pane_id });
-  assert.deepEqual(after.supported_profiles, ['passive', 'ssh_posix']);
+  assert.deepEqual(after.supported_profiles, ['passive', 'terminal', 'ssh_posix']);
   assert.equal(after.observed_connection.remote_identity_authenticated, false);
   const proposed = await client.call('action_propose', action(start.job_id));
   assert.ok(proposed.proposal_id, JSON.stringify(proposed));
-  const local = await client.call('job_start', { pane_id: pane.pane_id, objective: 'diagnose', action_scope: scope });
+  const local = await client.call('job_start', { analysis: 'auto', pane_id: pane.pane_id, objective: 'diagnose', action_scope: scope });
   await client.call('job_wait', { job_id: local.job_id, wait_ms: 1000 });
   assert.equal((await client.call('action_propose', action(local.job_id))).error, 'profile_mismatch');
-  const wrong = await client.call('job_start', { pane_id: pane.pane_id, objective: 'diagnose', action_scope: { ...scopeSSH, cwd: '/fixture/other' } });
+  const wrong = await client.call('job_start', { analysis: 'auto', pane_id: pane.pane_id, objective: 'diagnose', action_scope: { ...scopeSSH, cwd: '/fixture/other' } });
   await client.call('job_wait', { job_id: wrong.job_id, wait_ms: 1000 });
   assert.equal((await client.call('action_propose', { ...action(wrong.job_id), cwd: '/fixture/other' })).error, 'ssh_scope_mismatch');
   assert.equal(h.calls.filter(call => call.method === 'pane.send_input').length, 0);
@@ -51,7 +51,7 @@ test('SSH reconnect invalidates inspected readiness, approvals and inherited mod
   assert.equal((await terminal.command(`ssh-ready ${before.pane_session_id} /fixture`)).error, 'target_changed');
   const after = await client.call('pane_describe', { pane_id: pane.pane_id });
   assert.equal(after.action_mode, 2);
-  assert.deepEqual(after.supported_profiles, ['passive']);
+  assert.deepEqual(after.supported_profiles, ['passive', 'terminal']);
   assert.equal(h.calls.filter(call => call.method === 'pane.send_input').length, 0);
 });
 

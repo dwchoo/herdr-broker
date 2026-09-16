@@ -10,7 +10,7 @@ import { pane, connect } from './harness.mjs';
 import { consoleProcess } from './console-harness.mjs';
 
 async function proposal(h, client) {
-  const initial = await client.call('job_start', { pane_id: pane.pane_id, objective: 'diagnose', action_scope: { ...scope, cwd: h.root, paths: [h.root] } });
+  const initial = await client.call('job_start', { analysis: 'auto', pane_id: pane.pane_id, objective: 'diagnose', action_scope: { ...scope, cwd: h.root, paths: [h.root] } });
   const job = await client.call('job_wait', { job_id: initial.job_id, wait_ms: 1000 });
   return { job, proposal: await client.call('action_propose', { ...action(job.job_id), command: ':', cwd: h.root, affected_paths: [h.root] }) };
 }
@@ -237,7 +237,7 @@ test('Console bounds held-terminal listings while preserving every durable hold'
   const console = await consoleProcess(t, h, { observationMs: 100 }), client = await connect(console.ready.socket, t);
   for (let index = 0; index < 40; index++) {
     target = { ...pane, terminal_id: `terminal-${index}` };
-    const initial = await client.call('job_start', { pane_id: pane.pane_id, objective: 'diagnose', action_scope: { ...scope, cwd: h.root, paths: [h.root] } });
+    const initial = await client.call('job_start', { analysis: 'auto', pane_id: pane.pane_id, objective: 'diagnose', action_scope: { ...scope, cwd: h.root, paths: [h.root] } });
     await client.call('job_wait', { job_id: initial.job_id, wait_ms: 1000 });
     const proposal = await client.call('action_propose', { ...action(initial.job_id), command: ':', target: { ...action(initial.job_id).target, terminal_id: target.terminal_id }, cwd: h.root, affected_paths: [h.root] });
     assert.equal((await client.call('action_submit', { proposal_id: proposal.proposal_id })).submission_state, 'accepted');

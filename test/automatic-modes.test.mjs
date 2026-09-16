@@ -8,7 +8,7 @@ import { executingHarness } from './execution-harness.mjs';
 import { consoleProcess } from './console-harness.mjs';
 
 async function start(client, h, trusted = true) {
-  const initial = await client.call('job_start', { pane_id: pane.pane_id, objective: 'diagnose', action_scope: { ...scope, cwd: h.root, paths: [h.root], trusted } });
+  const initial = await client.call('job_start', { analysis: 'auto', pane_id: pane.pane_id, objective: 'diagnose', action_scope: { ...scope, cwd: h.root, paths: [h.root], trusted } });
   return client.call('job_wait', { job_id: initial.job_id, wait_ms: 1000 });
 }
 const input = (h, job, overrides = {}) => ({ ...action(job.job_id), command: ':', cwd: h.root, affected_paths: [h.root], ...overrides });

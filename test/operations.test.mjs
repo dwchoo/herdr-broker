@@ -63,7 +63,7 @@ test('Doctor reports unsafe state permissions instead of repairing or printing d
 test('Interactive status exposes session, approval and remaining budgets without command or Evidence bodies', async t => {
   const h = await harness(t, { text: 'PRIVATE_SYNTHETIC_DIAGNOSTIC' });
   const terminal = await consoleProcess(t, h), client = await connect(terminal.ready.socket, t);
-  const start = await client.call('job_start', { pane_id: pane.pane_id, objective: 'diagnose', action_scope: scope });
+  const start = await client.call('job_start', { analysis: 'auto', pane_id: pane.pane_id, objective: 'diagnose', action_scope: scope });
   const ready = await client.call('job_wait', { job_id: start.job_id, wait_ms: 1000 });
   await terminal.command(`mode ${ready.snapshot.pane_session_id} 1`);
   const proposal = await client.call('action_propose', { ...action(start.job_id), command: 'echo PRIVATE_COMMAND_BODY' });
@@ -87,7 +87,7 @@ test('Default 64 MiB accounting rejects active-only pressure and explicit purge 
   const terminal = await consoleProcess(t, h), client = await connect(terminal.ready.socket, t);
   let refused, first;
   for (let index = 0; index < 500; index++) {
-    const start = await client.call('job_start', { pane_id: pane.pane_id, objective: 'pressure' });
+    const start = await client.call('job_start', { analysis: 'auto', pane_id: pane.pane_id, objective: 'pressure' });
     if (start.error) { refused = start; break; }
     const ready = await client.call('job_wait', { job_id: start.job_id, wait_ms: 1000 });
     first ??= ready;
@@ -104,7 +104,7 @@ test('Default 64 MiB accounting rejects active-only pressure and explicit purge 
   assert.ok(after.memory_bytes < full.memory_bytes / 2);
   const expired = await client.call('evidence_get', { job_id: first.job_id, evidence_id: `${first.snapshot.snapshot_id}:L0001` });
   assert.equal(expired.error, 'evidence_expired');
-  const fresh = await client.call('job_start', { pane_id: pane.pane_id, objective: 'after purge' });
+  const fresh = await client.call('job_start', { analysis: 'auto', pane_id: pane.pane_id, objective: 'after purge' });
   assert.equal((await client.call('job_wait', { job_id: fresh.job_id, wait_ms: 1000 })).result?.kind, 'prepared_context');
 });
 

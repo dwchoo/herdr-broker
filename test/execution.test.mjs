@@ -102,7 +102,7 @@ test('ACK loss preserves unknown submission even when completion is later observ
 test('A held terminal blocks another approved job and cancellation after acceptance sends no Ctrl-C', async t => {
   const h = await executingHarness(t), { console, client, job, proposal } = await approved(t, h, 'sleep 0.3; exit 0');
   const other = await connect(console.ready.socket, t);
-  const start = await other.call('job_start', { pane_id: pane.pane_id, objective: 'diagnose', action_scope: { ...scope, cwd: h.root, paths: [h.root] } });
+  const start = await other.call('job_start', { analysis: 'auto', pane_id: pane.pane_id, objective: 'diagnose', action_scope: { ...scope, cwd: h.root, paths: [h.root] } });
   await other.call('job_wait', { job_id: start.job_id, wait_ms: 1000 });
   const next = await other.call('action_propose', { ...action(start.job_id), cwd: h.root, affected_paths: [h.root] });
   await console.command(`review ${next.proposal_id}`); await console.command(`approve ${next.proposal_id}`);
@@ -273,7 +273,7 @@ test('Actual Broker crashes around the SQLite intent recover without replaying i
       assert.ok(!JSON.stringify(recovered).includes('crash-fixture'));
       const newOwner = await connect(replacement.ready.socket, t);
       assert.equal((await newOwner.call('action_submit', { proposal_id: proposal.proposal_id })).error, 'proposal_unavailable');
-      const freshJob = await newOwner.call('job_start', { pane_id: pane.pane_id, objective: 'diagnose', action_scope: { ...scope, cwd: h.root, paths: [h.root] } });
+      const freshJob = await newOwner.call('job_start', { analysis: 'auto', pane_id: pane.pane_id, objective: 'diagnose', action_scope: { ...scope, cwd: h.root, paths: [h.root] } });
       const ready = await newOwner.call('job_wait', { job_id: freshJob.job_id, wait_ms: 1000 });
       await replacement.command(`mode ${ready.pane_session_id} 1`);
       const fresh = await newOwner.call('action_propose', { ...action(freshJob.job_id), cwd: h.root, affected_paths: [h.root] });

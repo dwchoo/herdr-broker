@@ -1,5 +1,7 @@
 # 프로젝트 skill과 Herdr 내부 실행
 
+현재 Skill 이름과 경로는 `$broker` / `.agents/skills/broker/`다. 아래 기록의 기존 helper 경로는 호환 wrapper로 유지한다. [변경 기록](broker-skill-ssh-workflow.md)을 참고한다.
+
 2026-09-16. 사용자는 Parent와 Broker를 Herdr 안에서 사용하는 것을 전제로 하며, 프로젝트 skill을 기본 진입점으로 요청했다. Codex Desktop·ChatGPT·Herdr 밖의 Codex가 같은 Broker MCP를 정상 실행 경로로 사용하는 것은 거부한다.
 
 ## 실행 계약

@@ -50,7 +50,7 @@ test('Snapshot normalizes terminal rows and redacts credentials before preservin
   const secret = 'ghp_' + 'A'.repeat(36);
   const h = await harness(t, { text: '\x1b[31merror\x1b[0m\nprogress 10%\rprogress 90%\nPASS\nPASS\nunknown result\npassword=hunter2\n' + secret + '\n-----BEGIN PRIVATE KEY-----\nsecret-key-body\n-----END PRIVATE KEY-----\ncustom-sensitive\ncontradictory success', core: { redactionPatterns: ['custom-sensitive'] } });
   const client = await h.connect();
-  const start = await client.call('job_start', { pane_id: pane.pane_id, objective: 'diagnose' });
+  const start = await client.call('job_start', { analysis: 'auto', pane_id: pane.pane_id, objective: 'diagnose' });
   const ready = await client.call('job_wait', { job_id: start.job_id, wait_ms: 1000 });
   const body = JSON.stringify(ready);
   for (const secretText of ['hunter2', secret, 'secret-key-body', 'custom-sensitive', '\\u001b', 'progress 10%']) assert.ok(!body.includes(secretText), secretText);
@@ -98,7 +98,7 @@ test('Delegation Jobs enforce connection ownership, deadlines, wait timeout, and
   const h = await harness(t, { text: 'x'.repeat(2000), core: { now: () => now } });
   const client = await h.connect();
   const stranger = await h.connect();
-  const start = await client.call('job_start', { pane_id: pane.pane_id, objective: 'diagnose' });
+  const start = await client.call('job_start', { analysis: 'auto', pane_id: pane.pane_id, objective: 'diagnose' });
   assert.equal(start.budget.deadline_ms, 300000);
   for (const tool of ['job_status', 'job_wait', 'job_cancel']) assert.equal((await stranger.call(tool, { job_id: start.job_id, ...(tool === 'job_wait' ? { wait_ms: 0 } : {}) })).error, 'job_unavailable');
   await client.call('job_wait', { job_id: start.job_id, wait_ms: 1000 });
@@ -117,7 +117,7 @@ test('Delegation Jobs enforce connection ownership, deadlines, wait timeout, and
     if (request.method === 'pane.read') delayed.push(() => { if (!socket.destroyed) socket.write(JSON.stringify(response) + '\n'); });
     else socket.write(JSON.stringify(response) + '\n');
   };
-  const pending = await client.call('job_start', { pane_id: pane.pane_id, objective: 'waiting', budget: { deadline_ms: 50 } });
+  const pending = await client.call('job_start', { analysis: 'auto', pane_id: pane.pane_id, objective: 'waiting', budget: { deadline_ms: 50 } });
   const timeout = await client.call('job_wait', { job_id: pending.job_id, wait_ms: 1 });
   assert.equal(timeout.phase, 'observing');
   assert.equal(timeout.wait_timed_out, true);
@@ -136,7 +136,7 @@ test('Delegation Jobs enforce connection ownership, deadlines, wait timeout, and
 test('Retained diagnostic memory evicts ended bodies first and refuses active overflow', async t => {
   const h = await harness(t, { core: { memoryLimit: 45000 } });
   const client = await h.connect();
-  const start = async () => client.call('job_start', { pane_id: pane.pane_id, objective: 'diagnose' });
+  const start = async () => client.call('job_start', { analysis: 'auto', pane_id: pane.pane_id, objective: 'diagnose' });
   const first = await start();
   await client.call('job_wait', { job_id: first.job_id, wait_ms: 1000 });
   await client.call('job_cancel', { job_id: first.job_id });
@@ -166,12 +166,12 @@ test('Herdr version changes and malformed responses fail closed without exposing
   }
   h.state.respond = undefined;
   h.state.text = 'secret'.repeat(180000);
-  const start = await client.call('job_start', { pane_id: pane.pane_id, objective: 'diagnose' });
+  const start = await client.call('job_start', { analysis: 'auto', pane_id: pane.pane_id, objective: 'diagnose' });
   const failure = await client.call('job_wait', { job_id: start.job_id, wait_ms: 1000 });
   assert.equal(failure.error, 'herdr_response_too_large');
   assert.equal(failure.result, undefined);
   assert.ok(!JSON.stringify(failure).includes('secret'));
-  assert.ok((await client.call('job_start', { pane_id: pane.pane_id, objective: 'diagnose', approved: true })).tool_error);
+  assert.ok((await client.call('job_start', { analysis: 'auto', pane_id: pane.pane_id, objective: 'diagnose', approved: true })).tool_error);
 });
 
 test('Cancellation during identity observation prevents capture and cannot be reversed by a late reply', async t => {
@@ -181,7 +181,7 @@ test('Cancellation during identity observation prevents capture and cannot be re
     else socket.write(JSON.stringify(response) + '\n');
   } });
   const client = await h.connect();
-  const start = await client.call('job_start', { pane_id: pane.pane_id, objective: 'cancel before capture' });
+  const start = await client.call('job_start', { analysis: 'auto', pane_id: pane.pane_id, objective: 'cancel before capture' });
   await client.call('job_wait', { job_id: start.job_id, wait_ms: 5 });
   assert.equal((await client.call('job_cancel', { job_id: start.job_id })).phase, 'cancelled');
   reply?.();
@@ -198,7 +198,7 @@ test('Pane mapping changes during capture invalidate the observation', async t =
     socket.write(JSON.stringify(response) + '\n');
   } });
   const client = await h.connect();
-  const start = await client.call('job_start', { pane_id: pane.pane_id, objective: 'observe identity' });
+  const start = await client.call('job_start', { analysis: 'auto', pane_id: pane.pane_id, objective: 'observe identity' });
   const status = await client.call('job_wait', { job_id: start.job_id, wait_ms: 1000 });
   assert.equal(status.error, 'target_changed');
   assert.equal(status.result, undefined);
@@ -207,7 +207,7 @@ test('Pane mapping changes during capture invalidate the observation', async t =
 test('Quoted credential assignments and escaped values are redacted from JSON and YAML logs', async t => {
   const h = await harness(t, { text: '{"password":"fixture-secret","api_key":"fixture-api-value","token":"escaped\\\"token-tail"}\n\'secret\': \'yaml-sensitive\'\nstatus: unknown' });
   const client = await h.connect();
-  const start = await client.call('job_start', { pane_id: pane.pane_id, objective: 'diagnose' });
+  const start = await client.call('job_start', { analysis: 'auto', pane_id: pane.pane_id, objective: 'diagnose' });
   const ready = await client.call('job_wait', { job_id: start.job_id, wait_ms: 1000 });
   for (const value of ['fixture-secret', 'fixture-api-value', 'token-tail', 'yaml-sensitive']) assert.ok(!JSON.stringify(ready).includes(value), value);
   assert.match(ready.result.text, /status: unknown/);

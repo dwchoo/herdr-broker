@@ -26,7 +26,7 @@ async function dashboard(t, options = {}) {
 }
 async function propose(h, overrides = {}) {
   const described = await h.client.call('pane_describe', { pane_id: h.target.pane_id });
-  const started = await h.client.call('job_start', { pane_id: h.target.pane_id, objective: 'diagnose', budget: { parent_payload_bytes: 16384 }, action_scope: { profile: 'local_posix', cwd: h.config.project, paths: [h.config.project], trusted: true } });
+  const started = await h.client.call('job_start', { analysis: 'auto', pane_id: h.target.pane_id, objective: 'diagnose', budget: { parent_payload_bytes: 16384 }, action_scope: { profile: 'local_posix', cwd: h.config.project, paths: [h.config.project], trusted: true } });
   await h.client.call('job_wait', { job_id: started.job_id, wait_ms: 1000 });
   const proposal = await h.client.call('action_propose', { job_id: started.job_id, target: described.target, objective: 'diagnose', operation: 'execute', command: 'printf "hello world\\n"', cwd: h.config.project, env: {}, affected_paths: [h.config.project], risk: { ...risk, classification: 'high' }, ...overrides });
   assert.equal(proposal.authorization, 'approval_required', JSON.stringify(proposal));
@@ -53,7 +53,7 @@ test('Dashboard read model uses verified Parent identities and observes without 
   assert.deepEqual(afterData, beforeData);
   assert.equal(h.calls.filter(call => ['pane.read', 'pane.send_input'].includes(call.method) && call.params.pane_id === created.panes[0].pane_id).length, 0);
   assert.equal(view.snapshot().panes[0].session, null);
-  const started = await client.call('job_start', { pane_id: created.panes[0].pane_id, objective: 'diagnose' });
+  const started = await client.call('job_start', { analysis: 'auto', pane_id: created.panes[0].pane_id, objective: 'diagnose' });
   await client.call('job_wait', { job_id: started.job_id, wait_ms: 1000 });
   const budget = core.summary().jobs[0].parent_payload_bytes_remaining;
   const calls = h.calls.filter(call => call.method === 'pane.read').length;
@@ -306,7 +306,7 @@ test('The verified Parent terminal identity is preserved and replacement prevent
   const h = await consoleHarness(t), client = await h.connect();
   const created = await client.call('console_open', { label: 'Parent identity' });
   const target = created.panes[0], described = await client.call('pane_describe', { pane_id: target.pane_id });
-  const started = await client.call('job_start', { pane_id: target.pane_id, objective: 'diagnose', action_scope: { profile: 'local_posix', cwd: h.config.project, paths: [h.config.project], trusted: true } });
+  const started = await client.call('job_start', { analysis: 'auto', pane_id: target.pane_id, objective: 'diagnose', action_scope: { profile: 'local_posix', cwd: h.config.project, paths: [h.config.project], trusted: true } });
   await client.call('job_wait', { job_id: started.job_id, wait_ms: 1000 });
   const proposal = await client.call('action_propose', { job_id: started.job_id, target: described.target, objective: 'diagnose', operation: 'execute', command: 'echo hello', cwd: h.config.project, env: {}, affected_paths: [h.config.project], risk });
   assert.equal(proposal.authorization, 'parent_risk_review');

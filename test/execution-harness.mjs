@@ -26,7 +26,7 @@ export async function executingHarness(t, options = {}) {
 
 export async function approved(t, h, command = 'sleep 0.2; printf "observed output\\n"; exit 7', options = {}) {
   const console = await consoleProcess(t, h, options), client = await connect(console.ready.socket, t);
-  const start = await client.call('job_start', { pane_id: pane.pane_id, objective: 'diagnose', action_scope: { ...scope, cwd: h.root, paths: [h.root] } });
+  const start = await client.call('job_start', { analysis: 'auto', pane_id: pane.pane_id, objective: 'diagnose', action_scope: { ...scope, cwd: h.root, paths: [h.root] } });
   const ready = await client.call('job_wait', { job_id: start.job_id, wait_ms: 1000 });
   await console.command(`mode ${ready.pane_session_id} 1`);
   const proposal = await client.call('action_propose', { ...action(ready.job_id), command, cwd: h.root, affected_paths: [h.root], env: { HB_LITERAL: "literal ' $HOME $(unexecuted)" } });

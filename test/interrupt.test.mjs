@@ -12,7 +12,7 @@ async function setup(t, options = {}) {
   const h = await executingHarness(t, { execute: false, ...options });
   const console = await consoleProcess(t, h, { observationMs: 200, ...options.console });
   const client = await connect(console.ready.socket, t);
-  const start = await client.call('job_start', { pane_id: pane.pane_id, objective: 'diagnose', action_scope: scope });
+  const start = await client.call('job_start', { analysis: 'auto', pane_id: pane.pane_id, objective: 'diagnose', action_scope: scope });
   const job = await client.call('job_wait', { job_id: start.job_id, wait_ms: 1000 });
   return { h, console, client, job };
 }
@@ -52,9 +52,9 @@ test('A user inspects a ready shell and resets its goal without rewriting the un
   assert.equal(recovered.exit_code, null);
   assert.equal((await console.command('status')).held_terminal_count, 0);
   assert.equal((await client.call('action_propose', action(job.job_id))).error, 'job_ended');
-  const wrong = await client.call('job_start', { pane_id: pane.pane_id, objective: 'old goal', action_scope: scope });
+  const wrong = await client.call('job_start', { analysis: 'auto', pane_id: pane.pane_id, objective: 'old goal', action_scope: scope });
   assert.equal((await client.call('job_wait', { job_id: wrong.job_id, wait_ms: 1000 })).error, 'recovery_objective_required');
-  const fresh = await client.call('job_start', { pane_id: pane.pane_id, objective: 'fresh goal', action_scope: scope });
+  const fresh = await client.call('job_start', { analysis: 'auto', pane_id: pane.pane_id, objective: 'fresh goal', action_scope: scope });
   assert.equal((await client.call('job_wait', { job_id: fresh.job_id, wait_ms: 1000 })).phase, 'result_ready');
   const next = await client.call('action_propose', { ...action(fresh.job_id), objective: 'fresh goal' });
   assert.equal((await client.call('action_submit', { proposal_id: next.proposal_id })).submission_state, 'accepted');
@@ -96,7 +96,7 @@ test('Interrupt is bound to a submitted original; cancel stops it without sendin
   await client.call('job_cancel', { job_id: job.job_id });
   assert.equal((await client.call('action_submit', { proposal_id: pending.proposal_id })).error, 'job_ended');
   assert.equal((await client.call('action_status', { job_id: job.job_id, proposal_id: pending.proposal_id })).submission_state, 'not_submitted');
-  const start = await client.call('job_start', { pane_id: pane.pane_id, objective: 'diagnose', action_scope: scope });
+  const start = await client.call('job_start', { analysis: 'auto', pane_id: pane.pane_id, objective: 'diagnose', action_scope: scope });
   const fresh = await client.call('job_wait', { job_id: start.job_id, wait_ms: 1000 });
   const explicit = await client.call('action_propose', interrupt(fresh, original));
   assert.equal((await client.call('action_submit', { proposal_id: explicit.proposal_id })).submission_state, 'accepted');
@@ -127,7 +127,7 @@ test('A job deadline prevents a prepared interrupt without changing the original
   const h = await executingHarness(t, { execute: false }), clock = join(h.root, 'clock');
   await writeFile(clock, '1000');
   const console = await consoleProcess(t, h, { clockPath: clock, observationMs: 200 }), client = await connect(console.ready.socket, t);
-  const start = await client.call('job_start', { pane_id: pane.pane_id, objective: 'diagnose', action_scope: scope, budget: { deadline_ms: 5000 } });
+  const start = await client.call('job_start', { analysis: 'auto', pane_id: pane.pane_id, objective: 'diagnose', action_scope: scope, budget: { deadline_ms: 5000 } });
   const job = await client.call('job_wait', { job_id: start.job_id, wait_ms: 1000 });
   const original = await client.call('action_propose', action(job.job_id));
   await client.call('action_submit', { proposal_id: original.proposal_id });
@@ -165,7 +165,7 @@ test('A restart hold needs fresh console confirmation; the old process cannot be
   await client.call('action_submit', { proposal_id: original.proposal_id });
   const stopped = once(console.child, 'close'); console.child.stdin.end('quit\n'); await stopped;
   const restarted = await consoleProcess(t, h), nextClient = await connect(restarted.ready.socket, t);
-  const start = await nextClient.call('job_start', { pane_id: pane.pane_id, objective: 'diagnose', action_scope: scope });
+  const start = await nextClient.call('job_start', { analysis: 'auto', pane_id: pane.pane_id, objective: 'diagnose', action_scope: scope });
   const next = await nextClient.call('job_wait', { job_id: start.job_id, wait_ms: 1000 });
   assert.equal(next.action_mode, 2);
   assert.notEqual(next.pane_session_id, job.pane_session_id);

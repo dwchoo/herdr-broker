@@ -2,11 +2,11 @@
 
 ## 필요한 환경
 
-검증 기준은 macOS arm64, Node 24, Herdr 0.9.0/protocol 22, Codex CLI 0.154.0이다. Worker는 `gpt-5.6-luna`/low를 사용하며 로컬 Codex 계정의 기존 인증으로 실행한다. 원격에 AI runtime이나 credential을 설치하지 않는다. SSH 실행은 사용자 준비 확인이 필요한 `ssh_posix` profile로 제공한다. [SSH acceptance](implementation/issue-24-ssh-acceptance.md)는 #24 artifact의 기록이며, 현재 checkout의 실행 문맥과 검증 절차는 [project skill 검증](implementation/project-skill-herdr-context.md)을 따른다.
+검증 기준은 macOS arm64, Node 24, Herdr 0.9.0/protocol 22, Codex CLI 0.154.0이다. Worker는 `gpt-5.6-luna`/high를 사용하며 로컬 Codex 계정의 기존 인증으로 실행한다. 원격에 AI runtime이나 credential을 설치하지 않는다. 기본 입력은 프로그램 종류와 무관한 `terminal` profile이다. 기존 `ssh_posix` wrapper 실행만 사용자 준비 확인을 요구한다. [SSH acceptance](implementation/issue-24-ssh-acceptance.md)는 #24 artifact의 기록이며, 현재 checkout의 실행 문맥과 검증 절차는 [project skill 검증](implementation/project-skill-herdr-context.md)을 따른다.
 
 ## Broker 시작·접속과 공유 terminal
 
-Herdr의 이 프로젝트 Codex에게 `$herdr-broker`를 요청한다. Broker는 같은 tab의 terminal 묶음을 관리하는 백그라운드 core다. 평소에는 일반 shell에서 사용자와 Codex가 함께 작업하며, 관리 화면은 요청할 때만 임시 pane으로 연다. Codex나 관리 화면 종료는 core·terminal 종료가 아니다.
+Herdr의 이 프로젝트 Codex에게 `$broker`를 요청한다. Broker는 같은 tab의 terminal 묶음을 관리하는 백그라운드 core다. 평소에는 일반 shell에서 사용자와 Codex가 함께 작업하며, 관리 화면은 요청할 때만 임시 pane으로 연다. Codex나 관리 화면 종료는 core·terminal 종료가 아니다.
 
 Broker와 terminal은 로컬 등록소에서 겹치지 않는 4자리 번호를 받는다. “7316에 연결해”, “4821에서 실행해”처럼 요청한다. 번호는 재시작·이름 변경 후에도 유지한다. 정확하지 않은 번호나 “아까 빌드하던 pane”은 Codex가 목록과 대화 맥락을 보고 판단한다. 자동 prefix·오타 교정 규칙은 없다.
 
@@ -21,10 +21,10 @@ Node 24로 checkout을 준비한다.
 ```sh
 npm ci
 npm run build
-node .agents/skills/herdr-broker/scripts/run.mjs setup
+node .agents/skills/broker/scripts/run.mjs setup
 ```
 
-setup은 이 프로젝트의 MCP 설정만 갱신한다. Herdr 밖에서는 MCP·core·관리 화면을 실행할 수 없다. Herdr 프로젝트 shell에서 새 Codex를 시작하거나 `node .agents/skills/herdr-broker/scripts/run.mjs parent`를 사용한다.
+setup은 이 프로젝트의 MCP 설정만 갱신한다. Herdr 밖에서는 MCP·core·관리 화면을 실행할 수 없다. Herdr 프로젝트 shell에서 새 Codex를 시작하거나 `node .agents/skills/broker/scripts/run.mjs parent`를 사용한다.
 
 기본 설정 파일은 OS 계정 home의 `~/.config/herdr-broker/config.json`이며 없어도 기본 경로를 사용한다. 사용자 소유 regular file, mode 0600이어야 한다.
 
@@ -60,10 +60,10 @@ setup은 이 프로젝트의 MCP 설정만 갱신한다. Herdr 밖에서는 MCP�
 
 ## 진단과 Action
 
-1. Parent가 exact pane을 `pane_describe`로 확인하고 목표를 정해 `job_start`한다.
-2. `job_wait`로 bounded context 또는 Worker report를 받고 필요한 `evidence_get`만 조회한다. 결과 준비는 job/명령 완료와 별개다.
-3. 실행할 경우 처음부터 cwd·영향 경로·협조적 shell 범위를 `action_scope`로 선언한다. Parent가 정확한 command·env·위험 판단을 넣어 `action_propose`한다.
-4. 현재 모드에 따라 `action_submit`을 호출한다. 완료 여부는 `action_status`의 observation과 exit를 확인한다.
+1. 공유 작업의 파일 확인·편집·실행은 옆 pane에 명령을 입력해서 수행한다. Parent의 별도 file/shell tool로 대신하지 않는다. Parent가 exact pane을 `pane_describe`로 확인하고 목표를 정해 `job_start`한다.
+2. `job_wait`로 bounded context 또는 Worker report를 받고 필요한 `evidence_get`만 조회한다. 출력 길이와 무관하게 기본 `gpt-5.6-luna/high` Worker가 전달된 Snapshot만 요약한다. 사용자가 원문 확인을 요청하면 `analysis: "direct"`와 `evidence_get`을 사용한다. 결과 준비는 job/명령 완료와 별개다.
+3. 기본 `action_scope`는 `{"profile":"terminal"}`이다. Parent는 현재 화면을 읽고 `operation: "input"`과 정확한 `text`, `keys`, 위험 판단으로 `action_propose`한다. shell·SSH·REPL·TUI에 같은 경로를 쓰며 `ssh-ready`나 cwd 선언은 필요 없다. Enter는 필요할 때 `keys: ["Enter"]`로 명시한다.
+4. 현재 모드에 따라 `action_submit`을 호출한다. input Receipt의 `accepted`는 입력 접수이며 exit는 null이다. 직전 cursor를 `job_wait`에 돌려주어 새 화면을 읽고 결과를 판단한다. 기존 POSIX `execute`만 wrapper와 완료 marker를 사용한다.
 
 새 Pane Session 기본은 **2 Agent Risk Review**다. 같은 세션의 다음 job에도 모드를 유지한다.
 
@@ -88,18 +88,18 @@ revoke <proposal_id>
 
 ## 중지·불명 상태·복구
 
-`job_cancel`은 이후 Worker와 미제출 입력을 중지하며 자동 Ctrl-C를 보내지 않는다. 이미 제출된 명령의 ACK와 제한된 passive 관찰은 독립적으로 정리한다. 원래 Action과 같은 관찰 session에 결합한 별도 `interrupt`만 현재 정책에 따라 `Ctrl+c`를 보낼 수 있다. interrupt는 자체 exit를 약속하지 않는다.
+`job_cancel`은 이후 Worker와 미제출 입력을 중지하며 자동 Ctrl-C를 보내지 않는다. 이미 제출된 명령의 ACK와 제한된 passive 관찰은 독립적으로 정리한다. 기존 POSIX execute가 held 상태라면 원래 Action과 같은 관찰 session에 결합한 별도 `interrupt`만 현재 정책에 따라 `Ctrl+c`를 보낼 수 있다. interrupt는 자체 exit를 약속하지 않는다.
 
-`accepted`는 Herdr의 입력 접수 응답이다. `completion_observed`와 exit code가 관찰돼야 명령 결과를 말할 수 있다. unknown은 자동 재전송하지 않으며 새 job이나 mode 3도 terminal hold를 우회하지 못한다. 늦거나 중복된 terminal 출력은 신뢰할 수 있는 process 완료 증명과 다르다.
+`accepted`는 Herdr의 입력 접수 응답이다. 일반 input은 `not_applicable`과 null exit를 유지하고 결과를 다음 화면에서 확인한다. 기존 POSIX execute는 `completion_observed`와 exit code로 완료 관찰을 기록한다. unknown은 자동 재전송하지 않으며 새 job이나 mode 3도 terminal hold를 우회하지 못한다. 늦거나 중복된 terminal 출력은 신뢰할 수 있는 process 완료 증명과 다르다.
 
-held terminal에서 실제 shell이 준비됐음을 확인한 뒤 console에서 다음을 사용한다.
+held terminal의 현재 상태를 직접 확인한 뒤 console에서 다음을 사용한다.
 
 ```text
 inspect <pane_id>
 recover <original_proposal_id> <새 작업 목표>
 ```
 
-Broker가 현재 mapping·session·revision·ready shell을 다시 확인한다. 원래 unknown/null exit를 성공으로 바꾸지 않고 복구 근거를 남긴다. 기존 job은 중지되므로 새 목표로 새 job을 시작한다. mode 선택이나 상태 파일 삭제로 복구하지 않는다.
+Broker가 현재 mapping·session·revision을 다시 확인한다. 일반 input hold는 `user_verified_input_target`으로 복구하며 shell 준비 선언을 요구하지 않는다. 기존 execute hold는 ready shell을 요구한다. 원래 unknown/null exit를 성공으로 바꾸지 않고 복구 근거를 남긴다. 기존 job은 중지되므로 새 목표로 새 job을 시작한다. mode 선택이나 상태 파일 삭제로 복구하지 않는다.
 
 ## 데이터와 예산
 
@@ -146,7 +146,7 @@ purge는 Snapshot·report·Evidence·pending payload를 제거한다. 제거된 
 
 원격 identity 인증, 감지되지 않는 연결 변화, 재검증과 전송 사이 race, 외부 Herdr client 입력 잠금, exactly-once 실행은 보장하지 않는다.
 
-## SSH POSIX shell 준비
+## 기존 POSIX wrapper의 SSH POSIX shell 준비
 
 SSH 연결 후 실제 pane이 협조적인 idle POSIX shell이고 현재 cwd가 맞는지 확인한다. 이어서 `serve` console에서 다음을 실행한다.
 
