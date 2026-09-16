@@ -1,0 +1,38 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "herdr-broker"
+version = "0.2.0"
+description = "Shared Herdr panes through a small Python MCP server"
+readme = "docs/operations.md"
+requires-python = ">=3.12,<3.15"
+dependencies = ["mcp==2.2.0", "openai-codex==0.154.0", "pydantic==2.13.5", "anyio==4.15.1"]
+
+[project.scripts]
+herdr-broker = "herdr_broker.cli:main"
+
+[dependency-groups]
+dev = ["pytest==9.1.1", "pytest-asyncio==1.4.0", "ruff==0.16.7", "mypy==2.3.1"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["python/herdr_broker"]
+
+[tool.hatch.build.targets.sdist]
+include = ["python", "tests", "pyproject.toml", "uv.lock", "docs/operations.md", "docs/mcp.md"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 110
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
