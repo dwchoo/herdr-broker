@@ -20,7 +20,7 @@ async def test_inventory_metadata_only_and_all_roles(harness):
     assert {t.name for t in tools} == {
         "tab_list",
         "pane_list",
-        "pane_read",
+        "pane_read", "analysis_release",
         "pane_send",
         "pane_execute",
         "pane_rename",

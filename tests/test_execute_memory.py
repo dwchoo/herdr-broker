@@ -100,13 +100,13 @@ async def test_analysis_limit_precedes_screen_capture_and_has_no_queue(harness, 
     release = asyncio.Event()
     entered = 0
 
-    async def analyze(text, objective, patterns, effort, timings):
+    async def analyze(text, objective, patterns, effort, timings, session, purpose):
         nonlocal entered
         entered += 1
         if entered == 2:
             ready.set()
         await release.wait()
-        return {"report": {"summary": "done"}}
+        return {"analysis_id": session.id, "report": {"summary": "done"}}
 
     monkeypatch.setattr(worker, "_analyze", analyze)
     tasks = [asyncio.create_task(call(server, "pane_read", **IDENTITY)) for _ in range(2)]
@@ -143,5 +143,18 @@ async def test_capture_failure_and_cancellation_release_slot(harness, monkeypatc
     task.cancel()
     with pytest.raises(asyncio.CancelledError):
         await task
-    assert worker.running == 0 and not worker.active
+    assert worker.running == 0
     assert (await call(server, "pane_read", **IDENTITY))["kind"] == "analysis"
+
+
+async def test_sdk_recycling_preserves_input_deduplication(harness):
+    peer, _, server, worker = harness
+    args = {**IDENTITY, "request_id": "survive-sdk-recycle", "command": "echo once"}
+    first = await call(server, "pane_execute", **args)
+    assert first["submission"] == "accepted"
+    await call(server, "pane_read", **IDENTITY, purpose="status")
+    worker._retire("rss_limit")
+    await worker.recycling
+    duplicate = await call(server, "pane_execute", **args)
+    assert duplicate["duplicate"] and duplicate["details_retained"] is False
+    assert sum(method == "pane.send_input" for method, _ in peer.calls) == 1

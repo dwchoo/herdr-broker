@@ -1,4 +1,5 @@
 import asyncio
+import json
 import os
 import sys
 import tomllib
@@ -22,7 +23,7 @@ async def test_public_stdio_tools_and_no_database(tmp_path):
         async with ClientSession(*streams) as client:
             await client.initialize()
             tools = (await client.list_tools()).tools
-            assert len(tools) == 14
+            assert len(tools) == 15
             result = await client.call_tool("pane_list", {})
             assert not result.is_error and len(result.structured_content["panes"]) == 3
             args = {"pane_id": "w1:p2", "terminal_id": "term_2", "request_id": "stdio", "text": "echo hi"}
@@ -113,3 +114,57 @@ def test_setup_rejects_symlink(tmp_path, monkeypatch):
     with pytest.raises(BrokerError, match="project_config_invalid"):
         setup(tmp_path)
     assert list(actual.iterdir()) == []
+
+
+@pytest.mark.parametrize("termination", ["eof", "term", "int", "kill", "early_term", "term_eof"])
+async def test_sdk_warmup_does_not_block_mcp_and_child_exits(tmp_path, termination):
+    import signal
+    from time import perf_counter
+
+    pid_file = tmp_path / "sdk.pid"
+    process = await asyncio.create_subprocess_exec(
+        sys.executable, "tests/sdk_stdio_fixture.py", str(pid_file),
+        *(["early"] if termination == "early_term" else []),
+        stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL,
+    )
+    sdk_pid = None
+    try:
+        start = perf_counter()
+        process.stdin.write((json.dumps({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {
+            "protocolVersion": "2025-11-25", "capabilities": {},
+            "clientInfo": {"name": "ownership-probe", "version": "1"},
+        }}) + "\n").encode())
+        await process.stdin.drain()
+        response = json.loads(await asyncio.wait_for(process.stdout.readline(), 3))
+        assert response["id"] == 1 and "result" in response
+        assert perf_counter() - start < 3
+        for _ in range(300):
+            if pid_file.exists():
+                break
+            await asyncio.sleep(0.05)
+        sdk_pid = int(pid_file.read_text())
+        if termination == "eof":
+            process.stdin.close()
+        else:
+            process.send_signal(signal.SIGKILL if termination == "kill" else
+                                signal.SIGINT if termination == "int" else signal.SIGTERM)
+            if termination == "term_eof":
+                process.stdin.close()
+        await asyncio.wait_for(process.wait(), 8)
+        for _ in range(100):
+            try:
+                os.kill(sdk_pid, 0)
+            except ProcessLookupError:
+                break
+            await asyncio.sleep(0.05)
+        else:
+            pytest.fail("Owned SDK survived MCP exit")
+    finally:
+        if process.returncode is None:
+            process.kill()
+            await process.wait()
+        if sdk_pid is not None:
+            try:
+                os.kill(sdk_pid, signal.SIGTERM)
+            except ProcessLookupError:
+                pass

@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def output_and_prompt_visible(result, marker, prompt):
-    rows = [(int(row["id"][1:]), row["text"].removesuffix("\\u000d").rstrip()) for row in result["evidence"]]
+    rows = [(int(row["id"].rsplit(":", 1)[-1][1:]), row["text"].removesuffix("\\u000d").rstrip()) for row in result["evidence"]]
     outputs = [number for number, text in rows if text == marker]
     prompts = [number for number, text in rows if text == prompt.rstrip()]
     return any(prompt_line > output_line for output_line in outputs for prompt_line in prompts)

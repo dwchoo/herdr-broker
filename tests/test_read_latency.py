@@ -12,7 +12,7 @@ async def test_default_read_limits_history_but_preserves_pending_input(harness):
     assert len(text.split('\n')) == 80
     assert text.endswith('user@host:~$ unfinished')
     assert 'old build 0\n' not in text
-    assert result['max_lines'] == 80 and result['truncated'] and result['effort'] == 'low'
+    assert result['max_lines'] == 80 and result['truncated'] and result['effort'] == 'high'
     assert result['timings_ms']['capture'] >= 0
     assert result['timings_ms']['total'] >= result['timings_ms']['capture']
     assert [p['lines'] for m, p in peer.calls if m == 'pane.read'] == [80]
@@ -41,11 +41,28 @@ async def test_invalid_read_options_never_capture(harness, options):
 async def test_replacement_during_analysis_rejects_result(harness, monkeypatch):
     peer, _, server, worker = harness
 
-    async def analyze(text, objective, patterns, effort, timings):
+    async def analyze(text, objective, patterns, effort, timings, session, purpose):
         peer.panes[1]["terminal_id"] = "replacement"
-        return {"report": {"summary": "old screen"}}
+        return {"analysis_id": session.id, "report": {"summary": "old screen"}}
 
     monkeypatch.setattr(worker, "_analyze", analyze)
     with pytest.raises(Exception, match="target_changed"):
         await server.call_tool("pane_read", IDENTITY)
     assert not any(m == "pane.send_input" for m, _ in peer.calls)
+
+
+async def test_purpose_defaults_continuation_release_and_raw_does_not_touch_context(harness):
+    _, _, server, worker = harness
+    status = await call(server, 'pane_read', **IDENTITY, purpose='status')
+    assert status['effort'] == 'low'
+    session = status['analysis_id']
+    analysis = await call(server, 'pane_read', **IDENTITY, analysis_id=session)
+    assert analysis['effort'] == 'high' and analysis['analysis_id'] == session
+    override = await call(server, 'pane_read', **IDENTITY, purpose='status', effort='medium', analysis_id=session)
+    assert override['effort'] == 'medium'
+    contexts = dict(worker.sessions)
+    await call(server, 'pane_read', **IDENTITY, raw=True, analysis_id=session)
+    assert worker.sessions == contexts
+    assert (await call(server, 'analysis_release', analysis_id=session))['released']
+    with pytest.raises(Exception, match='analysis_session_expired'):
+        await server.call_tool('pane_read', {**IDENTITY, 'analysis_id': session})

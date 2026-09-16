@@ -100,15 +100,49 @@ async def serve(project: Path) -> None:
     context = await Context.load(project)
     worker = Worker()
     server = create_server(Broker(context, worker))
-    task = asyncio.current_task()
+    await run_stdio(server, worker)
+
+
+async def run_stdio(server: Any, worker: Worker) -> None:
     loop = asyncio.get_running_loop()
-    if task:
-        for sig in (signal.SIGTERM, signal.SIGINT):
-            loop.add_signal_handler(sig, task.cancel)
+    stopping: asyncio.Task[None] | None = None
+    cleanup: asyncio.Task[None] | None = None
+
+    def begin_cleanup() -> asyncio.Task[None]:
+        nonlocal cleanup
+        if cleanup is None:
+            cleanup = asyncio.create_task(worker.close())
+        return cleanup
+
+    async def stop(sig: signal.Signals) -> None:
+        try:
+            await asyncio.shield(begin_cleanup())
+        except Exception as exc:
+            print(f"broker: {exc.code if isinstance(exc, BrokerError) else 'shutdown_failed'}",
+                  file=sys.stderr, flush=True)
+        finally:
+            # The pinned MCP transport can remain blocked in a stdin reader thread
+            # after cancellation. Reapply the requested signal only after SDK cleanup.
+            loop.remove_signal_handler(sig)
+            signal.signal(sig, signal.SIG_DFL)
+            os.kill(os.getpid(), sig)
+
+    def request_stop(sig: signal.Signals) -> None:
+        nonlocal stopping
+        if stopping is None:
+            stopping = asyncio.create_task(stop(sig))
+
+    for sig in (signal.SIGTERM, signal.SIGINT):
+        loop.add_signal_handler(sig, request_stop, sig)
+    worker.warmup()
     try:
         await server.run_stdio_async()
     finally:
-        await worker.close()
+        await asyncio.shield(begin_cleanup())
+        if stopping is not None:
+            await asyncio.shield(stopping)
+        for sig in (signal.SIGTERM, signal.SIGINT):
+            loop.remove_signal_handler(sig)
 
 
 def main() -> None:

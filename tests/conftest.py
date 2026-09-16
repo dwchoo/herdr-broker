@@ -5,6 +5,8 @@ import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from types import SimpleNamespace
+from unittest.mock import AsyncMock
 
 import pytest
 from herdr_broker.context import Context
@@ -33,11 +35,14 @@ class StubWorker(Worker):
         self.calls = []
         self.error = None
 
-    async def _analyze(self, text, objective, patterns, effort, timings):
+    async def _initialize(self):
+        self.runtime = SimpleNamespace(unsubscribe=AsyncMock(), close=AsyncMock())
+
+    async def _analyze(self, text, objective, patterns, effort, timings, session, purpose):
         self.calls.append((text, objective))
         if self.error:
             raise BrokerError(self.error)
-        return {"effort": effort, "report": {"summary": "화면 확인", "findings": [], "next_checks": [], "uncertainties": []}}
+        return {"analysis_id": session.id, "purpose": purpose, "effort": effort, "report": {"summary": "화면 확인", "findings": [], "next_checks": [], "uncertainties": []}}
 
 
 class Peer:
@@ -328,4 +333,7 @@ async def harness(tmp_path, socket_path):
         context.project = Path.cwd()
         worker = StubWorker()
         broker = Broker(context, worker)
-        yield peer, broker, create_server(broker), worker
+        try:
+            yield peer, broker, create_server(broker), worker
+        finally:
+            await worker.close()

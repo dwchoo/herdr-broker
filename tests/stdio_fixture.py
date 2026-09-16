@@ -17,7 +17,11 @@ async def main():
         path = Path(directory) / "h.sock"
         async with peer_server(path):
             context = Context(Herdr(path), Path.cwd(), "w1", "w1:p1", "term_1", os.getpid(), [])
-            await create_server(Broker(context, StubWorker())).run_stdio_async()
+            worker = StubWorker()
+            try:
+                await create_server(Broker(context, worker)).run_stdio_async()
+            finally:
+                await worker.close()
 
 
 if __name__ == "__main__":

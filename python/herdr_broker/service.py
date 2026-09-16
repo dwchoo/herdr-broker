@@ -12,7 +12,7 @@ from typing import Any
 from .context import Context
 from .herdr import BrokerError, Pane
 from .snapshot import bounded, clean
-from .worker import Effort, Worker
+from .worker import Effort, Purpose, Worker
 
 CODE = re.compile(r"^([1-9][0-9]{3})(?:\s*·\s*(.*))?$")
 
@@ -186,7 +186,8 @@ class Broker:
 
     async def pane_read(
         self, pane_id: str, terminal_id: str, objective: str, raw: bool, offset: int,
-        effort: Effort = "low", max_lines: int | None = None,
+        effort: Effort | None = None, max_lines: int | None = None,
+        purpose: Purpose = "analysis", analysis_id: str | None = None,
     ) -> dict[str, Any]:
         started = perf_counter()
         lines = max_lines if max_lines is not None else (1000 if raw else 80)
@@ -210,9 +211,17 @@ class Broker:
             metadata.update(observed)
             return text
 
-        report = await self.worker.analyze(capture, objective, self.context.patterns, effort=effort)
+        pane = await self.target(pane_id, terminal_id)
+        report = await self.worker.analyze(
+            capture, objective, self.context.patterns, effort=effort, purpose=purpose,
+            identity=(pane.workspace_id, pane_id, terminal_id), analysis_id=analysis_id,
+        )
         check_started = perf_counter()
-        await self.target(pane_id, terminal_id)
+        try:
+            await self.target(pane_id, terminal_id)
+        except BrokerError:
+            await self.worker.release(report["analysis_id"])
+            raise
         timings = report.setdefault("timings_ms", {})
         timings["final_identity_check"] = round((perf_counter() - check_started) * 1000, 3)
         timings["total"] = round((perf_counter() - started) * 1000, 3)
