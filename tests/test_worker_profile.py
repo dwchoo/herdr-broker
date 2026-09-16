@@ -77,3 +77,17 @@ async def test_prewarm_error_survives_until_public_read(harness, sdk_home, missi
         assert (await call(server, 'pane_read', pane_id='w1:p2', terminal_id='term_2', raw=True))['kind'] == 'raw'
     finally:
         await worker.close()
+
+
+def test_resource_bytes_do_not_follow_external_runtime_symlinks(tmp_path):
+    from types import SimpleNamespace
+
+    from herdr_broker.sdk_runtime import SDKRuntime
+    source = tmp_path / 'installed-runtime'
+    source.write_bytes(b'x' * 1024)
+    owned = tmp_path / 'worker'
+    owned.mkdir()
+    (owned / 'actual').write_bytes(b'123')
+    (owned / 'wrapper').symlink_to(source)
+    runtime = SDKRuntime(SimpleNamespace(), str(owned), lambda: None)
+    assert runtime.resources() == {'rss_bytes': None, 'temporary_bytes': 3}

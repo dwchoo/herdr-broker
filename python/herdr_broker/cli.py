@@ -99,11 +99,12 @@ def setup(project: Path) -> dict[str, Any]:
 async def serve(project: Path) -> None:
     context = await Context.load(project)
     worker = Worker()
-    server = create_server(Broker(context, worker))
-    await run_stdio(server, worker)
+    broker = Broker(context, worker)
+    server = create_server(broker)
+    await run_stdio(server, worker, broker)
 
 
-async def run_stdio(server: Any, worker: Worker) -> None:
+async def run_stdio(server: Any, worker: Worker, broker: Broker | None = None) -> None:
     loop = asyncio.get_running_loop()
     stopping: asyncio.Task[None] | None = None
     cleanup: asyncio.Task[None] | None = None
@@ -111,6 +112,8 @@ async def run_stdio(server: Any, worker: Worker) -> None:
     def begin_cleanup() -> asyncio.Task[None]:
         nonlocal cleanup
         if cleanup is None:
+            if broker is not None:
+                broker.observations.close()
             cleanup = asyncio.create_task(worker.close())
         return cleanup
 

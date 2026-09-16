@@ -96,3 +96,11 @@ local warm 중앙값 **15.15초**, 최댓값 **15.35초**로 두 번 모두 20�
 ## 후속 effort·문맥 설정
 
 위 성능 수치는 당시 Luna/high 분석으로 측정했다. 이후 사용자 요청으로 기본 analysis는 Luna/medium, Fast off로 변경하며 자동 Skill·환경 문맥을 제외한다. 현재 계약과 추가 검증은 [Worker profile](service-tier.md)을 따른다.
+
+## 2026-09-17: 독립 분석과 항목별 보고
+
+후속 사용자 결정으로 SDK 프로세스만 재사용하고 매 호출 새 ephemeral thread에서 한 turn을 수행한 뒤 구독 해제한다. 기존 thread 문맥 재사용·8 turn·128 KiB 전환 설명은 이 변경으로 대체된다. analysis_id는 대상에 묶인 최대 2개의 작은 작업 연결 기록이며 5분 idle 만료·analysis_release를 유지한다. 이전 질문·화면·보고를 다음 분석에 넣지 않는다. 사용자 AGENTS·Skill·도구 정의와 환경 작업 지침 격리는 유지한다.
+
+analysis는 Luna/medium, status는 Luna/low·8줄·1 KiB, Fast는 기본 off다. analysis의 requested_items로 필요한 항목 최대 6개를 지정하고 값·관찰/추정/미확인·근거를 받는다. Worker는 실행 계획이나 원문 복사를 하지 않고 Broker가 근거 위치 검증·원문 추출·중복 제거·예산을 처리한다. 서술 최대 1,000자와 원문 최대 3,000자를 구분한다. 이전 analysis JSON 4 KiB 제한은 이 계약으로 대체된다.
+
+화면 미보관 원칙의 한정된 예외로 성공 관찰의 정제된 화면을 최대 10분·16개·UTF-8 합계 1 MiB 보관한다. pane_excerpt는 같은 observation의 범위·literal 검색·cursor 추가 조회이며 Worker나 Herdr 수집을 호출하지 않는다. SDK 교체나 analysis_release와 독립적으로 만료·퇴출한다. 대화·보고·검색 세션은 누적하지 않는다. 현재 계약은 [계획](../plans/worker-report-contract.md)과 [MCP 문서](../mcp.md)를 따른다.

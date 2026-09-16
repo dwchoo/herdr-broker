@@ -100,13 +100,13 @@ async def test_analysis_limit_precedes_screen_capture_and_has_no_queue(harness, 
     release = asyncio.Event()
     entered = 0
 
-    async def analyze(text, objective, patterns, effort, timings, session, purpose, service_tier):
+    async def analyze(text, objective, patterns, effort, timings, session, purpose, service_tier, requested_items):
         nonlocal entered
         entered += 1
         if entered == 2:
             ready.set()
         await release.wait()
-        return {"analysis_id": session.id, "report": {"summary": "done"}}
+        return {"analysis_id": session.id, "observation_id": session.id, "report": {"summary": "done"}}
 
     monkeypatch.setattr(worker, "_analyze", analyze)
     tasks = [asyncio.create_task(call(server, "pane_read", **IDENTITY)) for _ in range(2)]

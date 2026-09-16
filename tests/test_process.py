@@ -23,9 +23,13 @@ async def test_public_stdio_tools_and_no_database(tmp_path):
         async with ClientSession(*streams) as client:
             await client.initialize()
             tools = (await client.list_tools()).tools
-            assert len(tools) == 15
+            assert len(tools) == 16
             result = await client.call_tool("pane_list", {})
             assert not result.is_error and len(result.structured_content["panes"]) == 3
+            observed = await client.call_tool("pane_read", {"pane_id": "w1:p2", "terminal_id": "term_2", "requested_items": ["원인"]})
+            assert not observed.is_error
+            excerpt = await client.call_tool("pane_excerpt", {"observation_id": observed.structured_content["observation_id"], "start_line": 1, "end_line": 2})
+            assert not excerpt.is_error and "TS2305" in excerpt.structured_content["excerpts"][0]["text"]
             args = {"pane_id": "w1:p2", "terminal_id": "term_2", "request_id": "stdio", "text": "echo hi"}
             first = await client.call_tool("pane_send", args)
             again = await client.call_tool("pane_send", args)

@@ -132,7 +132,7 @@ class SDKRuntime:
             except (OSError, ValueError, subprocess.SubprocessError):
                 pass
         try:
-            size = sum(p.stat().st_size for p in self.directory.rglob("*") if p.is_file())
+            size = sum(p.stat().st_size for p in self.directory.rglob("*") if not p.is_symlink() and p.is_file())
         except OSError:
             pass
         return {"rss_bytes": rss, "temporary_bytes": size}

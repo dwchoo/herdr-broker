@@ -52,7 +52,7 @@ Parent 대화와 완료 Job 이력은 보관하지 않는다. 화면·질문·�
 
 검증된 MCP 시작 시 SDK 하나를 백그라운드에서 준비하며 모델은 호출하지 않는다. 목록·입력은 기다리지 않고, 준비 전 분석만 초기화를 기다린다. 정상 프로세스는 MCP 종료까지 유지하며 idle 종료나 누적 thread 생성 횟수에 따른 재시작은 없다.
 
-같은 작업의 `pane_read`는 반환된 `analysis_id`를 이어 쓰고 완료 시 `analysis_release`한다. ID는 정확한 workspace·pane·terminal에 결합한다. 만료된 ID는 오류를 반환하므로 현재 대상을 확인하고 새 분석을 시작한다. 재사용 문맥과 동시 분석은 각각 최대 2개이며 같은 문맥에서 동시에 분석하지 않는다. 문맥은 5분 idle, thread는 8 turn·누적 payload 128 KiB에서 정리·전환한다. 문맥 만료가 프로세스 종료를 뜻하지 않는다. 화면 근거는 관찰 ID와 줄 ID로 구분한다.
+같은 작업의 `analysis_id`는 workspace·pane·terminal에 결합된 작은 연결 기록이다. 매 `pane_read`는 새 thread에서 한 turn만 분석하고 이전 대화를 넣지 않는다. 완료 시 thread를 정리하며 `analysis_release`는 연결 기록을 해제한다. 연결 기록과 동시 분석은 각각 최대 2개, 기록은 5분 idle에서 만료된다. 같은 기록의 동시 호출은 거부하고 만료된 ID는 현재 대상을 확인한 뒤 새로 시작한다. SDK 프로세스는 유지한다. 화면 근거는 관찰 ID와 위치로 구분한다.
 
 분석 60초·정리 대기 5초, 전역 알림 소비, 취소 시 interrupt와 종료 확인을 적용한다. RSS 512 MiB를 30초 간격으로 두 번 확인하거나 임시 폴더 128 MiB, 실제 loaded thread 64개에 도달하면 실행 중 분석을 마친 뒤 SDK만 교체한다. 종료가 미확인이면 새 SDK를 띄우지 않는다. 목록·입력·기존 중복 방지 기록과 Herdr terminal은 유지된다. 세부 계약과 검증은 [SDK 재사용](implementation/sdk-reuse.md)을 따른다.
 
@@ -64,12 +64,22 @@ Parent 대화와 완료 Job 이력은 보관하지 않는다. 화면·질문·�
 
 ## 읽기 지연 확인
 
-`pane_read`의 `timings_ms`는 수집·SDK 준비 대기·thread 생성·turn 접수·첫 event 대기·나머지 stream·보고 검증·정리·최종 identity 확인과 전체 시간을 제공한다. 모델 서비스의 queue·입력 처리·추론 내부 시간은 SDK가 구분하지 않으므로 측정한 것처럼 표시하지 않는다. 실패 시에도 내용 없는 timing 진단을 stderr로 남긴다. 선택한 최근 범위가 부족하면 명시적으로 넓혀 관찰하며, 실제 delta나 장기 화면 cache는 유지하지 않는다. 사용자가 원문을 요청한 raw 읽기는 기존 1,000줄 기본을 유지한다. 검증 방법과 결과는 [화면 분석 지연 개선](implementation/read-latency.md)을 따른다.
+`pane_read`의 `timings_ms`는 수집·SDK 준비 대기·thread 생성·turn 접수·첫 event 대기·나머지 stream·보고 검증·정리·최종 identity 확인과 전체 시간을 제공한다. 모델 서비스의 queue·입력 처리·추론 내부 시간은 SDK가 구분하지 않으므로 측정한 것처럼 표시하지 않는다. 실패 시에도 내용 없는 timing 진단을 stderr로 남긴다. 선택한 최근 범위가 부족하면 명시적으로 넓혀 관찰하며, 실제 delta는 만들지 않는다. 추가 근거 조회용 정제 화면만 최대 10분·16개·1 MiB 보관한다. 사용자가 원문을 요청한 raw 읽기는 기존 1,000줄 기본을 유지한다. 검증 방법과 결과는 [화면 분석 지연 개선](implementation/read-latency.md)을 따른다.
 
-상태 확인의 입력 크기와 SDK token 수는 [status 입력 개선](implementation/status-input.md)을 따른다. `input_bytes`는 화면+목적만, `input_sizes`는 조립 prompt·schema·고정 지침을 구분해 보여 준다. SDK가 추가하는 문맥과 이전 turn은 이 bytes 합계에 포함되지 않으며, 실제 모델 입력은 `usage`를 확인한다.
+상태 확인의 입력 크기와 SDK token 수는 [status 입력 개선](implementation/status-input.md)을 따른다. `input_bytes`는 화면+목적만, `input_sizes`는 조립 prompt·schema·고정 지침을 구분해 보여 준다. SDK protocol 부가량은 이 bytes 합계에 포함되지 않으며, 실제 모델 입력은 `usage`를 확인한다. 독립 thread이므로 이전 turn은 다음 모델 입력에 포함하지 않는다.
 
 ## Worker 속도 선택
 
 로그·출력 분석은 Luna/medium, 상태 확인은 Luna/low가 기본이다. 명시적 `effort="high"`도 사용할 수 있다. Fast는 기본으로 꺼져 있으며 `pane_read(service_tier="fast")`로 해당 호출만 켤 수 있다. 생략하거나 `"default"`를 지정하면 SDK 설정과 관계없이 표준 속도를 요청한다. 같은 analysis_id의 다음 호출에도 Fast가 자동 유지되지 않는다. 응답의 `service_tier_requested`는 요청값이며 실제 제공된 tier나 속도를 보장하지 않는다. 비용과 지연에 영향을 줄 수 있지만 입력 tokens를 줄이지는 않는다. 설계·검증과 추가 문맥의 구성은 [Worker service tier](implementation/service-tier.md)를 참고한다.
 
 Worker에는 자동 Skill·앱·협업·권한 설명·실행 환경 블록과 사용자 설정의 추가 developer 지침·말투를 넣지 않는다. 권한 설명만 생략하며 실제 read-only·deny-all 제한은 유지한다. Worker 전용 임시 profile로 사용자 AGENTS·config 상속을 차단하고, 기존 Luna metadata의 도구 노출만 제한해 도구 정의도 제외한다. 기존 Codex home의 file 인증(`auth.json`)과 `models_cache.json`이 필요하며 인증 값은 복사하지 않는다. 모델 cache가 없으면 Codex를 정상 시작해 갱신한 뒤 새 MCP를 실행한다. 종료 시 참조한 원본 파일은 삭제하지 않는다. 화면 1 KiB와 전체 모델 입력 1,000 tokens는 별도 측정값이다. 기존 Codex 인증과 도구 실행 제한은 유지한다.
+
+## 2026-09-17: 독립 분석과 항목별 보고
+
+후속 사용자 결정으로 SDK 프로세스만 재사용하고 매 호출 새 ephemeral thread에서 한 turn을 수행한 뒤 구독 해제한다. 기존 thread 문맥 재사용·8 turn·128 KiB 전환 설명은 이 변경으로 대체된다. analysis_id는 대상에 묶인 최대 2개의 작은 작업 연결 기록이며 5분 idle 만료·analysis_release를 유지한다. 이전 질문·화면·보고를 다음 분석에 넣지 않는다. 사용자 AGENTS·Skill·도구 정의와 환경 작업 지침 격리는 유지한다.
+
+analysis는 Luna/medium, status는 Luna/low·8줄·1 KiB, Fast는 기본 off다. analysis의 requested_items로 필요한 항목 최대 6개를 지정하고 값·관찰/추정/미확인·근거를 받는다. Worker는 실행 계획이나 원문 복사를 하지 않고 Broker가 근거 위치 검증·원문 추출·중복 제거·예산을 처리한다. 서술 최대 1,000자와 원문 최대 3,000자를 구분한다. 이전 analysis JSON 4 KiB 제한은 이 계약으로 대체된다.
+
+화면 미보관 원칙의 한정된 예외로 성공 관찰의 정제된 화면을 최대 10분·16개·UTF-8 합계 1 MiB 보관한다. pane_excerpt는 같은 observation의 범위·literal 검색·cursor 추가 조회이며 Worker나 Herdr 수집을 호출하지 않는다. SDK 교체나 analysis_release와 독립적으로 만료·퇴출한다. 대화·보고·검색 세션은 누적하지 않는다. 현재 계약은 [계획](plans/worker-report-contract.md)과 [MCP 문서](mcp.md)를 따른다.
+
+임시 파일 용량은 Worker 디렉터리에 실제 보관한 일반 파일을 합산한다. SDK가 설치된 실행 파일이나 기존 인증을 가리키는 symlink 대상 크기를 반복 합산하지 않는다. 이 측정 오류로 불필요한 SDK 교체가 발생하지 않게 한다.

@@ -23,7 +23,7 @@ def create_server(broker: Broker) -> MCPServer[Any]:
         "herdr-broker",
         version="0.2.0",
         log_level="WARNING",
-        instructions="Use workspace_list and pane_list to interpret names and imperfect references. Outside Herdr choose an explicit workspace_id for listing. Select exact pane_id and terminal_id. Use pane_split for a new terminal; pane_layout, pane_swap, pane_move and pane_reorient arrange live panes. pane_close ends a terminal. Work through visible pane commands. Status reads 8 recent lines / 1 KiB with Luna/low; analysis reads 80 lines with Luna/medium. Fast is off unless the user requests it for a call. Expand max_lines explicitly only when the tail is insufficient. Continue the same task with analysis_id and release it when done. Include the user objective to assess existing results before rerunning work. Apply your own approval policy; no Broker approval or attachment is required.",
+        instructions="Use workspace_list and pane_list to interpret names and imperfect references. Outside Herdr choose an explicit workspace_id for listing. Select exact pane_id and terminal_id. Use pane_split for a new terminal; pane_layout, pane_swap, pane_move and pane_reorient arrange live panes. pane_close ends a terminal. Work through visible pane commands. Status reads 8 recent lines / 1 KiB with Luna/low; analysis reads 80 lines with Luna/medium. Fast is off unless the user requests it for a call. Expand max_lines explicitly only when the tail is insufficient. Use requested_items for specific analysis answers; inspect partial or omitted evidence with pane_excerpt. Each read has an independent Worker thread. analysis_id groups only target identity; release it when done. Include the user objective to assess existing results before rerunning work. Apply your own approval policy; no Broker approval or attachment is required.",
     )
     read = ToolAnnotations(read_only_hint=True, destructive_hint=False)
     rename = ToolAnnotations(read_only_hint=False, destructive_hint=False, idempotent_hint=True)
@@ -66,14 +66,30 @@ def create_server(broker: Broker) -> MCPServer[Any]:
         purpose: Purpose = "analysis",
         analysis_id: Id | None = None,
         service_tier: ServiceTier = "default",
+        requested_items: Annotated[list[Annotated[str, Field(min_length=1, max_length=40)]], Field(min_length=1, max_length=6)] | None = None,
+        request_id: Id | None = None,
     ) -> dict[str, Any]:
-        """Read with Luna: status uses low and 8 recent lines / 1 KiB for prompt/pending input/running state; analysis uses medium and 80 lines / 64 KiB for interpretation. Explicit effort overrides apply per turn. Fast is off by default; service_tier="fast" requests Fast for this call only when the user asks. service_tier_requested is not a guarantee of the served tier. Include the user objective and assess existing results before rerunning commands. Carry analysis_id only for the same task/target; expired IDs require rediscovery and a new read. Evidence belongs to the current observation, never input echo. Expand max_lines up to 1000 when needed. Raw is only for requested original text and never changes analysis context. No automatic input, retry, delta or model fallback."""
+        """Read with Luna: status uses low and 8 recent lines / 1 KiB for prompt/pending input/running state; analysis uses medium and 80 lines / 64 KiB for interpretation. Explicit effort overrides apply per turn. Fast is off by default; service_tier="fast" requests Fast for this call only when the user asks. service_tier_requested is not a guarantee of the served tier. Include the user objective and assess existing results before rerunning commands. requested_items specifies up to six unique answer labels for analysis only. Missing values return unknown. Use pane_excerpt for retained source evidence; partial evidence is not full proof. Every read is independent; analysis_id only groups the same task/target; expired IDs require rediscovery and a new read. Evidence belongs to the current observation, never input echo. Expand max_lines up to 1000 when needed. Raw is only for requested original text and never changes analysis context. No automatic input, retry, delta or model fallback."""
         return await invoke(broker.pane_read, pane_id, terminal_id, objective, raw, offset,
-                            effort, max_lines, purpose, analysis_id, service_tier)
+                            effort, max_lines, purpose, analysis_id, service_tier, requested_items, request_id)
+
+    @server.tool(annotations=read)
+    async def pane_excerpt(
+        observation_id: Id,
+        start_line: Annotated[int, Field(ge=1, le=1000)] | None = None,
+        end_line: Annotated[int, Field(ge=1, le=1000)] | None = None,
+        query: Annotated[str, Field(min_length=1, max_length=256)] | None = None,
+        cursor: Annotated[str, Field(min_length=1, max_length=2048)] | None = None,
+    ) -> dict[str, Any]:
+        """Read historical sanitized evidence by inclusive line range, literal search, or returned cursor. No live capture or Worker. At most 4000 characters; continue next_cursor. Expired snapshots are explicit errors. Never treat historical output as current completion. No additional raw permission is needed for evidence verification."""
+        try:
+            return await broker.pane_excerpt(observation_id, start_line, end_line, query, cursor)
+        except BrokerError as exc:
+            raise ToolError(exc.code) from exc
 
     @server.tool(annotations=ToolAnnotations(read_only_hint=False, destructive_hint=False, idempotent_hint=True))
     async def analysis_release(analysis_id: Id) -> dict[str, Any]:
-        """Release this task's idle analysis context when finished. Leaves SDK, panes and terminal work alive. Unknown IDs are harmless; busy contexts must finish first. Unsubscribe does not prove immediate SDK memory unload."""
+        """Release this task's idle identity handle when finished; every Worker thread is already independent. Leaves SDK, panes and terminal work alive. Unknown IDs are harmless; busy contexts must finish first. Unsubscribe does not prove immediate SDK memory unload."""
         return await invoke(broker.worker.release, analysis_id)
 
     @server.tool(annotations=ToolAnnotations(read_only_hint=False, destructive_hint=True))

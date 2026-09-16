@@ -62,7 +62,7 @@ async def test_invalid_read_options_never_capture(harness, options):
 async def test_replacement_during_analysis_rejects_result(harness, monkeypatch):
     peer, _, server, worker = harness
 
-    async def analyze(text, objective, patterns, effort, timings, session, purpose, service_tier):
+    async def analyze(text, objective, patterns, effort, timings, session, purpose, service_tier, requested_items):
         peer.panes[1]["terminal_id"] = "replacement"
         return {"analysis_id": session.id, "report": {"summary": "old screen"}}
 

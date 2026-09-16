@@ -3,12 +3,15 @@ import asyncio
 import gc
 import json
 import os
+import subprocess
 import time
 import tracemalloc
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
 from herdr_broker.herdr import BrokerError
+from herdr_broker.observations import Observations
 from herdr_broker.worker import Worker
 from test_worker_sdk import provider as model_provider_fixture
 from test_worker_sdk import screen
@@ -20,9 +23,10 @@ provider = model_provider_fixture
 async def test_real_sdk_100_analyses_and_35_minute_retention(provider):
     duration = float(os.environ["BROKER_SOAK_SECONDS"])
     worker = Worker(timeout=30)
+    observations = Observations()
     started = time.monotonic()
     records, owned, directories = [], {}, set()
-    output = Path("/private/tmp/herdr-sdk-reuse-soak.json")
+    output = Path("/private/tmp/herdr-report-soak.json")
     tracemalloc.start()
 
     async def measure(stage):
@@ -40,7 +44,9 @@ async def test_real_sdk_100_analyses_and_35_minute_retention(provider):
             "loaded_threads": await runtime.loaded_count(1000),
             "global_queue": runtime.client._client._sync._router._global_notifications.qsize(),
             "python_traced_bytes": tracemalloc.get_traced_memory()[0],
-            "contexts": len(worker.sessions), **await asyncio.to_thread(runtime.resources),
+            "contexts": len(worker.sessions), "snapshot_bytes": observations.bytes, "snapshots": len(observations.records),
+            "python_rss_bytes": int(subprocess.check_output(["/bin/ps", "-o", "rss=", "-p", str(os.getpid())]).strip()) * 1024,
+            **await asyncio.to_thread(runtime.resources),
         }
         assert record["global_queue"] == 0
         records.append(record)
@@ -63,6 +69,7 @@ async def test_real_sdk_100_analyses_and_35_minute_retention(provider):
                 await worker.recycling
                 await measure("recycled")
                 continue
+            observations.put(result["observation_id"], "synthetic", {"captured_at": datetime.now(UTC).isoformat()}, time.monotonic())
             await worker.release(result["analysis_id"])
             provider["requests"].clear()
             completed += 1
@@ -74,7 +81,9 @@ async def test_real_sdk_100_analyses_and_35_minute_retention(provider):
                 await worker.recycling
             await measure("idle")
         assert len(worker.sessions) == 0
+        assert not observations.records and observations.bytes == 0
     finally:
+        observations.close()
         await worker.close()
         tracemalloc.stop()
     assert all(proc.poll() is not None for proc in owned.values())

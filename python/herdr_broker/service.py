@@ -6,11 +6,14 @@ import json
 import re
 from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime
-from time import perf_counter
+from time import monotonic, perf_counter
 from typing import Any
+from uuid import uuid4
 
 from .context import Context
 from .herdr import BrokerError, Pane
+from .observations import Observations
+from .reports import validate_items
 from .snapshot import bounded, clean
 from .worker import Effort, Purpose, ServiceTier, Worker
 
@@ -53,6 +56,7 @@ class Broker:
         self.context = context
         self.herdr = context.herdr
         self.worker = worker
+        self.observations = Observations()
         self.submissions: dict[str, dict[str, Any]] = {}
 
     async def target(self, pane_id: str, terminal_id: str) -> Pane:
@@ -172,6 +176,8 @@ class Broker:
         recent = "\n".join(text.split("\n")[-max_lines:])
         cropped = recent.encode()[-max_bytes:].decode(errors="ignore")
         metadata = {
+            "workspace_id": pane.workspace_id,
+            "tab_id": pane.tab_id,
             "pane_id": pane_id,
             "terminal_id": terminal_id,
             "captured_at": now(),
@@ -189,8 +195,11 @@ class Broker:
         self, pane_id: str, terminal_id: str, objective: str, raw: bool, offset: int,
         effort: Effort | None = None, max_lines: int | None = None,
         purpose: Purpose = "analysis", analysis_id: str | None = None,
-        service_tier: ServiceTier = "default",
+        service_tier: ServiceTier = "default", requested_items: list[str] | None = None,
+        request_id: str | None = None,
     ) -> dict[str, Any]:
+        validate_items(requested_items, purpose, raw)
+        request_id = request_id or uuid4().hex
         started = perf_counter()
         lines = max_lines if max_lines is not None else (1000 if raw else 8 if purpose == "status" else 80)
         byte_limit = 1024 if purpose == "status" and max_lines is None and not raw else 65536
@@ -200,7 +209,7 @@ class Broker:
             next_offset = offset + len(excerpt)
             return {
                 **metadata,
-                "kind": "raw",
+                "kind": "raw", "request_id": request_id,
                 "text": excerpt,
                 "next_offset": next_offset if next_offset < len(cropped) else None,
                 "truncated": metadata["truncated"] or next_offset < len(cropped),
@@ -208,9 +217,12 @@ class Broker:
         if offset:
             raise BrokerError("offset_requires_raw")
         metadata = {}
+        captured_text, captured_time = "", 0.0
 
         async def capture() -> str:
+            nonlocal captured_text, captured_time
             text, observed = await self.capture(pane_id, terminal_id, lines, byte_limit)
+            captured_text, captured_time = text, monotonic()
             metadata.update(observed)
             return text
 
@@ -218,6 +230,7 @@ class Broker:
         report = await self.worker.analyze(
             capture, objective, self.context.patterns, effort=effort, purpose=purpose,
             identity=(pane.workspace_id, pane_id, terminal_id), analysis_id=analysis_id, service_tier=service_tier,
+            requested_items=requested_items,
         )
         check_started = perf_counter()
         try:
@@ -228,7 +241,13 @@ class Broker:
         timings = report.setdefault("timings_ms", {})
         timings["final_identity_check"] = round((perf_counter() - check_started) * 1000, 3)
         timings["total"] = round((perf_counter() - started) * 1000, 3)
-        return {**metadata, "kind": "analysis", **report}
+        expires = self.observations.put(report["observation_id"], captured_text, metadata, captured_time)
+        return {**metadata, "kind": "analysis", **report, "request_id": request_id, "expires_at": expires}
+
+    async def pane_excerpt(self, observation_id: str, start_line: int | None = None,
+                           end_line: int | None = None, query: str | None = None,
+                           cursor: str | None = None) -> dict[str, Any]:
+        return self.observations.excerpt(observation_id, start_line, end_line, query, cursor)
 
     async def pane_send(
         self, pane_id: str, terminal_id: str, request_id: str, text: str, keys: list[str]

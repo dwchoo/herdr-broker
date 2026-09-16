@@ -73,9 +73,20 @@ async def provider(monkeypatch, tmp_path, sdk_home):
                     if latest["purpose"] == "status":
                         current_report = {"observation_id": latest["observation_id"],
                                           "summary": "현재 상태 확인", "lines": [1], "uncertainty": ""}
+                if compact and latest["purpose"] == "analysis" and "items" in request["text"]["format"]["schema"]["properties"]:
+                    rows = latest["screen"]
+                    first_line = next((i + 1 for i, line in enumerate(rows.values()) if line.strip()), None)
+                    current_report = dict(observation_id=latest["observation_id"], summary="build 오류 확인",
+                        items=[dict(item=i + 1, value="미확인", basis="unknown", refs=[])
+                               for i in range(len(latest.get("requested_items", [])))],
+                        findings=[dict(claim="오류", confidence="observed", refs=[1])] if first_line else [],
+                        uncertainties=[], evidence=[dict(start_line=first_line, end_line=first_line,
+                        focus_line=first_line, anchor=rows[f"L{first_line:04}"][:80])] if first_line else [])
                 if state["mode"] == "invalid-evidence":
                     if "lines" in current_report:
                         current_report["lines"] = [9999]
+                    elif "evidence" in current_report:
+                        current_report["evidence"][0]["end_line"] = 999
                     else:
                         current_report["findings"][0]["evidence_ids"] = ["L9999"]
                 if state["mode"] == "large":
@@ -186,14 +197,14 @@ async def worker(provider):
 async def test_sdk_requested_effort_no_tools_and_evidence(provider, worker, effort):
     result = await worker.analyze(screen("build failed"), "진단", [], effort=effort)
     assert result["model_requested"] == "gpt-5.6-luna"
-    assert result["evidence"] == [{"id": result["observation_id"] + ":L0001", "text": "build failed"}]
+    assert len(result["evidence"]) == 1 and result["evidence"][0]["text"] == "build failed"
     for request in provider["requests"]:
         assert request.get("tools", []) == []
         assert request["model"] == "gpt-5.6-luna"
         assert request["reasoning"]["effort"] == effort
         schema = request["text"]["format"]["schema"]
-        assert schema["properties"]["observation_id"]["enum"] == [result["observation_id"]]
-        assert schema["$defs"]["Finding"]["properties"]["evidence_ids"]["items"]["pattern"] == r"^L[0-9]{4}$"
+        assert "enum" not in schema["properties"]["observation_id"]
+        assert schema["$defs"]["Finding"]["properties"]["refs"]["items"]["maximum"] == 6
     sizes = result['input_sizes']
     assert sizes['schema_bytes'] == len(json.dumps(schema, ensure_ascii=False, separators=(',', ':')).encode())
     assert sizes['broker_request_bytes'] == sizes['prompt_bytes'] + sizes['schema_bytes'] + sizes['instructions_bytes']
@@ -215,11 +226,12 @@ async def test_sdk_reuses_process_and_task_changes_effort(provider, worker):
     assert worker.runtime.process is process
     assert worker.sessions[first["analysis_id"]].thread is thread
     assert [r["reasoning"]["effort"] for r in provider["requests"]] == ["low", "medium"]
-    assert second["sdk_reused"] and second["context_reused"]
+    assert second["sdk_reused"] and not second["context_reused"]
+    assert "prompt" not in json.dumps(provider["requests"][-1]["input"], ensure_ascii=False)
+    assert second["context_mode"] == "independent"
     assert first["observation_id"] != second["observation_id"]
-    observations = [r["text"]["format"]["schema"]["properties"]["observation_id"]["enum"]
-                for r in provider["requests"]]
-    assert observations[0] != observations[1]
+    assert all("enum" not in r["text"]["format"]["schema"]["properties"]["observation_id"]
+               for r in provider["requests"])
     assert (await worker.release(first["analysis_id"]))["released"]
     assert not worker.sessions and process.poll() is None
 
@@ -307,19 +319,19 @@ async def test_repeated_sdk_analysis_keeps_one_child_and_drains(provider, worker
     assert process.poll() is not None and not Path(directory).exists()
 
 
-async def test_context_turn_and_byte_limits_rotate_without_process_restart(provider, worker):
-    first = await worker.analyze(screen("first"), "분석", [])
+async def test_independent_calls_release_all_thread_references(provider, worker):
+    first = await worker.analyze(screen("FIRST_SCREEN_SENTINEL"), "FIRST_QUESTION_SENTINEL", [])
     session = worker.sessions[first["analysis_id"]]
     process = worker.runtime.process
-    old = session.thread
-    session.turns = 8
+    assert session.thread is None and session.turn is None
     second = await worker.analyze(screen("second"), "상태", [], purpose="status", analysis_id=session.id)
-    assert second["context_reset_reason"] == "turn_limit" and not second["context_reused"]
-    assert session.thread is not old and worker.runtime.process is process
-    session.bytes = worker.limits.context_bytes
-    third = await worker.analyze(screen("third"), "분석", [], analysis_id=session.id)
-    assert third["context_reset_reason"] == "context_bytes"
-    assert third["analysis_id"] == first["analysis_id"]
+    assert not second["context_reused"] and not second["context_reset"]
+    assert second["context_reset_reason"] is None and worker.runtime.process is process
+    assert "FIRST_SCREEN_SENTINEL" not in json.dumps(provider['requests'][-1])
+    assert "FIRST_QUESTION_SENTINEL" not in json.dumps(provider['requests'][-1])
+    assert session.thread is None and session.turn is None
+    await worker.analyze(screen("third"), "상태", [], purpose="status", analysis_id=session.id)
+    assert provider['requests'][-1]['text']['format']['schema'] == provider['requests'][-2]['text']['format']['schema']
 
 
 async def test_current_evidence_and_status_budget_are_enforced(provider, worker):
@@ -330,7 +342,8 @@ async def test_current_evidence_and_status_budget_are_enforced(provider, worker)
     provider["mode"] = "large"
     with pytest.raises(BrokerError, match="worker_invalid_report"):
         await worker.analyze(screen("screen"), "상태", [], purpose="status")
-    assert (await worker.analyze(screen("screen"), "분석", []))["report_bytes"] > 1024
+    with pytest.raises(BrokerError, match="worker_invalid_report"):
+        await worker.analyze(screen("screen"), "분석", [])
 
 
 async def test_actual_loaded_limit_recycles_and_expires_handles(provider, worker):

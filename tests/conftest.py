@@ -7,10 +7,12 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
+from uuid import uuid4
 
 import pytest
 from herdr_broker.context import Context
 from herdr_broker.herdr import BrokerError, Herdr
+from herdr_broker.reports import build_report
 from herdr_broker.server import create_server
 from herdr_broker.service import Broker
 from herdr_broker.worker import Worker
@@ -38,11 +40,21 @@ class StubWorker(Worker):
     async def _initialize(self):
         self.runtime = SimpleNamespace(unsubscribe=AsyncMock(), close=AsyncMock())
 
-    async def _analyze(self, text, objective, patterns, effort, timings, session, purpose, service_tier):
+    async def _analyze(self, text, objective, patterns, effort, timings, session, purpose, service_tier, requested_items):
         self.calls.append((text, objective))
         if self.error:
             raise BrokerError(self.error)
-        return {"analysis_id": session.id, "purpose": purpose, "effort": effort, "service_tier_requested": service_tier, "report": {"summary": "화면 확인", "findings": [], "next_checks": [], "uncertainties": []}}
+        observation = uuid4().hex
+        candidate = [] if not text.strip() else [dict(start_line=1, end_line=1, focus_line=1, anchor=text.split('\n')[0][:80])]
+        wire = dict(observation_id=observation, summary="화면 확인", items=[
+            dict(item=i + 1, value="미확인", basis="unknown", refs=[]) for i in range(len(requested_items))
+        ], findings=[], uncertainties=[], evidence=candidate)
+        if purpose == "status":
+            wire = dict(observation_id=observation, summary="화면 확인", lines=[1] if text.strip() else [], uncertainty="")
+        return {"analysis_id": session.id, "observation_id": observation, "purpose": purpose,
+                "effort": effort, "service_tier_requested": service_tier,
+                **build_report(json.dumps(wire), text, observation, purpose, requested_items, patterns)}
+
 
 
 class Peer:
@@ -336,6 +348,7 @@ async def harness(tmp_path, socket_path):
         try:
             yield peer, broker, create_server(broker), worker
         finally:
+            broker.observations.close()
             await worker.close()
 
 
