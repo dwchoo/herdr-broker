@@ -11,7 +11,7 @@ uv sync --locked
 uv run herdr-broker setup --project .
 ```
 
-setup은 `.codex/config.toml`의 Broker MCP 블록만 갱신하고 승인 설정은 바꾸지 않는다. 이 프로젝트에서 새 Codex를 시작한 뒤 `$broker`를 호출한다. Herdr shell과 같은 Mac의 Codex CLI·Desktop을 지원한다. 개발 checkout은 `uv run --project <경로> herdr-broker mcp --project <경로>`로 실행한다. 패키지는 `uvx --from <wheel 경로 또는 버전 고정 Git URL> herdr-broker mcp --project <프로젝트 경로>`로도 실행할 수 있다. 아직 공개 registry에 배포했다고 가정하지 않는다.
+setup은 `.codex/config.toml`의 Broker MCP 블록만 갱신하고 승인 설정은 바꾸지 않는다. 이 프로젝트에서 새 Codex를 시작한 뒤 `$broker`를 호출한다. Herdr shell과 같은 Mac의 Codex CLI·Desktop을 지원한다. 개발 checkout은 `uv run --project <경로> herdr-broker mcp --project <경로>`로 실행한다. 패키지는 `uvx --from <wheel 경로 또는 Git URL> herdr-broker mcp --project <프로젝트 경로>`로도 실행할 수 있다. 아직 공개 registry에 배포했다고 가정하지 않는다.
 
 같은 Mac·OS 사용자의 Codex CLI·Desktop에서도 사용할 수 있다. Herdr 밖에서는 `workspace_list`로 workspace를 고르고 `workspace_id`를 지정해 tab·pane을 조회한다. Herdr 안에서는 주입된 workspace·tab·pane·socket과 실제 shell의 프로세스 조상 관계를 확인하며 caller workspace가 기본값이다. 불완전하거나 잘못된 Herdr 환경값을 외부 모드로 우회하지 않는다. MCP는 설정의 project 경로 아래에서 실행하며, 사용자 소유 `~/.config/herdr-broker/config.json`의 `herdr_socket`·`redaction_patterns` 설정을 사용할 수 있다. 원격 컴퓨터·cloud ChatGPT 연결은 이번 로컬 연결에 포함하지 않는다. legacy `codex_binary`는 새 SDK runtime 선택에 사용하지 않는다.
 
@@ -19,7 +19,7 @@ setup은 `.codex/config.toml`의 Broker MCP 블록만 갱신하고 승인 설정
 
 1. `$broker 현재 pane이 뭐야?` — workspace 전체의 tab·pane 이름과 실제 ID를 읽는다. 목록 조회는 화면 수집·분석·입력·이름 변경을 하지 않는다.
 2. `1008 · 서버에서 상태 확인해줘` — Parent가 최신 목록과 대화 맥락에서 대상을 선택하고 사용자에게 알린다. 번호·이름이 불명확하면 후보와 위치를 확인한다.
-3. `pane_read` — 출력 길이와 관계없이 `gpt-5.6-luna`가 화면만 분석한다. 기본 `purpose="analysis"`는 Luna/medium, `purpose="status"`는 prompt 복귀·미완성 입력·실행 중 여부를 Luna/low로 확인한다. status는 최근 8줄·1 KiB, analysis는 80줄·64 KiB를 기본으로 읽는다. 문맥이 부족하면 `max_lines`를 명시해 최대 1,000줄·64 KiB로 넓힌다. 명시적 effort 지정은 유지한다. 이번 관찰로 결정할 일을 기준으로 purpose를 명시한다. 새 명령 입력 전에는 현재 프로그램·prompt·미제출 입력 확인만 status로 요청한다. 사용자에게 답할 내용이나 실행 결과를 해석할 때 analysis를 사용한다. 기존 출력에서 답을 찾는 작업은 analysis로 수행하며, 이미 필요한 분석에서 현재 입력 상태도 확인됐다면 status를 추가로 반복하지 않는다. Worker는 파일·shell·MCP 도구를 사용하지 않는다. 사용자가 원문을 요청했을 때만 raw 읽기를 사용한다.
+3. `pane_read` — 출력 길이와 관계없이 설정된 Worker 모델(기본 `gpt-5.6-luna`)이 화면만 분석한다. 기본 `purpose="analysis"`는 Luna/medium, `purpose="status"`는 prompt 복귀·미완성 입력·실행 중 여부를 Luna/low로 확인한다. status는 최근 8줄·1 KiB, analysis는 80줄·64 KiB를 기본으로 읽는다. 문맥이 부족하면 `max_lines`를 명시해 최대 1,000줄·64 KiB로 넓힌다. 명시적 effort 지정은 유지한다. 이번 관찰로 결정할 일을 기준으로 purpose를 명시한다. 새 명령 입력 전에는 현재 프로그램·prompt·미제출 입력 확인만 status로 요청한다. 사용자에게 답할 내용이나 실행 결과를 해석할 때 analysis를 사용한다. 기존 출력에서 답을 찾는 작업은 analysis로 수행하며, 이미 필요한 분석에서 현재 입력 상태도 확인됐다면 status를 추가로 반복하지 않는다. Worker는 파일·shell·MCP 도구를 사용하지 않는다. 사용자가 원문을 요청했을 때만 raw 읽기를 사용한다.
 4. `pane_execute` — 실행할 명령과 Enter 하나를 같은 요청으로 보낸다. 입력만 하거나 TUI의 특정 키를 누를 때는 기존 `pane_send`를 사용한다. SSH 여부에 따라 별도 준비 절차를 두지 않는다.
 5. 최신 확인이 필요한 때만 실행하고, 최근 화면을 다시 읽어 결과와 prompt 복귀를 확인한다. 이전 출력 재사용 시 그 결과가 현재 값이라고 추측하지 않는다. ACK는 입력 접수이며 실행 완료·성공·exit code를 뜻하지 않는다.
 
@@ -72,16 +72,20 @@ Parent 대화와 완료 Job 이력은 보관하지 않는다. 화면·질문·�
 
 ## Worker 속도 선택
 
-로그·출력 분석은 Luna/medium, 상태 확인은 Luna/low가 기본이다. 명시적 `effort="high"`도 사용할 수 있다. Fast는 기본으로 꺼져 있으며 `pane_read(service_tier="fast")`로 해당 호출만 켤 수 있다. 생략하거나 `"default"`를 지정하면 SDK 설정과 관계없이 표준 속도를 요청한다. 같은 analysis_id의 다음 호출에도 Fast가 자동 유지되지 않는다. 응답의 `service_tier_requested`는 요청값이며 실제 제공된 tier나 속도를 보장하지 않는다. 비용과 지연에 영향을 줄 수 있지만 입력 tokens를 줄이지는 않는다. 설계·검증과 추가 문맥의 구성은 [Worker service tier](implementation/service-tier.md)를 참고한다.
+로그·출력 분석은 Luna/medium, 상태 확인은 Luna/low가 기본이다. 명시적 `effort="high"`도 사용할 수 있다. Fast는 기본으로 꺼져 있으며 `pane_read(service_tier="fast")`로 해당 호출만 켤 수 있다. 생략/null이면 MCP 시작 설정을 상속하고 `"default"`는 해당 호출에 표준 속도를 요청한다. 같은 analysis_id의 다음 호출에도 Fast가 자동 유지되지 않는다. 응답의 `service_tier_requested`는 요청값이며 실제 제공된 tier나 속도를 보장하지 않는다. 비용과 지연에 영향을 줄 수 있지만 입력 tokens를 줄이지는 않는다. 설계·검증과 추가 문맥의 구성은 [Worker service tier](implementation/service-tier.md)를 참고한다.
 
-Worker에는 자동 Skill·앱·협업·권한 설명·실행 환경 블록과 사용자 설정의 추가 developer 지침·말투를 넣지 않는다. 권한 설명만 생략하며 실제 read-only·deny-all 제한은 유지한다. Worker 전용 임시 profile로 사용자 AGENTS·config 상속을 차단하고, 기존 Luna metadata의 도구 노출만 제한해 도구 정의도 제외한다. 기존 Codex home의 file 인증(`auth.json`)과 `models_cache.json`이 필요하며 인증 값은 복사하지 않는다. 모델 cache가 없으면 Codex를 정상 시작해 갱신한 뒤 새 MCP를 실행한다. 종료 시 참조한 원본 파일은 삭제하지 않는다. 화면 1 KiB와 전체 모델 입력 1,000 tokens는 별도 측정값이다. 기존 Codex 인증과 도구 실행 제한은 유지한다.
+Worker에는 자동 Skill·앱·협업·권한 설명·실행 환경 블록과 사용자 설정의 추가 developer 지침·말투를 넣지 않는다. 권한 설명만 생략하며 실제 read-only·deny-all 제한은 유지한다. Worker 전용 임시 profile로 사용자 AGENTS·config 상속을 차단하고, 선택한 모델의 metadata에서 도구 노출을 제한해 도구 정의도 제외한다. 기존 Codex home의 file 인증(`auth.json`)과 `models_cache.json`이 필요하며 인증 값은 복사하지 않는다. 모델 cache가 없으면 Codex를 정상 시작해 갱신한 뒤 새 MCP를 실행한다. 종료 시 참조한 원본 파일은 삭제하지 않는다. 화면 1 KiB와 전체 모델 입력 1,000 tokens는 별도 측정값이다. 기존 Codex 인증과 도구 실행 제한은 유지한다.
 
 ## 2026-09-17: 독립 분석과 항목별 보고
 
 후속 사용자 결정으로 SDK 프로세스만 재사용하고 매 호출 새 ephemeral thread에서 한 turn을 수행한 뒤 구독 해제한다. 기존 thread 문맥 재사용·8 turn·128 KiB 전환 설명은 이 변경으로 대체된다. analysis_id는 대상에 묶인 최대 2개의 작은 작업 연결 기록이며 5분 idle 만료·analysis_release를 유지한다. 이전 질문·화면·보고를 다음 분석에 넣지 않는다. 사용자 AGENTS·Skill·도구 정의와 환경 작업 지침 격리는 유지한다.
 
-analysis는 Luna/medium, status는 Luna/low·8줄·1 KiB, Fast는 기본 off다. analysis의 requested_items로 필요한 항목 최대 6개를 지정하고 값·관찰/추정/미확인·근거를 받는다. Worker는 실행 계획이나 원문 복사를 하지 않고 Broker가 근거 위치 검증·원문 추출·중복 제거·예산을 처리한다. 서술 최대 1,000자와 원문 최대 3,000자를 구분한다. 이전 analysis JSON 4 KiB 제한은 이 계약으로 대체된다.
+analysis는 Luna/medium, status는 Luna/low·8줄·1 KiB, Fast는 기본 off다. analysis의 requested_items로 필요한 항목 최대 6개를 지정하고 값·관찰/추정/미확인·근거를 받는다. Worker는 실행 계획이나 원문 복사를 하지 않고 Broker가 근거 위치 검증·원문 추출·중복 제거·예산을 처리한다. 기본 medium 모드에서 서술 최대 1,000자와 원문 최대 3,000자를 구분한다. 이전 analysis JSON 4 KiB 제한은 이 계약으로 대체된다.
 
 화면 미보관 원칙의 한정된 예외로 성공 관찰의 정제된 화면을 최대 10분·16개·UTF-8 합계 1 MiB 보관한다. pane_excerpt는 같은 observation의 범위·literal 검색·cursor 추가 조회이며 Worker나 Herdr 수집을 호출하지 않는다. SDK 교체나 analysis_release와 독립적으로 만료·퇴출한다. 대화·보고·검색 세션은 누적하지 않는다. 현재 계약은 [계획](plans/worker-report-contract.md)과 [MCP 문서](mcp.md)를 따른다.
 
 임시 파일 용량은 Worker 디렉터리에 실제 보관한 일반 파일을 합산한다. SDK가 설치된 실행 파일이나 기존 인증을 가리키는 symlink 대상 크기를 반복 합산하지 않는다. 이 측정 오류로 불필요한 SDK 교체가 발생하지 않게 한다.
+
+## Worker 실행 설정
+
+모델·effort·Fast·응답 길이·Markdown template과 GitHub uvx 실행은 [Worker 설정](implementation/worker-options.md)을 따른다. Luna/medium·Luna/low와 Fast off는 기본값이다. 호출에서 effort·tier를 생략하면 시작 설정을 상속한다. 사용자가 요청한 변경만 Main Agent가 명시한다. 현재 공개 main의 Python 구현 반영과 현재 MCP 전환은 별도 작업이다.

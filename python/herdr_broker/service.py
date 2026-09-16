@@ -195,7 +195,7 @@ class Broker:
         self, pane_id: str, terminal_id: str, objective: str, raw: bool, offset: int,
         effort: Effort | None = None, max_lines: int | None = None,
         purpose: Purpose = "analysis", analysis_id: str | None = None,
-        service_tier: ServiceTier = "default", requested_items: list[str] | None = None,
+        service_tier: ServiceTier | None = None, requested_items: list[str] | None = None,
         request_id: str | None = None,
     ) -> dict[str, Any]:
         validate_items(requested_items, purpose, raw)

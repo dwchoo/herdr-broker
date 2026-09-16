@@ -51,7 +51,7 @@ async def test_explicit_range_effort_and_raw_compatibility(harness):
     assert tail['text'] == '248\n249' and tail['truncated']
 
 
-@pytest.mark.parametrize('options', [{'max_lines': 0}, {'max_lines': 1001}, {'effort': 'invalid'}, {'service_tier': 'invalid'}, {'service_tier': None}])
+@pytest.mark.parametrize('options', [{'max_lines': 0}, {'max_lines': 1001}, {'effort': 'invalid'}, {'service_tier': 'invalid'}])
 async def test_invalid_read_options_never_capture(harness, options):
     peer, _, server, _ = harness
     with pytest.raises(Exception):

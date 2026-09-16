@@ -12,9 +12,10 @@ from openai_codex import AsyncCodex
 from openai_codex.generated.v2_all import ThreadLoadedListResponse, ThreadUnsubscribeResponse
 
 from .herdr import BrokerError
+from .options import Effort, ServiceTier
 
 
-def analysis_profile(directory: str, model: str) -> tuple[Path, Path]:
+def analysis_profile(directory: str, model: str | tuple[str, ...]) -> tuple[Path, Path]:
     """Scope SDK settings to this Worker; reference file auth without reading it."""
     source = Path(os.environ.get("CODEX_HOME", str(Path.home() / ".codex"))).expanduser().resolve()
     auth = source / "auth.json"
@@ -25,22 +26,39 @@ def analysis_profile(directory: str, model: str) -> tuple[Path, Path]:
         if cache.stat().st_size > 8 * 1024 * 1024:
             raise ValueError("model cache too large")
         models = json.loads(cache.read_text())["models"]
-        matches = [item for item in models if isinstance(item, dict) and item.get("slug") == model]
-        if len(matches) != 1:
-            raise ValueError("model unavailable")
-        metadata = matches[0]
+        selected = dict.fromkeys((model,) if isinstance(model, str) else model)
+        restricted = []
+        for slug in selected:
+            matches = [item for item in models if isinstance(item, dict) and item.get("slug") == slug]
+            if len(matches) != 1:
+                raise ValueError("model unavailable")
+            metadata = matches[0]
+            # Preserve model limits, supported tiers and security metadata. Only disable tools.
+            metadata.update(tool_mode="direct", apply_patch_tool_type=None,
+                            supports_search_tool=False, multi_agent_version=None,
+                            experimental_supported_tools=[])
+            restricted.append(metadata)
     except (OSError, ValueError, TypeError, KeyError):
         raise BrokerError("worker_model_catalog_unavailable") from None
-    # Preserve model limits, supported tiers and security metadata. Only disable tools.
-    metadata.update(tool_mode="direct", apply_patch_tool_type=None,
-                    supports_search_tool=False, multi_agent_version=None,
-                    experimental_supported_tools=[])
     profile = Path(directory) / "profile"
     profile.mkdir(mode=0o700)
     (profile / "auth.json").symlink_to(auth)
     catalog = profile / "models.json"
-    catalog.write_text(json.dumps({"models": [metadata]}))
+    catalog.write_text(json.dumps({"models": restricted}))
     return profile, catalog
+
+
+def validate_model(metadata: dict[str, object], effort: Effort, tier: ServiceTier) -> None:
+    levels = metadata.get("supported_reasoning_levels")
+    if not isinstance(levels, list):
+        raise BrokerError("worker_model_catalog_unavailable")
+    if not any(isinstance(x, dict) and x.get("effort") == effort for x in levels):
+        raise BrokerError("worker_effort_unsupported")
+    tiers = metadata.get("service_tiers")
+    if tier == "fast" and (not isinstance(tiers, list) or not any(
+        isinstance(x, dict) and x.get("id") == "priority" for x in tiers
+    )):
+        raise BrokerError("worker_fast_unsupported")
 
 
 class SDKRuntime:

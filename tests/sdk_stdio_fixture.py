@@ -28,7 +28,10 @@ async def main():
                         await asyncio.sleep(0.001)
                 else:
                     await worker.startup
-                Path(sys.argv[1]).write_text(str(worker.runtime.process.pid))
+                path = Path(sys.argv[1])
+                staging = path.with_suffix('.pending')
+                staging.write_text(str(worker.runtime.process.pid))
+                staging.replace(path)
 
             notify = asyncio.create_task(ready())
             try:

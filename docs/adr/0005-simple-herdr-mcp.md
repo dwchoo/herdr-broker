@@ -31,3 +31,10 @@ MCP와 분석 Worker는 호출한 Codex와 함께 종료한다. Herdr terminal�
 analysis는 Luna/medium, status는 Luna/low·8줄·1 KiB, Fast는 기본 off다. analysis의 requested_items로 필요한 항목 최대 6개를 지정하고 값·관찰/추정/미확인·근거를 받는다. Worker는 실행 계획이나 원문 복사를 하지 않고 Broker가 근거 위치 검증·원문 추출·중복 제거·예산을 처리한다. 서술 최대 1,000자와 원문 최대 3,000자를 구분한다. 이전 analysis JSON 4 KiB 제한은 이 계약으로 대체된다.
 
 화면 미보관 원칙의 한정된 예외로 성공 관찰의 정제된 화면을 최대 10분·16개·UTF-8 합계 1 MiB 보관한다. pane_excerpt는 같은 observation의 범위·literal 검색·cursor 추가 조회이며 Worker나 Herdr 수집을 호출하지 않는다. SDK 교체나 analysis_release와 독립적으로 만료·퇴출한다. 대화·보고·검색 세션은 누적하지 않는다. 현재 계약은 [계획](../plans/worker-report-contract.md)과 [MCP 문서](../mcp.md)를 따른다.
+
+
+## 2026-09-17: Worker 실행 설정
+
+모델·effort·Fast는 purpose별 시작 설정을 사용한다. 기본값은 기존 Luna/medium·Luna/low·Fast off이며, 사용자 요청 시 Parent가 해당 호출의 effort·tier를 명시할 수 있다. 생략/null은 시작 설정을 상속하고 명시적인 default tier는 Fast를 끈다. 승인 정책은 추가하지 않는다.
+
+응답 길이는 short/medium/long/auto로 정하며 medium 계약을 유지한다. auto는 단일 turn에서 medium/long을 선택해 해당 한도를 검증한다. 응답 지침은 편집 가능한 Markdown template로 분리하지만 schema·근거 추출·길이 제한·도구 차단은 코드가 관리한다. 설정과 template 변경은 다음 MCP 시작부터 적용한다. GitHub uvx 설치와 세부 기준은 [Worker 설정](../implementation/worker-options.md)을 따른다.

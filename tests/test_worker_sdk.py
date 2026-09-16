@@ -82,6 +82,8 @@ async def provider(monkeypatch, tmp_path, sdk_home):
                         findings=[dict(claim="오류", confidence="observed", refs=[1])] if first_line else [],
                         uncertainties=[], evidence=[dict(start_line=first_line, end_line=first_line,
                         focus_line=first_line, anchor=rows[f"L{first_line:04}"][:80])] if first_line else [])
+                if "response_length" in request.get("text", {}).get("format", {}).get("schema", {}).get("properties", {}):
+                    current_report["response_length"] = state.get("response_length", "medium")
                 if state["mode"] == "invalid-evidence":
                     if "lines" in current_report:
                         current_report["lines"] = [9999]
@@ -170,8 +172,8 @@ async def provider(monkeypatch, tmp_path, sdk_home):
     original = module.worker_config
     override = f'model_providers.probe={{name="Probe",base_url="http://127.0.0.1:{server.server_port}/v1",wire_api="responses",requires_openai_auth=false,request_max_retries=0,stream_max_retries=0}}'
 
-    def config(directory):
-        value = original(directory)
+    def config(directory, options=None):
+        value = original(directory, options)
         return replace(value, config_overrides=value.config_overrides + ('model_provider="probe"', override))
 
     monkeypatch.setattr(module, "worker_config", config)
@@ -410,3 +412,54 @@ async def test_sdk_catalog_schema_failure_is_explicit_after_warmup(provider, wor
     with pytest.raises(BrokerError, match='worker_model_catalog_unavailable'):
         await worker.analyze(screen('prompt'), '상태', [], purpose='status')
     assert not provider['requests'] and worker.runtime is None
+
+
+@pytest.mark.parametrize('choice', ['medium', 'long'])
+async def test_configured_models_templates_and_auto_share_one_sdk(provider, sdk_home, tmp_path, choice):
+    from herdr_broker.options import WorkerOptions, export_templates
+    cache = sdk_home / 'models_cache.json'
+    data = json.loads(cache.read_text())
+    data['models'].append(dict(data['models'][0], slug='probe-status'))
+    cache.write_text(json.dumps(data))
+    templates = tmp_path / 'templates'
+    export_templates(templates)
+    (templates / 'analysis.md').write_text('ANALYSIS_TEMPLATE_SENTINEL')
+    (templates / 'status.md').write_text('STATUS_TEMPLATE_SENTINEL')
+    options = WorkerOptions(status_model='probe-status', status_effort='medium', analysis_effort='high',
+                            fast_mode='analysis', response_length_mode='auto', template_dir=templates)
+    worker = module.Worker(timeout=20, options=options)
+    provider['response_length'] = choice
+    try:
+        worker.warmup()
+        await worker.startup
+        assert not provider['requests']
+        process = worker.runtime.process
+        first = await worker.analyze(screen('prompt'), '상태', [], purpose='status')
+        (templates / 'analysis.md').write_text('EDIT_NOT_UNTIL_RESTART')
+        second = await worker.analyze(screen('result'), '분석', [], analysis_id=first['analysis_id'])
+        third = await worker.analyze(screen('result'), '분석', [], effort='low', service_tier='default')
+        assert worker.runtime.process is process
+        assert len(provider['requests']) == 3
+        assert second['response_length_mode'] == 'auto' and second['response_length_used'] == choice
+        assert third['effort'] == 'low' and third['service_tier_requested'] == 'default'
+        assert [r['model'] for r in provider['requests']] == ['probe-status', module.MODEL, module.MODEL]
+        assert [r['reasoning']['effort'] for r in provider['requests']] == ['medium', 'high', 'low']
+        assert [r.get('service_tier') for r in provider['requests']] == [None, 'priority', None]
+        for i, request in enumerate(provider['requests']):
+            encoded = json.dumps(request)
+            assert ('STATUS_TEMPLATE_SENTINEL' in encoded) == (i == 0)
+            assert ('ANALYSIS_TEMPLATE_SENTINEL' in encoded) == (i != 0)
+            assert 'EDIT_NOT_UNTIL_RESTART' not in encoded
+            assert 'PARENT_ONLY_INSTRUCTIONS' not in encoded and not request.get('tools')
+        # A resource recycle must not reload edited templates inside this MCP.
+        worker._retire('temporary_limit')
+        await worker.recycling
+        assert process.poll() is not None and worker.runtime.process is not process
+        await worker.analyze(screen('result'), '분석', [])
+        assert 'ANALYSIS_TEMPLATE_SENTINEL' in json.dumps(provider['requests'][-1])
+        assert 'EDIT_NOT_UNTIL_RESTART' not in json.dumps(provider['requests'][-1])
+        replacement = worker.runtime.process
+        owned = worker.directory.name
+    finally:
+        await worker.close()
+    assert replacement.poll() is not None and not Path(owned).exists()

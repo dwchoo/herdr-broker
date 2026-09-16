@@ -1,1 +1,3 @@
+# Status response
+
 For status, describe visible program/prompt, pending input or activity briefly; cite current line numbers and state uncertainty when the tail is insufficient.

@@ -32,13 +32,17 @@ def pane(number, tab="w1:t1", **extra):
 
 
 class StubWorker(Worker):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self.calls = []
         self.error = None
 
     async def _initialize(self):
         self.runtime = SimpleNamespace(unsubscribe=AsyncMock(), close=AsyncMock())
+        self.model_metadata = {self.options.model(purpose): {
+            "supported_reasoning_levels": [{"effort": e} for e in ("low", "medium", "high")],
+            "service_tiers": [{"id": "priority"}],
+        } for purpose in ("status", "analysis")}
 
     async def _analyze(self, text, objective, patterns, effort, timings, session, purpose, service_tier, requested_items):
         self.calls.append((text, objective))
@@ -51,9 +55,11 @@ class StubWorker(Worker):
         ], findings=[], uncertainties=[], evidence=candidate)
         if purpose == "status":
             wire = dict(observation_id=observation, summary="화면 확인", lines=[1] if text.strip() else [], uncertainty="")
+        if purpose == "analysis" and self.options.response_length_mode == "auto":
+            wire["response_length"] = "medium"
         return {"analysis_id": session.id, "observation_id": observation, "purpose": purpose,
                 "effort": effort, "service_tier_requested": service_tier,
-                **build_report(json.dumps(wire), text, observation, purpose, requested_items, patterns)}
+                **build_report(json.dumps(wire), text, observation, purpose, requested_items, patterns, self.options.response_length_mode)}
 
 
 
@@ -361,7 +367,7 @@ def sdk_home(tmp_path, monkeypatch):
     (source / "config.toml").write_text('developer_instructions="PARENT_CONFIG_INSTRUCTIONS"\nservice_tier="fast"\n[features]\nfast_mode=false\n')
     (source / "models_cache.json").write_text(json.dumps({"models": [{
         "slug": "gpt-5.6-luna", "display_name": "Probe", "description": None,
-        "supported_reasoning_levels": [], "shell_type": "unified_exec",
+        "supported_reasoning_levels": [{"effort": e, "description": e} for e in ("low", "medium", "high")], "shell_type": "unified_exec",
         "visibility": "list", "supported_in_api": True, "priority": 1,
         "service_tiers": [{"id": "priority", "name": "Fast", "description": "Probe"}],
         "support_verbosity": False, "truncation_policy": {"mode": "bytes", "limit": 10000},

@@ -2,12 +2,14 @@
 from __future__ import annotations
 
 import json
+from functools import lru_cache
 from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, create_model
 
 from .herdr import BrokerError
 from .observations import Screen, Span, merge
+from .options import LengthMode
 from .snapshot import clean
 
 Line = Annotated[int, Field(strict=True, ge=1, le=1000)]
@@ -47,6 +49,38 @@ class AnalysisReport(Contract):
     evidence: list[Candidate] = Field(max_length=6)
 
 
+BUDGETS = {"short": (500, 1500), "medium": (1000, 3000), "long": (2000, 6000)}
+
+
+@lru_cache(maxsize=4)
+def analysis_contract(mode: LengthMode) -> type[BaseModel]:
+    if mode == "medium":
+        return AnalysisReport
+    scale = 0.5 if mode == "short" else 2
+    answer = create_model(f"{mode}Answer", __base__=Answer,
+                          value=(str, Field(min_length=1, max_length=int(60 * scale))))
+    finding = create_model(f"{mode}Finding", __base__=Finding,
+                           claim=(str, Field(max_length=int(70 * scale))))
+    fields: dict[str, Any] = dict(
+        summary=(str, Field(max_length=int(160 * scale))),
+        items=(list[answer], Field(max_length=6)),  # type: ignore[valid-type]
+        findings=(list[finding], Field(max_length=2)),  # type: ignore[valid-type]
+        uncertainties=(list[Annotated[str, Field(max_length=int(50 * scale))]], Field(max_length=2)),
+    )
+    if mode == "auto":
+        fields["response_length"] = (Literal["medium", "long"], ...)
+    return create_model(f"{mode}AnalysisReport", __base__=AnalysisReport, **fields)
+
+
+def length_instructions(mode: LengthMode) -> str:
+    selection = ("Choose response_length=medium normally; choose long only when required answers, errors or "
+                 "limitations need more space. Select once in this response. Medium field limits: summary 160, item value 60, "
+                 "finding claim 70, uncertainty 50 characters; long doubles these limits. " if mode == "auto" else "")
+    budgets = "; ".join(f"{name}: narrative {a} characters, evidence {b} characters"
+                        for name, (a, b) in BUDGETS.items() if (mode == "auto" and name != "short") or name == mode)
+    return selection + budgets + ". Narrative includes item labels. Schema field and count limits also apply."
+
+
 class StatusReport(Contract):
     observation_id: str
     summary: str = Field(max_length=60)
@@ -64,7 +98,7 @@ def validate_items(items: list[str] | None, purpose: str, raw: bool = False) -> 
     return items
 
 
-def candidate_spans(screen: Screen, candidates: list[Candidate]) -> list[Span]:
+def candidate_spans(screen: Screen, candidates: list[Candidate], budget: int = 3000) -> list[Span]:
     spans = []
     for c in candidates:
         if not c.start_line <= c.focus_line <= c.end_line:
@@ -74,37 +108,37 @@ def candidate_spans(screen: Screen, candidates: list[Candidate]) -> list[Span]:
         except BrokerError:
             raise BrokerError('worker_invalid_evidence') from None
         line = screen.lines[c.focus_line - 1]
-        if (c.anchor and c.anchor not in line) or (len(line) > 3000 and not c.anchor):
+        if (c.anchor and c.anchor not in line) or (len(line) > budget and not c.anchor):
             raise BrokerError('worker_invalid_evidence')
         spans.append(span)
     return spans
 
 
-def extract(screen: Screen, candidates: list[Candidate], observation: str) -> tuple[list[dict[str, Any]],
+def extract(screen: Screen, candidates: list[Candidate], observation: str, budget: int = 3000) -> tuple[list[dict[str, Any]],
                                                                                    list[dict[str, Any]],
                                                                                    list[dict[str, Any]]]:
-    original = candidate_spans(screen, candidates)
+    original = candidate_spans(screen, candidates, budget)
     selected = list(original)
-    while len(selected) > 1 and sum(b - a for a, b in merge(selected)) > 3000:
+    while len(selected) > 1 and sum(b - a for a, b in merge(selected)) > budget:
         selected.pop()
-    if selected and selected[0][1] - selected[0][0] > 3000:
+    if selected and selected[0][1] - selected[0][0] > budget:
         c = candidates[0]
         a, b = screen.span(c.focus_line, c.focus_line)
-        if b - a > 3000:
+        if b - a > budget:
             hit = a + screen.lines[c.focus_line - 1].index(c.anchor)
-            start = min(max(a, hit - (3000 - len(c.anchor)) // 2), b - 3000)
-            selected[0] = (start, start + 3000)
+            start = min(max(a, hit - (budget - len(c.anchor)) // 2), b - budget)
+            selected[0] = (start, start + budget)
         else:
             left = right = c.focus_line
             while left > c.start_line or right < c.end_line:
                 if left > c.start_line:
                     trial = screen.span(left - 1, right)
-                    if trial[1] - trial[0] > 3000:
+                    if trial[1] - trial[0] > budget:
                         break
                     left -= 1
                 if right < c.end_line:
                     trial = screen.span(left, right + 1)
-                    if trial[1] - trial[0] > 3000:
+                    if trial[1] - trial[0] > budget:
                         break
                     right += 1
             selected[0] = screen.span(left, right)
@@ -145,8 +179,11 @@ def references(refs: list[int], delivery: list[dict[str, Any]], required: bool) 
 
 
 def build_report(final: str, text: str, observation: str, purpose: str,
-                 items: list[str], patterns: list[str]) -> dict[str, Any]:
+                 items: list[str], patterns: list[str], length_mode: LengthMode = "medium") -> dict[str, Any]:
     screen = Screen(text)
+    analysis: Any
+    used: LengthMode = length_mode
+    evidence_budget = 3000
     try:
         if purpose == 'status':
             status = StatusReport.model_validate_json(final)
@@ -165,7 +202,11 @@ def build_report(final: str, text: str, observation: str, purpose: str,
                 next_checks=[], uncertainties=[clean(status.uncertainty, patterns)] if status.uncertainty else [])
             analysis = None
         else:
-            analysis = AnalysisReport.model_validate_json(final)
+            data = analysis_contract(length_mode).model_validate_json(final).model_dump()
+            used = data.pop("response_length") if length_mode == "auto" else length_mode
+            contract = analysis_contract(used)
+            analysis = contract.model_validate(data)
+            evidence_budget = BUDGETS[used][1]
             if any(not a.value.strip() for a in analysis.items):
                 raise BrokerError('worker_invalid_report')
             response_id, candidates = analysis.observation_id, analysis.evidence
@@ -179,14 +220,14 @@ def build_report(final: str, text: str, observation: str, purpose: str,
                 answer['value'] = clean(answer['value'], patterns)
             for finding in data['findings']:
                 finding['claim'] = clean(finding['claim'], patterns)
-            analysis = AnalysisReport.model_validate(data)
+            analysis = contract.model_validate(data)
             report = dict(summary=analysis.summary, items=[], findings=[], next_checks=[],
                           uncertainties=analysis.uncertainties)
     except ValidationError:
         raise BrokerError('worker_invalid_report') from None
     if response_id != observation:
         raise BrokerError('worker_invalid_evidence')
-    excerpts, omitted, delivery = extract(screen, candidates, observation)
+    excerpts, omitted, delivery = extract(screen, candidates, observation, evidence_budget)
     if purpose == 'status':
         if candidates:
             report['findings'] = [dict(claim=report['summary'],
@@ -202,7 +243,8 @@ def build_report(final: str, text: str, observation: str, purpose: str,
                                   **references(f.refs, delivery, True)) for f in analysis.findings]
         chars = (len(report['summary']) + sum(len(a['item']) + len(a['value']) for a in report['items'])
                  + sum(len(f['claim']) for f in report['findings']) + sum(map(len, report['uncertainties'])))
-        if chars > 1000:
+        if chars > BUDGETS[used][0]:
             raise BrokerError('worker_report_too_large')
-    return {'report': report, 'evidence': excerpts, 'omitted_evidence': omitted, 'empty': not text.strip(),
+    lengths = {} if purpose == 'status' else {'response_length_mode': length_mode, 'response_length_used': used}
+    return {**lengths, 'report': report, 'evidence': excerpts, 'omitted_evidence': omitted, 'empty': not text.strip(),
             'report_bytes': len(json.dumps(report, ensure_ascii=False, separators=(',', ':')).encode())}

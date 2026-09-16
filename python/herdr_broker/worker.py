@@ -6,9 +6,10 @@ import logging
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from importlib.resources import files
+from pathlib import Path
 from tempfile import TemporaryDirectory
 from time import perf_counter
-from typing import Any, Literal
+from typing import Any
 from uuid import uuid4
 
 import anyio
@@ -18,14 +19,15 @@ from openai_codex.types import ReasoningEffort
 from pydantic import BaseModel
 
 from .herdr import BrokerError
-from .reports import AnalysisReport, StatusReport, build_report, validate_items
-from .sdk_runtime import SDKRuntime, analysis_profile
+from .options import MODEL as MODEL
+from .options import Effort as Effort
+from .options import Purpose as Purpose
+from .options import ServiceTier as ServiceTier
+from .options import WorkerOptions, load_templates
+from .reports import StatusReport, analysis_contract, build_report, length_instructions, validate_items
+from .sdk_runtime import SDKRuntime, analysis_profile, validate_model
 from .snapshot import clean
 
-MODEL = "gpt-5.6-luna"
-Effort = Literal["low", "medium", "high"]
-Purpose = Literal["status", "analysis"]
-ServiceTier = Literal["default", "fast"]
 Identity = tuple[str, str, str]
 logger = logging.getLogger(__name__)
 DISABLED = (
@@ -58,8 +60,9 @@ DISABLED = (
 INSTRUCTIONS = files("herdr_broker").joinpath("resources/worker.txt").read_text().strip()
 
 
-def worker_config(directory: str) -> CodexConfig:
-    profile, catalog = analysis_profile(directory, MODEL)
+def worker_config(directory: str, options: WorkerOptions | None = None) -> CodexConfig:
+    options = options or WorkerOptions()
+    profile, catalog = analysis_profile(directory, (options.analysis_model, options.status_model))
     return CodexConfig(
         cwd=directory,
         env={"CODEX_HOME": str(profile)},
@@ -109,8 +112,11 @@ class Analysis:
 
 
 class Worker:
-    def __init__(self, timeout: float = 60, cleanup_timeout: float = 5, *, limits: Limits | None = None):
+    def __init__(self, timeout: float = 60, cleanup_timeout: float = 5, *, limits: Limits | None = None, options: WorkerOptions | None = None):
         self.timeout, self.cleanup_timeout = timeout, cleanup_timeout
+        self.options = options or WorkerOptions()
+        self.templates: dict[str, str] | None = None
+        self.model_metadata: dict[str, dict[str, object]] = {}
         self.limits = limits or Limits()
         self.runtime: SDKRuntime | None = None
         self.directory: TemporaryDirectory[str] | None = None
@@ -147,8 +153,15 @@ class Worker:
         self.startup_error = None
         began = perf_counter()
         try:
+            if self.templates is None:
+                self.templates = load_templates(self.options.template_dir)
             self.directory = TemporaryDirectory(prefix="herdr-worker-")
-            self.runtime = SDKRuntime(AsyncCodex(worker_config(self.directory.name)),
+            config = worker_config(self.directory.name, self.options)
+            catalog = json.loads((Path(self.directory.name) / "profile/models.json").read_text())
+            self.model_metadata = {m["slug"]: m for m in catalog["models"]}
+            for purpose in ("status", "analysis"):
+                validate_model(self.model_metadata[self.options.model(purpose)], self.options.effort(purpose), self.options.tier(purpose))
+            self.runtime = SDKRuntime(AsyncCodex(config),
                                       self.directory.name, self._fault)
             async with asyncio.timeout(self.timeout):
                 await self.runtime.start()
@@ -322,7 +335,7 @@ class Worker:
         self, capture: Callable[[], Awaitable[str]], objective: str, patterns: list[str],
         *, effort: Effort | None = None, purpose: Purpose = "analysis",
         identity: Identity = ("", "", ""), analysis_id: str | None = None,
-        service_tier: ServiceTier = "default", requested_items: list[str] | None = None,
+        service_tier: ServiceTier | None = None, requested_items: list[str] | None = None,
     ) -> dict[str, Any]:
         requested = validate_items(requested_items, purpose)
         requested = [clean(item, patterns) for item in requested]
@@ -333,7 +346,8 @@ class Worker:
         task = asyncio.current_task()
         if task is not None:
             self.call_tasks.add(task)
-        selected: Effort = effort or ("low" if purpose == "status" else "medium")
+        selected: Effort = effort or self.options.effort(purpose)
+        selected_tier = service_tier or self.options.tier(purpose)
         timings = {"admission": round((perf_counter() - began) * 1000, 3)}
         collector: asyncio.Task[dict[str, Any]] | None = None
         failed = True
@@ -351,13 +365,14 @@ class Worker:
                 for old in retired:
                     if old.thread is not None:
                         await self.runtime.unsubscribe(old.thread.id)
+                validate_model(self.model_metadata[self.options.model(purpose)], selected, selected_tier)
                 start = perf_counter()
                 text = await capture()
                 timings["capture"] = round((perf_counter() - start) * 1000, 3)
                 if self.closing:
                     raise BrokerError("worker_closed")
                 collector = asyncio.create_task(self._analyze(
-                    text, objective, patterns, selected, timings, session, purpose, service_tier, requested,
+                    text, objective, patterns, selected, timings, session, purpose, selected_tier, requested,
                 ))
                 result = await asyncio.shield(collector)
                 result["sdk_reused"] = ready
@@ -386,7 +401,7 @@ class Worker:
                     self.call_tasks.discard(task)
                 logger.log(logging.WARNING if failed else logging.INFO, "pane_analysis %s", json.dumps({
                     "failed": failed, "purpose": purpose, "effort": selected, "timings_ms": timings,
-                    "service_tier_requested": service_tier,
+                    "service_tier_requested": selected_tier,
                     "total_ms": round((perf_counter() - began) * 1000, 3),
                 }))
 
@@ -431,7 +446,11 @@ class Worker:
         timings: dict[str, float], session: Analysis, purpose: Purpose, service_tier: ServiceTier, requested_items: list[str],
     ) -> dict[str, Any]:
         prepared = perf_counter()
-        instructions = INSTRUCTIONS + "\n" + files("herdr_broker").joinpath(f"resources/{purpose}.txt").read_text().strip()
+        assert self.templates is not None
+        instructions = INSTRUCTIONS + "\n" + self.templates[purpose]
+        length_mode = self.options.response_length_mode
+        if purpose == "analysis":
+            instructions += "\n" + length_instructions(length_mode)
         observation = uuid4().hex
         rows = {f"L{i + 1:04}": row for i, row in enumerate(text.split("\n"))}
         objective = clean(objective, patterns)
@@ -442,7 +461,7 @@ class Worker:
             content["requested_items"] = requested_items
         prompt = json.dumps(content, ensure_ascii=False, separators=(",", ":"))
         payload_bytes = len(text.encode()) + len(objective.encode())
-        schema = (StatusReport if purpose == "status" else AnalysisReport).model_json_schema()
+        schema = (StatusReport if purpose == "status" else analysis_contract(length_mode)).model_json_schema()
         sizes = {"screen_bytes": len(text.encode()), "objective_bytes": len(objective.encode()),
                  "prompt_bytes": len(prompt.encode()),
                  "schema_bytes": len(json.dumps(schema, ensure_ascii=False, separators=(",", ":")).encode()),
@@ -459,7 +478,7 @@ class Worker:
                 self._retire("loaded_threads")
                 raise BrokerError("worker_recycling")
             session.thread = await self.runtime.client.thread_start(
-                model=MODEL, approval_mode=ApprovalMode.deny_all, sandbox=Sandbox.read_only,
+                model=self.options.model(purpose), approval_mode=ApprovalMode.deny_all, sandbox=Sandbox.read_only,
                 ephemeral=True, cwd=self.directory.name, base_instructions=instructions,
                 developer_instructions="", personality=Personality.none,
             )
@@ -500,10 +519,10 @@ class Worker:
         if not completed:
             raise BrokerError("worker_failed")
         start = perf_counter()
-        report = build_report(final, text, observation, purpose, requested_items, patterns)
+        report = build_report(final, text, observation, purpose, requested_items, patterns, length_mode)
         timings["validation"] = round((perf_counter() - start) * 1000, 3)
         return {
-            **report, "model_requested": MODEL, "effort": effort, "purpose": purpose, "usage": usage,
+            **report, "model_requested": self.options.model(purpose), "effort": effort, "purpose": purpose, "usage": usage,
             "service_tier_requested": service_tier,
             "analysis_id": session.id, "observation_id": observation,
             "context_mode": "independent", "context_reused": False, "context_reset": False,

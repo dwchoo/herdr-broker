@@ -94,7 +94,7 @@ def test_setup_preserves_approval_and_other_settings(tmp_path, monkeypatch):
     result = tomllib.loads(first)
     assert result["approval_policy"] == "never"
     assert result["mcp_servers"]["other"]["command"] == "existing"
-    assert result["mcp_servers"]["herdr_broker"]["command"].endswith("uv")
+    assert result["mcp_servers"]["herdr_broker"]["command"].endswith("uvx")
     setup(tmp_path)
     assert path.read_text() == first
 
