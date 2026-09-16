@@ -12,7 +12,7 @@ from typing import Any
 from .context import Context
 from .herdr import BrokerError, Pane
 from .snapshot import bounded, clean
-from .worker import Effort, Purpose, Worker
+from .worker import Effort, Purpose, ServiceTier, Worker
 
 CODE = re.compile(r"^([1-9][0-9]{3})(?:\s*·\s*(.*))?$")
 
@@ -189,6 +189,7 @@ class Broker:
         self, pane_id: str, terminal_id: str, objective: str, raw: bool, offset: int,
         effort: Effort | None = None, max_lines: int | None = None,
         purpose: Purpose = "analysis", analysis_id: str | None = None,
+        service_tier: ServiceTier = "default",
     ) -> dict[str, Any]:
         started = perf_counter()
         lines = max_lines if max_lines is not None else (1000 if raw else 8 if purpose == "status" else 80)
@@ -216,7 +217,7 @@ class Broker:
         pane = await self.target(pane_id, terminal_id)
         report = await self.worker.analyze(
             capture, objective, self.context.patterns, effort=effort, purpose=purpose,
-            identity=(pane.workspace_id, pane_id, terminal_id), analysis_id=analysis_id,
+            identity=(pane.workspace_id, pane_id, terminal_id), analysis_id=analysis_id, service_tier=service_tier,
         )
         check_started = perf_counter()
         try:

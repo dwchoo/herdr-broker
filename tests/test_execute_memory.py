@@ -100,7 +100,7 @@ async def test_analysis_limit_precedes_screen_capture_and_has_no_queue(harness, 
     release = asyncio.Event()
     entered = 0
 
-    async def analyze(text, objective, patterns, effort, timings, session, purpose):
+    async def analyze(text, objective, patterns, effort, timings, session, purpose, service_tier):
         nonlocal entered
         entered += 1
         if entered == 2:

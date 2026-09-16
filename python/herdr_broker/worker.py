@@ -12,16 +12,18 @@ from uuid import uuid4
 
 import anyio
 from openai_codex import ApprovalMode, AsyncCodex, AsyncThread, AsyncTurnHandle, CodexConfig, Sandbox
+from openai_codex.generated.v2_all import Personality
 from openai_codex.types import ReasoningEffort
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from .herdr import BrokerError
-from .sdk_runtime import SDKRuntime
+from .sdk_runtime import SDKRuntime, analysis_profile
 from .snapshot import bounded, clean
 
 MODEL = "gpt-5.6-luna"
 Effort = Literal["low", "medium", "high"]
 Purpose = Literal["status", "analysis"]
+ServiceTier = Literal["default", "fast"]
 Identity = tuple[str, str, str]
 logger = logging.getLogger(__name__)
 DISABLED = (
@@ -30,6 +32,7 @@ DISABLED = (
     "apps",
     "plugins",
     "multi_agent",
+    "multi_agent_v2",
     "hooks",
     "memories",
     "shell_snapshot",
@@ -88,11 +91,22 @@ class StatusReport(BaseModel):
 
 
 def worker_config(directory: str) -> CodexConfig:
+    profile, catalog = analysis_profile(directory, MODEL)
     return CodexConfig(
         cwd=directory,
+        env={"CODEX_HOME": str(profile)},
         config_overrides=tuple(f"features.{name}=false" for name in DISABLED)
         + (
             "features.skip_host_skill_discovery=true",
+            "features.fast_mode=true",
+            "tools.update_plan.enabled=false",
+            "tools.experimental_request_user_input.enabled=false",
+            f"model_catalog_json={json.dumps(str(catalog))}",
+            "skills.include_instructions=false",
+            "include_environment_context=false",
+            "include_apps_instructions=false",
+            "include_collaboration_mode_instructions=false",
+            "include_permissions_instructions=false",
             "mcp_servers={}",
             'web_search="disabled"',
             "project_doc_max_bytes=0",
@@ -137,6 +151,7 @@ class Worker:
         self.runtime: SDKRuntime | None = None
         self.directory: TemporaryDirectory[str] | None = None
         self.startup: asyncio.Task[None] | None = None
+        self.startup_error: str | None = None
         self.monitor: asyncio.Task[None] | None = None
         self.recycling: asyncio.Task[None] | None = None
         self.cleanup_task: asyncio.Task[None] | None = None
@@ -165,6 +180,7 @@ class Worker:
             self.monitor = asyncio.create_task(self._monitor())
 
     async def _initialize(self) -> None:
+        self.startup_error = None
         began = perf_counter()
         try:
             self.directory = TemporaryDirectory(prefix="herdr-worker-")
@@ -174,10 +190,14 @@ class Worker:
                 await self.runtime.start()
             self.metrics["initialization_ms"] = round((perf_counter() - began) * 1000, 3)
             logger.info("sdk_ready %s", json.dumps(self.metrics))
-        except BaseException:
+        except BaseException as error:
             self.unhealthy = True
+            runtime = self.runtime
             await self._cleanup_runtime()
-            raise BrokerError("worker_failed") from None
+            self.startup_error = error.code if isinstance(error, BrokerError) else "worker_failed"
+            if runtime is not None and runtime.catalog_failed():
+                self.startup_error = "worker_model_catalog_unavailable"
+            raise BrokerError(self.startup_error) from None
 
     def _fault(self) -> None:
         if not self.closing:
@@ -288,7 +308,7 @@ class Worker:
         if self.recycle_reason:
             raise BrokerError("worker_recycling")
         if self.unhealthy:
-            raise BrokerError("worker_failed")
+            raise BrokerError(self.startup_error or "worker_failed")
         if analysis_id:
             session = self.sessions.get(analysis_id)
             if session is None:
@@ -338,13 +358,14 @@ class Worker:
         self, capture: Callable[[], Awaitable[str]], objective: str, patterns: list[str],
         *, effort: Effort | None = None, purpose: Purpose = "analysis",
         identity: Identity = ("", "", ""), analysis_id: str | None = None,
+        service_tier: ServiceTier = "default",
     ) -> dict[str, Any]:
         began = perf_counter()
         session, retired = self._select(identity, analysis_id)
         task = asyncio.current_task()
         if task is not None:
             self.call_tasks.add(task)
-        selected: Effort = effort or ("low" if purpose == "status" else "high")
+        selected: Effort = effort or ("low" if purpose == "status" else "medium")
         timings = {"admission": round((perf_counter() - began) * 1000, 3)}
         collector: asyncio.Task[dict[str, Any]] | None = None
         failed = True
@@ -368,7 +389,7 @@ class Worker:
                 if self.closing:
                     raise BrokerError("worker_closed")
                 collector = asyncio.create_task(self._analyze(
-                    text, objective, patterns, selected, timings, session, purpose,
+                    text, objective, patterns, selected, timings, session, purpose, service_tier,
                 ))
                 result = await asyncio.shield(collector)
                 result["sdk_reused"] = ready
@@ -397,6 +418,7 @@ class Worker:
                     self.call_tasks.discard(task)
                 logger.log(logging.WARNING if failed else logging.INFO, "pane_analysis %s", json.dumps({
                     "failed": failed, "purpose": purpose, "effort": selected, "timings_ms": timings,
+                    "service_tier_requested": service_tier,
                     "total_ms": round((perf_counter() - began) * 1000, 3),
                 }))
 
@@ -436,7 +458,7 @@ class Worker:
 
     async def _analyze(
         self, text: str, objective: str, patterns: list[str], effort: Effort,
-        timings: dict[str, float], session: Analysis, purpose: Purpose,
+        timings: dict[str, float], session: Analysis, purpose: Purpose, service_tier: ServiceTier,
     ) -> dict[str, Any]:
         prepared = perf_counter()
         observation = uuid4().hex
@@ -485,10 +507,14 @@ class Worker:
                 session.thread = await self.runtime.client.thread_start(
                     model=MODEL, approval_mode=ApprovalMode.deny_all, sandbox=Sandbox.read_only,
                     ephemeral=True, cwd=self.directory.name, base_instructions=INSTRUCTIONS,
+                    developer_instructions="", personality=Personality.none,
                 )
         timings["thread_start"] = round((perf_counter() - start) * 1000, 3)
         start = perf_counter()
-        session.turn = await session.thread.turn(prompt, effort=ReasoningEffort(effort), output_schema=schema)
+        session.turn = await session.thread.turn(
+            prompt, effort=ReasoningEffort(effort), output_schema=schema,
+            turn_service_tier="priority" if service_tier == "fast" else "default",
+        )
         timings["turn_submit"] = round((perf_counter() - start) * 1000, 3)
         stage, start = "first_event", perf_counter()
         final, completed, usage, total = "", False, None, 0
@@ -562,6 +588,7 @@ class Worker:
         return {
             "report": safe, "evidence": [{"id": f"{observation}:{eid}", "text": bounded(rows[eid], 512)} for eid in ids],
             "model_requested": MODEL, "effort": effort, "purpose": purpose, "usage": usage,
+            "service_tier_requested": service_tier,
             "analysis_id": session.id, "observation_id": observation,
             "context_reused": reused and reason is None, "context_reset": reason is not None,
             "context_reset_reason": reason, "input_bytes": payload_bytes, "report_bytes": report_bytes,

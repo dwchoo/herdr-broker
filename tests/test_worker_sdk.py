@@ -22,7 +22,7 @@ def screen(text):
 
 
 @pytest.fixture
-async def provider(monkeypatch, tmp_path):
+async def provider(monkeypatch, tmp_path, sdk_home):
     state = {"requests": [], "mode": "valid", "release": threading.Event(), "forced_sent": False}
     report = {
         "summary": "build 오류 확인",
@@ -214,7 +214,7 @@ async def test_sdk_reuses_process_and_task_changes_effort(provider, worker):
     second = await worker.analyze(screen("result"), "분석", [], analysis_id=first["analysis_id"])
     assert worker.runtime.process is process
     assert worker.sessions[first["analysis_id"]].thread is thread
-    assert [r["reasoning"]["effort"] for r in provider["requests"]] == ["low", "high"]
+    assert [r["reasoning"]["effort"] for r in provider["requests"]] == ["low", "medium"]
     assert second["sdk_reused"] and second["context_reused"]
     assert first["observation_id"] != second["observation_id"]
     observations = [r["text"]["format"]["schema"]["properties"]["observation_id"]["enum"]
@@ -344,3 +344,56 @@ async def test_actual_loaded_limit_recycles_and_expires_handles(provider, worker
     assert not worker.sessions
     with pytest.raises(BrokerError, match="analysis_session_expired"):
         await worker.analyze(screen("stale handle"), "분석", [], analysis_id=first["analysis_id"])
+
+
+async def test_sdk_service_tier_override_is_per_turn_even_with_fast_config(provider, worker):
+    first = await worker.analyze(screen("prompt"), "상태", [], purpose="status")
+    process = worker.runtime.process
+    thread = worker.sessions[first["analysis_id"]].thread
+    assert first["service_tier_requested"] == "default"
+    second = await worker.analyze(screen("result"), "분석", [], service_tier="fast",
+                                  analysis_id=first["analysis_id"])
+    third = await worker.analyze(screen("result"), "분석", [], analysis_id=first["analysis_id"])
+    assert worker.runtime.process is process and worker.sessions[first["analysis_id"]].thread is thread
+    assert second["service_tier_requested"] == "fast" and third["service_tier_requested"] == "default"
+    assert [r.get("service_tier") for r in provider["requests"]] == [None, "priority", None]
+    assert [r["reasoning"]["effort"] for r in provider["requests"]] == ["low", "medium", "medium"]
+
+
+async def test_sdk_omits_unneeded_context_but_preserves_restrictions(provider, worker, monkeypatch):
+    from openai_codex.client import CodexClient
+    original = CodexClient.thread_start
+    states = []
+
+    def start(client, params):
+        result = original(client, params)
+        states.append(result)
+        return result
+
+    monkeypatch.setattr(CodexClient, "thread_start", start)
+    await worker.analyze(screen("user@host$"), "입력 상태 확인", [], purpose="status")
+    messages = [content.get("text", "") for item in provider["requests"][-1]["input"]
+                for content in item.get("content", [])]
+    assert module.INSTRUCTIONS in provider["requests"][-1].get("instructions", "") or any(
+        module.INSTRUCTIONS in message for message in messages)
+    for marker in ("<skills_instructions>", "<environment_context>", "<permissions instructions>",
+                   "<apps_instructions>", "<collaboration_mode>", "PARENT_ONLY_INSTRUCTIONS",
+                   "PARENT_CONFIG_INSTRUCTIONS", "AGENTS.md instructions"):
+        assert not any(marker in message for message in messages)
+    assert not provider["requests"][-1].get("tools")
+    assert all(not item.get("tools") for item in provider["requests"][-1]["input"]
+               if item.get("type") == "additional_tools")
+    state = states[0]
+    assert state.approval_policy.root.value == "never"
+    assert state.sandbox.root.type == "readOnly"
+
+
+@pytest.mark.parametrize('malformed', [{'slug': module.MODEL}, {'slug': module.MODEL, 'display_name': 1}])
+async def test_sdk_catalog_schema_failure_is_explicit_after_warmup(provider, worker, sdk_home, malformed):
+    (sdk_home / 'models_cache.json').write_text(json.dumps({'models': [malformed]}))
+    worker.warmup()
+    with pytest.raises(BrokerError, match='worker_model_catalog_unavailable'):
+        await worker.startup
+    with pytest.raises(BrokerError, match='worker_model_catalog_unavailable'):
+        await worker.analyze(screen('prompt'), '상태', [], purpose='status')
+    assert not provider['requests'] and worker.runtime is None

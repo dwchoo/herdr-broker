@@ -33,7 +33,7 @@ async def test_default_read_limits_history_but_preserves_pending_input(harness):
     assert len(text.split('\n')) == 80
     assert text.endswith('user@host:~$ unfinished')
     assert 'old build 0\n' not in text
-    assert result['max_lines'] == 80 and result['truncated'] and result['effort'] == 'high'
+    assert result['max_lines'] == 80 and result['truncated'] and result['effort'] == 'medium'
     assert result['timings_ms']['capture'] >= 0
     assert result['timings_ms']['total'] >= result['timings_ms']['capture']
     assert [p['lines'] for m, p in peer.calls if m == 'pane.read'] == [80]
@@ -51,7 +51,7 @@ async def test_explicit_range_effort_and_raw_compatibility(harness):
     assert tail['text'] == '248\n249' and tail['truncated']
 
 
-@pytest.mark.parametrize('options', [{'max_lines': 0}, {'max_lines': 1001}, {'effort': 'invalid'}])
+@pytest.mark.parametrize('options', [{'max_lines': 0}, {'max_lines': 1001}, {'effort': 'invalid'}, {'service_tier': 'invalid'}, {'service_tier': None}])
 async def test_invalid_read_options_never_capture(harness, options):
     peer, _, server, _ = harness
     with pytest.raises(Exception):
@@ -62,7 +62,7 @@ async def test_invalid_read_options_never_capture(harness, options):
 async def test_replacement_during_analysis_rejects_result(harness, monkeypatch):
     peer, _, server, worker = harness
 
-    async def analyze(text, objective, patterns, effort, timings, session, purpose):
+    async def analyze(text, objective, patterns, effort, timings, session, purpose, service_tier):
         peer.panes[1]["terminal_id"] = "replacement"
         return {"analysis_id": session.id, "report": {"summary": "old screen"}}
 
@@ -78,7 +78,7 @@ async def test_purpose_defaults_continuation_release_and_raw_does_not_touch_cont
     assert status['effort'] == 'low'
     session = status['analysis_id']
     analysis = await call(server, 'pane_read', **IDENTITY, analysis_id=session)
-    assert analysis['effort'] == 'high' and analysis['analysis_id'] == session
+    assert analysis['effort'] == 'medium' and analysis['analysis_id'] == session
     override = await call(server, 'pane_read', **IDENTITY, purpose='status', effort='medium', analysis_id=session)
     assert override['effort'] == 'medium'
     contexts = dict(worker.sessions)
@@ -87,3 +87,15 @@ async def test_purpose_defaults_continuation_release_and_raw_does_not_touch_cont
     assert (await call(server, 'analysis_release', analysis_id=session))['released']
     with pytest.raises(Exception, match='analysis_session_expired'):
         await server.call_tool('pane_read', {**IDENTITY, 'analysis_id': session})
+
+
+async def test_service_tier_is_per_read_and_raw_ignores_worker_options(harness):
+    _, _, server, worker = harness
+    first = await call(server, 'pane_read', **IDENTITY, service_tier='fast', effort='high')
+    assert first['service_tier_requested'] == 'fast' and first['effort'] == 'high'
+    session = first['analysis_id']
+    second = await call(server, 'pane_read', **IDENTITY, analysis_id=session)
+    assert second['service_tier_requested'] == 'default' and second['effort'] == 'medium'
+    count = len(worker.calls)
+    await call(server, 'pane_read', **IDENTITY, raw=True, service_tier='fast', analysis_id=session)
+    assert len(worker.calls) == count

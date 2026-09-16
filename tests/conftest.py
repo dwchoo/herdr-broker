@@ -38,11 +38,11 @@ class StubWorker(Worker):
     async def _initialize(self):
         self.runtime = SimpleNamespace(unsubscribe=AsyncMock(), close=AsyncMock())
 
-    async def _analyze(self, text, objective, patterns, effort, timings, session, purpose):
+    async def _analyze(self, text, objective, patterns, effort, timings, session, purpose, service_tier):
         self.calls.append((text, objective))
         if self.error:
             raise BrokerError(self.error)
-        return {"analysis_id": session.id, "purpose": purpose, "effort": effort, "report": {"summary": "화면 확인", "findings": [], "next_checks": [], "uncertainties": []}}
+        return {"analysis_id": session.id, "purpose": purpose, "effort": effort, "service_tier_requested": service_tier, "report": {"summary": "화면 확인", "findings": [], "next_checks": [], "uncertainties": []}}
 
 
 class Peer:
@@ -337,3 +337,23 @@ async def harness(tmp_path, socket_path):
             yield peer, broker, create_server(broker), worker
         finally:
             await worker.close()
+
+
+@pytest.fixture
+def sdk_home(tmp_path, monkeypatch):
+    source = tmp_path / "source-codex"
+    source.mkdir()
+    (source / "auth.json").write_text("{}")  # Local peer needs no real credentials.
+    (source / "AGENTS.md").write_text("PARENT_ONLY_INSTRUCTIONS")
+    (source / "config.toml").write_text('developer_instructions="PARENT_CONFIG_INSTRUCTIONS"\nservice_tier="fast"\n[features]\nfast_mode=false\n')
+    (source / "models_cache.json").write_text(json.dumps({"models": [{
+        "slug": "gpt-5.6-luna", "display_name": "Probe", "description": None,
+        "supported_reasoning_levels": [], "shell_type": "unified_exec",
+        "visibility": "list", "supported_in_api": True, "priority": 1,
+        "service_tiers": [{"id": "priority", "name": "Fast", "description": "Probe"}],
+        "support_verbosity": False, "truncation_policy": {"mode": "bytes", "limit": 10000},
+        "experimental_supported_tools": [], "base_instructions": "Synthetic provider test.",
+        "tool_mode": "code_mode_only", "apply_patch_tool_type": "freeform", "supports_search_tool": True,
+    }]}))
+    monkeypatch.setenv("CODEX_HOME", str(source))
+    return source

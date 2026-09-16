@@ -2,12 +2,45 @@
 from __future__ import annotations
 
 import asyncio
+import json
+import os
 import subprocess
 from collections.abc import Callable
 from pathlib import Path
 
 from openai_codex import AsyncCodex
 from openai_codex.generated.v2_all import ThreadLoadedListResponse, ThreadUnsubscribeResponse
+
+from .herdr import BrokerError
+
+
+def analysis_profile(directory: str, model: str) -> tuple[Path, Path]:
+    """Scope SDK settings to this Worker; reference file auth without reading it."""
+    source = Path(os.environ.get("CODEX_HOME", str(Path.home() / ".codex"))).expanduser().resolve()
+    auth = source / "auth.json"
+    if not auth.is_file():
+        raise BrokerError("worker_auth_unavailable")
+    try:
+        cache = source / "models_cache.json"
+        if cache.stat().st_size > 8 * 1024 * 1024:
+            raise ValueError("model cache too large")
+        models = json.loads(cache.read_text())["models"]
+        matches = [item for item in models if isinstance(item, dict) and item.get("slug") == model]
+        if len(matches) != 1:
+            raise ValueError("model unavailable")
+        metadata = matches[0]
+    except (OSError, ValueError, TypeError, KeyError):
+        raise BrokerError("worker_model_catalog_unavailable") from None
+    # Preserve model limits, supported tiers and security metadata. Only disable tools.
+    metadata.update(tool_mode="direct", apply_patch_tool_type=None,
+                    supports_search_tool=False, multi_agent_version=None,
+                    experimental_supported_tools=[])
+    profile = Path(directory) / "profile"
+    profile.mkdir(mode=0o700)
+    (profile / "auth.json").symlink_to(auth)
+    catalog = profile / "models.json"
+    catalog.write_text(json.dumps({"models": [metadata]}))
+    return profile, catalog
 
 
 class SDKRuntime:
@@ -41,6 +74,11 @@ class SDKRuntime:
             raise RuntimeError("SDK closed while spawning")
         await self.client.__aenter__()
         self.notifications = asyncio.create_task(self._drain())
+
+    def catalog_failed(self) -> bool:
+        # Called after close joins stderr consumption; do not log its contents.
+        return any("failed to parse model_catalog_json" in line
+                   for line in self.client._client._sync._stderr_lines)
 
     async def _drain(self) -> None:
         try:

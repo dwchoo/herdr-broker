@@ -47,3 +47,7 @@
 Python 전체 115 tests, ruff, mypy, wheel·sdist build를 통과했다. 기존 35분 유지 시험은 opt-in으로 이번 실행에서 제외했다. SDK/process 수명 코드는 변경하지 않았다. Standards·Spec review에서 추가 actionable finding은 없었다.
 
 새 MCP 실행부터 적용하며, 실행 중인 MCP·Herdr terminal을 재시작하지 않는다. 사용자 README 변경과 기존 미추적 파일은 보존한다.
+
+## 후속 설정 변경
+
+위 수치와 high 분석은 당시 측정 조건이다. 이후 사용자 요청으로 로그·출력 analysis 기본은 Luna/medium, Fast는 off로 변경한다. 추가 문맥의 실제 구성과 tier 계약은 [Worker service tier](service-tier.md)에 기록한다.

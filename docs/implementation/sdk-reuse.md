@@ -92,3 +92,7 @@ local warm 중앙값 **15.15초**, 최댓값 **15.35초**로 두 번 모두 20�
 ### 적용
 
 새 MCP 실행부터 적용된다. 실행 중인 MCP나 사용자 terminal을 강제로 재시작하지 않는다. Parent는 작업 중 반환된 `analysis_id`를 사용하고 작업 완료 시 `analysis_release`한다. `$broker` Skill과 공개 MCP 설명에 이 흐름을 반영했다.
+
+## 후속 effort·문맥 설정
+
+위 성능 수치는 당시 Luna/high 분석으로 측정했다. 이후 사용자 요청으로 기본 analysis는 Luna/medium, Fast off로 변경하며 자동 Skill·환경 문맥을 제외한다. 현재 계약과 추가 검증은 [Worker profile](service-tier.md)을 따른다.
