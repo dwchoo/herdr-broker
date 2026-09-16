@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 from collections.abc import Awaitable, Callable
 from tempfile import TemporaryDirectory
+from time import perf_counter
 from typing import Any, Literal
 
 import anyio
@@ -15,6 +17,8 @@ from .herdr import BrokerError
 from .snapshot import bounded, clean
 
 MODEL = "gpt-5.6-luna"
+Effort = Literal["low", "medium", "high"]
+logger = logging.getLogger(__name__)
 DISABLED = (
     "shell_tool",
     "unified_exec",
@@ -51,6 +55,10 @@ INSTRUCTIONS = (
     "Identify actual output/errors and a returned prompt separately; report uncertainty if completion is unclear."
     " An input ACK is not completion. Missing expected output calls for fresh observation of the current "
     "program, not replaying a command merely because its marker is absent."
+    " This is a bounded recent window, not full history. Check the current program, prompt and any "
+    "unfinished input along with existing output relevant to the objective. Existing results may answer "
+    "the question without rerunning commands, but their age/current accuracy may be unknown. If context "
+    "is insufficient, name what a wider read or deeper analysis must resolve. Be brief for simple checks."
 )
 
 
@@ -144,8 +152,10 @@ class Worker:
                 raise BrokerError("worker_cleanup_failed")
 
     async def analyze(
-        self, capture: Callable[[], Awaitable[str]], objective: str, patterns: list[str]
+        self, capture: Callable[[], Awaitable[str]], objective: str, patterns: list[str],
+        *, effort: Effort = "low",
     ) -> dict[str, Any]:
+        started = perf_counter()
         if self.unhealthy:
             raise BrokerError("worker_cleanup_failed")
         if self.closing:
@@ -153,21 +163,40 @@ class Worker:
         if self.running >= 2:
             raise BrokerError("worker_busy")
         self.running += 1
+        timings = {"admission": round((perf_counter() - started) * 1000, 3)}
+        captured = perf_counter()
         try:
-            text = await capture()
+            try:
+                text = await capture()
+            finally:
+                timings["capture"] = round((perf_counter() - captured) * 1000, 3)
             if self.unhealthy or self.closing:
                 raise BrokerError("worker_cleanup_failed" if self.unhealthy else "worker_closed")
-            return await self._analyze(text, objective, patterns)
+            result = await self._analyze(text, objective, patterns, effort, timings)
+            result["timings_ms"] = timings
+            return result
+        except BaseException as exc:
+            logger.warning("pane_analysis_failed %s", json.dumps({
+                "error": exc.code if isinstance(exc, BrokerError) else type(exc).__name__,
+                "effort": effort, "timings_ms": timings,
+                "total_ms": round((perf_counter() - started) * 1000, 3),
+            }))
+            raise
         finally:
             self.running -= 1
 
-    async def _analyze(self, text: str, objective: str, patterns: list[str]) -> dict[str, Any]:
+    async def _analyze(
+        self, text: str, objective: str, patterns: list[str], effort: Effort, timings: dict[str, float]
+    ) -> dict[str, Any]:
+        prepared = perf_counter()
         rows = {f"L{i + 1:04}": row for i, row in enumerate(text.split("\n"))}
         prompt = json.dumps({"objective": clean(objective, patterns), "screen": rows}, ensure_ascii=False)
         schema = Report.model_json_schema()
-        schema["$defs"]["Finding"]["properties"]["evidence_ids"]["items"]["enum"] = list(rows)
         directory = TemporaryDirectory(prefix="herdr-worker-")
         codex: AsyncCodex | None = None
+        timings["prepare"] = round((perf_counter() - prepared) * 1000, 3)
+        stage = "sdk_start"
+        stage_started = perf_counter()
         try:
             codex = AsyncCodex(worker_config(directory.name))
             self.active.add(codex)
@@ -182,14 +211,21 @@ class Worker:
                     cwd=directory.name,
                     base_instructions=INSTRUCTIONS,
                 )
+                timings[stage] = round((perf_counter() - stage_started) * 1000, 3)
+                stage, stage_started = "turn_submit", perf_counter()
                 turn = await thread.turn(
-                    prompt, effort=ReasoningEffort.high, output_schema=schema
+                    prompt, effort=ReasoningEffort(effort), output_schema=schema
                 )
+                timings[stage] = round((perf_counter() - stage_started) * 1000, 3)
+                stage, stage_started = "first_event", perf_counter()
                 final = ""
                 completed = False
                 usage: Any = None
                 total = 0
                 async for event in turn.stream():
+                    if stage == "first_event":
+                        timings[stage] = round((perf_counter() - stage_started) * 1000, 3)
+                        stage, stage_started = "stream", perf_counter()
                     payload: dict[str, Any] = (
                         event.payload.model_dump(mode="json", by_alias=True)
                         if isinstance(event.payload, BaseModel)
@@ -212,6 +248,8 @@ class Worker:
                         completed = True
                 if not completed:
                     raise BrokerError("worker_failed")
+                timings[stage] = round((perf_counter() - stage_started) * 1000, 3)
+                stage, stage_started = "validation", perf_counter()
                 report = Report.model_validate_json(final)
                 if len(report.model_dump_json().encode()) > 4096 or any(
                     len(s) > 600 for s in report.next_checks + report.uncertainties
@@ -232,7 +270,7 @@ class Worker:
                     "report": safe_report,
                     "evidence": [{"id": eid, "text": bounded(rows[eid], 512)} for eid in ids],
                     "model_requested": MODEL,
-                    "effort": "high",
+                    "effort": effort,
                     "usage": usage,
                 }
         except TimeoutError as exc:
@@ -244,7 +282,12 @@ class Worker:
         except Exception as exc:
             raise BrokerError("worker_failed") from exc
         finally:
-            if codex:
-                await self.cleanup(codex)
-            else:
-                directory.cleanup()
+            timings[stage] = round((perf_counter() - stage_started) * 1000, 3)
+            cleanup_started = perf_counter()
+            try:
+                if codex:
+                    await self.cleanup(codex)
+                else:
+                    directory.cleanup()
+            finally:
+                timings["cleanup"] = round((perf_counter() - cleanup_started) * 1000, 3)

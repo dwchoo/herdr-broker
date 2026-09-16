@@ -92,6 +92,8 @@ async def provider(monkeypatch, tmp_path):
                     }
                 ]
             else:
+                if state["mode"] == "invalid-evidence":
+                    report["findings"][0]["evidence_ids"] = ["L9999"]
                 text = '{"bad":true}' if state["mode"] == "invalid" else json.dumps(report)
                 output = [
                     {
@@ -176,17 +178,25 @@ async def provider(monkeypatch, tmp_path):
         thread.join(2)
 
 
-async def test_sdk_luna_high_no_tools_and_evidence(provider):
+@pytest.mark.parametrize("effort", ["low", "medium", "high"])
+async def test_sdk_requested_effort_no_tools_and_evidence(provider, effort):
     worker = module.Worker(timeout=20)
-    result = await worker.analyze(screen("build failed"), "진단", [])
+    result = await worker.analyze(screen("build failed"), "진단", [], effort=effort)
     assert result["model_requested"] == "gpt-5.6-luna"
     assert result["evidence"] == [{"id": "L0001", "text": "build failed"}]
     assert provider["requests"]
     for request in provider["requests"]:
         assert request.get("tools", []) == []
         assert request["model"] == "gpt-5.6-luna"
-        assert request["reasoning"]["effort"] == "high"
+        assert request["reasoning"]["effort"] == effort
     assert not worker.active
+    assert result["effort"] == effort
+    timings = result["timings_ms"]
+    assert set(timings) == {"admission", "capture", "prepare", "sdk_start", "turn_submit",
+                            "first_event", "stream", "validation", "cleanup"}
+    assert all(value >= 0 for value in timings.values())
+    schema = provider["requests"][-1]["text"]["format"]["schema"]
+    assert "enum" not in schema["$defs"]["Finding"]["properties"]["evidence_ids"]["items"]
 
 
 async def test_sdk_invalid_report_is_error(provider):
@@ -272,3 +282,13 @@ async def test_repeated_sdk_analysis_reaps_children_and_reports_memory(provider,
     finally:
         tracemalloc.stop()
         await worker.close()
+
+
+async def test_sdk_rejects_unseen_evidence_without_schema_enum(provider, caplog):
+    provider["mode"] = "invalid-evidence"
+    with pytest.raises(BrokerError, match="worker_invalid_evidence"):
+        await module.Worker(timeout=20).analyze(screen("private-screen-marker"), "private-objective", [])
+    assert "worker_invalid_evidence" in caplog.text
+    assert "timings_ms" in caplog.text
+    assert "private-screen-marker" not in caplog.text
+    assert "private-objective" not in caplog.text

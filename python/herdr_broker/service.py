@@ -6,12 +6,13 @@ import json
 import re
 from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime
+from time import perf_counter
 from typing import Any
 
 from .context import Context
 from .herdr import BrokerError, Pane
 from .snapshot import bounded, clean
-from .worker import Worker
+from .worker import Effort, Worker
 
 CODE = re.compile(r"^([1-9][0-9]{3})(?:\s*·\s*(.*))?$")
 
@@ -139,14 +140,16 @@ class Broker:
             "next_offset": next_offset if next_offset < len(panes) else None,
         }
 
-    async def capture(self, pane_id: str, terminal_id: str) -> tuple[str, dict[str, Any]]:
+    async def capture(
+        self, pane_id: str, terminal_id: str, max_lines: int = 1000
+    ) -> tuple[str, dict[str, Any]]:
         pane = await self.target(pane_id, terminal_id)
         result = await self.herdr.request(
             "pane.read",
             {
                 "pane_id": pane_id,
                 "source": "recent_unwrapped",
-                "lines": 1000,
+                "lines": max_lines,
                 "format": "ansi",
                 "strip_ansi": True,
             },
@@ -166,7 +169,8 @@ class Broker:
             raise BrokerError("herdr_invalid_response")
         await self.target(pane_id, terminal_id)
         text = clean(capture["text"], self.context.patterns)
-        cropped = text.encode()[-65536:].decode(errors="ignore")
+        recent = "\n".join(text.split("\n")[-max_lines:])
+        cropped = recent.encode()[-65536:].decode(errors="ignore")
         metadata = {
             "pane_id": pane_id,
             "terminal_id": terminal_id,
@@ -174,14 +178,20 @@ class Broker:
             "revision": capture.get("revision"),
             "truncated": bool(capture.get("truncated")) or cropped != text,
             "history_complete": False,
+            "max_lines": max_lines,
+            "captured_lines": len(cropped.split("\n")),
+            "captured_bytes": len(cropped.encode()),
         }
         return cropped, metadata
 
     async def pane_read(
-        self, pane_id: str, terminal_id: str, objective: str, raw: bool, offset: int
+        self, pane_id: str, terminal_id: str, objective: str, raw: bool, offset: int,
+        effort: Effort = "low", max_lines: int | None = None,
     ) -> dict[str, Any]:
+        started = perf_counter()
+        lines = max_lines if max_lines is not None else (1000 if raw else 80)
         if raw:
-            cropped, metadata = await self.capture(pane_id, terminal_id)
+            cropped, metadata = await self.capture(pane_id, terminal_id, lines)
             excerpt = bounded(cropped[offset:], 8192)
             next_offset = offset + len(excerpt)
             return {
@@ -196,12 +206,16 @@ class Broker:
         metadata = {}
 
         async def capture() -> str:
-            text, observed = await self.capture(pane_id, terminal_id)
+            text, observed = await self.capture(pane_id, terminal_id, lines)
             metadata.update(observed)
             return text
 
-        report = await self.worker.analyze(capture, objective, self.context.patterns)
+        report = await self.worker.analyze(capture, objective, self.context.patterns, effort=effort)
+        check_started = perf_counter()
         await self.target(pane_id, terminal_id)
+        timings = report.setdefault("timings_ms", {})
+        timings["final_identity_check"] = round((perf_counter() - check_started) * 1000, 3)
+        timings["total"] = round((perf_counter() - started) * 1000, 3)
         return {**metadata, "kind": "analysis", **report}
 
     async def pane_send(

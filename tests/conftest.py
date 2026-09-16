@@ -33,11 +33,11 @@ class StubWorker(Worker):
         self.calls = []
         self.error = None
 
-    async def _analyze(self, text, objective, patterns):
+    async def _analyze(self, text, objective, patterns, effort, timings):
         self.calls.append((text, objective))
         if self.error:
             raise BrokerError(self.error)
-        return {"report": {"summary": "화면 확인", "findings": [], "next_checks": [], "uncertainties": []}}
+        return {"effort": effort, "report": {"summary": "화면 확인", "findings": [], "next_checks": [], "uncertainties": []}}
 
 
 class Peer:
