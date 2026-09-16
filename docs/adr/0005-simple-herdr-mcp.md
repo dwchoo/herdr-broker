@@ -14,7 +14,7 @@
 
 `pane_read`는 출력 길이에 관계없이 Codex Python SDK의 `gpt-5.6-luna/high` Worker로 분석한다. 사용자가 원문을 요청한 때만 direct 읽기를 사용한다. Worker는 전달된 화면만 읽고 파일·shell·MCP 도구를 사용할 수 없다. SDK의 runtime·취소·도구 제한을 실제 검증한다. 실패 시 raw나 다른 모델로 자동 대체하지 않는다.
 
-입력은 정확한 text·keys를 한 번 제출한다. wrapper·Enter를 추가하지 않는다. ACK는 접수이며 완료 증거가 아니다. 같은 MCP process의 request ID에 대해 중복 제출을 막고, 다른 payload를 같은 ID로 보내면 거부한다. 불확실한 접수 결과와 취소 후에는 자동 재전송하지 않는다. 입력 이력은 메모리에만 있고 재시작을 넘는 중복 억제·복구를 보장하지 않는다.
+`pane_send`는 정확한 text·keys를 한 번 제출하며 wrapper·Enter를 추가하지 않는다. 후속 실행 도구 `pane_execute`는 사용자가 실행 의도를 선택한 호출로, 명령 원문과 Enter 하나를 함께 제출한다. 두 도구 모두 ACK는 접수이며 완료 증거가 아니다. 같은 MCP process의 request ID에 대해 중복 제출을 막고, 다른 payload나 도구를 같은 ID로 보내면 거부한다. 불확실한 접수 결과와 취소 후에는 자동 재전송하지 않는다. 중복 방지 기록은 제한된 ID·상태만 메모리에 보관하고 재시작을 넘는 중복 억제·복구를 보장하지 않는다. 구체적인 수명·상한은 [MCP 계약](../mcp.md#labels-context-and-lifecycle)을 따른다.
 
 ## 수명과 범위
 

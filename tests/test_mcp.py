@@ -22,6 +22,7 @@ async def test_inventory_metadata_only_and_all_roles(harness):
         "pane_list",
         "pane_read",
         "pane_send",
+        "pane_execute",
         "pane_rename",
         "tab_rename",
         "workspace_list", "pane_layout", "pane_split", "pane_close", "pane_swap", "pane_move", "pane_reorient",

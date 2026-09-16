@@ -20,7 +20,7 @@ dev = ["pytest==9.1.1", "pytest-asyncio==1.4.0", "ruff==0.16.7", "mypy==2.3.1"]
 packages = ["python/herdr_broker"]
 
 [tool.hatch.build.targets.sdist]
-include = ["python", "tests", "pyproject.toml", "uv.lock", "docs/operations.md", "docs/mcp.md"]
+include = ["python", "tests", "acceptance/execute-herdr.py", "pyproject.toml", "uv.lock", "docs/operations.md", "docs/mcp.md"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

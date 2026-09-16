@@ -22,7 +22,7 @@ async def test_public_stdio_tools_and_no_database(tmp_path):
         async with ClientSession(*streams) as client:
             await client.initialize()
             tools = (await client.list_tools()).tools
-            assert len(tools) == 13
+            assert len(tools) == 14
             result = await client.call_tool("pane_list", {})
             assert not result.is_error and len(result.structured_content["panes"]) == 3
             args = {"pane_id": "w1:p2", "terminal_id": "term_2", "request_id": "stdio", "text": "echo hi"}

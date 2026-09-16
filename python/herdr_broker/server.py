@@ -72,8 +72,18 @@ def create_server(broker: Broker) -> MCPServer[Any]:
         text: Annotated[str, Field(max_length=65536)] = "",
         keys: Annotated[list[Annotated[str, Field(min_length=1, max_length=64)]], Field(max_length=32)] = [],
     ) -> dict[str, Any]:
-        """Send exact text and keys under your own approval policy. Newlines are input; Enter is never added. Reuse request_id only to check the same submission in this process. Unknown delivery must not be replayed. ACK is not completion; read the screen afterwards."""
+        """Type exact text/keys without implicit submission; use pane_execute for shell commands to run now. Pasted newlines may not submit; Enter is never added here. Reuse request_id only to query its compact receipt. Unknown delivery must not be replayed. ACK is not completion; read afterwards."""
         return await invoke(broker.pane_send, pane_id, terminal_id, request_id, text, keys)
+
+    @server.tool(annotations=ToolAnnotations(read_only_hint=False, destructive_hint=True, idempotent_hint=False))
+    async def pane_execute(
+        pane_id: Id,
+        terminal_id: Id,
+        request_id: Id,
+        command: Annotated[str, Field(max_length=65536)],
+    ) -> dict[str, Any]:
+        """Submit a nonblank shell command (including heredocs) and one explicit Enter together under your approval policy. Command text is unchanged; no wrapper or automatic observation. Check the current program first. ACK is not completion: use pane_read to verify actual output/errors and prompt return, not echoed code or markers. Never replay unknown delivery; duplicates return compact receipts."""
+        return await invoke(broker.pane_execute, pane_id, terminal_id, request_id, command)
 
     @server.tool(annotations=rename)
     async def pane_rename(

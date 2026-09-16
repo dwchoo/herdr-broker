@@ -13,6 +13,7 @@ All pane operations use the exact `pane_id` and `terminal_id` returned by discov
 | `pane_list` | optional `workspace_id`, `tab_id`, `offset` | Metadata page, checked time, truncation/next offset |
 | `pane_read` | `pane_id`, `terminal_id`, optional `objective`, `raw=false`, `offset=0` | Default Worker report or user-requested bounded raw text |
 | `pane_send` | `pane_id`, `terminal_id`, `request_id`, `text=""`, `keys=[]` | Submission state only |
+| `pane_execute` | `pane_id`, `terminal_id`, `request_id`, `command` | Submit the unchanged command and one explicit Enter together; submission state only |
 | `pane_rename` | `pane_id`, `terminal_id`, `name`, `numbered=false` | Updated pane; optionally preserve/allocate numeric label |
 | `tab_rename` | `tab_id`, `name`, optional `workspace_id` | Updated tab |
 | `pane_layout` | `pane_id`, `terminal_id` | Split tree and exact pane identities, metadata only |
@@ -36,6 +37,10 @@ When users give incomplete numbers or contextual names, the Parent uses inventor
 
 ## Read and type
 
+Use `pane_execute` for a shell command that should run now, then `pane_read` to check its result. It sends the unchanged nonblank command and exactly one explicit Enter in the same Herdr request, with the same 65,536-byte input limit, identity checks, approval policy and request-ID deduplication as `pane_send`. It adds no wrapper, automatic read, completion watcher or Job. REPL/TUI input still requires judging the current program; use `pane_send` for typing without submission and specific keys.
+
+For example, pass `command="python3 - <<'PY'\nprint('BROKER_' + 'EXEC_PROBE')\nPY\n"` to `pane_execute`. The newline in pasted text is not a reliable substitute for Enter: Herdr wraps text in bracketed paste when the terminal enables it. Verify the actual `BROKER_EXEC_PROBE` output, not marker text echoed inside the command. Output, errors and a returned prompt are evidence; an ACK or echoed heredoc is not completion. If text is still awaiting submission, inspect the current program and send only the needed key instead of replaying the command.
+
 `pane_read` captures a bounded recent screen and invokes `gpt-5.6-luna/high` through the official Codex Python SDK even for short output. Reports contain a concise Korean summary, findings with evidence from supplied lines, suggested checks and uncertainties. Worker tools, filesystem access and network tools are disabled. Worker failures/cancellation are explicit; never silently return raw text or change models. Raw reads are for explicit user requests for original text, with limits and truncation disclosed. Offsets are within the current capture, not durable scrollback cursors.
 
 Target work is visible in the shared pane: type commands to display files, edit them and execute programs. The Parent does not use background file/shell tools as a substitute. SSH, shells, REPLs and TUIs use the same input path without readiness declarations.
@@ -47,6 +52,10 @@ Pane identity is checked before read/input/rename/layout mutation. Herdr current
 Known Herdr enqueue rejections (`invalid_key`, `pane_not_found`, `pane_send_failed`) return `rejected`; a failure before submission returns `not_sent`. SDK startup and cleanup failures are explicit Worker errors too. Screen responses must match the requested source and format, with a nonnegative integer revision and boolean truncation flag. Each analysis constrains evidence IDs to the actual captured line IDs and validates them again before returning a report.
 
 ## Labels, context and lifecycle
+
+The MCP stores no conversation, completed Job history, screen or Worker report. Each analysis starts a fresh ephemeral SDK thread. Up to two analyses may run per MCP process: admission happens before screen capture, and excess calls fail immediately with `worker_busy` without a queue. Analysis keeps its 60-second timeout. SDK cleanup has a five-second wait limit, including on cancellation. Cleanup failure/timeout disables new analyses in that MCP (`worker_cleanup_failed`) and retains unresolved clients for one shutdown cleanup attempt; it does not claim that an unconfirmed child process exited. Metadata and input tools remain available, with no automatic raw/model fallback.
+
+Input and layout submissions retain at most 10,000 process-local dedupe records, with no eviction. Final records contain only digest, status/errors, acknowledged steps, and exact IDs/last-known locations needed for recovery. They omit command text, tree, labels, cwd and other descriptive metadata. The first response retains full details; duplicates return a compact receipt with `details_retained=false`. Use `pane_layout`/discovery for current details. Cancellation and failure also compact the record without losing dedupe protection. At capacity, `request_capacity_reached` rejects new deduplicated mutations before sending; duplicate queries, metadata and reads still work. Reconnect only after checking outstanding work, then rediscover and observe; process restart never authorizes replay.
 
 A four-digit prefix in the manual Herdr label is a convenience, e.g. `1234 · 빌드`. Explicit `numbered=true` preserves an existing prefix or chooses an unused current-workspace number. Concurrent naming/user edits may yield duplicate labels; discovery exposes each exact target. No historical registry, permanent global uniqueness or ownership is implied.
 

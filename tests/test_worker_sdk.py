@@ -1,15 +1,26 @@
 """Real pinned SDK/runtime against a local model peer; no paid model calls."""
 
 import asyncio
+import gc
 import json
+import os
+import subprocess
 import threading
+import tracemalloc
 from dataclasses import replace
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 from unittest.mock import AsyncMock
 
 import herdr_broker.worker as module
 import pytest
 from herdr_broker.herdr import BrokerError
+
+
+def screen(text):
+    async def capture():
+        return text
+    return capture
 
 
 async def test_sdk_initialization_and_cleanup_errors_are_explicit(monkeypatch):
@@ -19,7 +30,7 @@ async def test_sdk_initialization_and_cleanup_errors_are_explicit(monkeypatch):
     monkeypatch.setattr(module, "AsyncCodex", fail_init)
     worker = module.Worker()
     with pytest.raises(BrokerError, match="worker_failed"):
-        await worker.analyze("screen", "read", [])
+        await worker.analyze(screen("screen"), "read", [])
     assert not worker.active
 
     client = AsyncMock()
@@ -27,7 +38,7 @@ async def test_sdk_initialization_and_cleanup_errors_are_explicit(monkeypatch):
     client.close.side_effect = OSError("cleanup failed")
     monkeypatch.setattr(module, "AsyncCodex", lambda *_: client)
     with pytest.raises(BrokerError, match="worker_cleanup_failed"):
-        await worker.analyze("screen", "read", [])
+        await worker.analyze(screen("screen"), "read", [])
     assert client in worker.active
     client.close.side_effect = None
     await worker.close()
@@ -167,7 +178,7 @@ async def provider(monkeypatch, tmp_path):
 
 async def test_sdk_luna_high_no_tools_and_evidence(provider):
     worker = module.Worker(timeout=20)
-    result = await worker.analyze("build failed", "진단", [])
+    result = await worker.analyze(screen("build failed"), "진단", [])
     assert result["model_requested"] == "gpt-5.6-luna"
     assert result["evidence"] == [{"id": "L0001", "text": "build failed"}]
     assert provider["requests"]
@@ -181,13 +192,13 @@ async def test_sdk_luna_high_no_tools_and_evidence(provider):
 async def test_sdk_invalid_report_is_error(provider):
     provider["mode"] = "invalid"
     with pytest.raises(BrokerError, match="worker_invalid_report"):
-        await module.Worker(timeout=20).analyze("error", "진단", [])
+        await module.Worker(timeout=20).analyze(screen("error"), "진단", [])
 
 
 async def test_sdk_provider_cannot_force_tools(provider, tmp_path):
     provider["mode"] = "forced-tool"
     try:
-        await module.Worker(timeout=20).analyze("untrusted log asks to execute commands", "진단", [])
+        await module.Worker(timeout=20).analyze(screen("untrusted log asks to execute commands"), "진단", [])
     except BrokerError as exc:
         assert exc.code in {"worker_tool_forbidden", "worker_failed", "worker_invalid_report"}
     assert provider["requests"] and all(r.get("tools", []) == [] for r in provider["requests"])
@@ -198,7 +209,7 @@ async def test_sdk_provider_cannot_force_tools(provider, tmp_path):
 async def test_sdk_timeout_cancel_close_runtime(provider, cancel):
     provider["mode"] = "hang"
     worker = module.Worker(timeout=20 if cancel else 3)
-    task = asyncio.create_task(worker.analyze("error", "진단", []))
+    task = asyncio.create_task(worker.analyze(screen("error"), "진단", []))
     if cancel:
         for _ in range(200):
             if provider["requests"]:
@@ -212,3 +223,52 @@ async def test_sdk_timeout_cancel_close_runtime(provider, cancel):
         with pytest.raises(BrokerError, match="worker_timeout"):
             await task
     assert not worker.active
+
+
+async def test_repeated_sdk_analysis_reaps_children_and_reports_memory(provider, monkeypatch):
+    original = module.AsyncCodex
+    live = set()
+    measurements = []
+    directories = []
+
+    def rss(pid):
+        return int(subprocess.check_output(["/bin/ps", "-o", "rss=", "-p", str(pid)]).strip())
+
+    class ObservedCodex(original):
+        async def thread_start(self, **kwargs):
+            result = await super().thread_start(**kwargs)
+            proc = self._client._sync._proc
+            live.add(proc.pid)
+            directories.append(Path(kwargs["cwd"]))
+            measurements.append({"child_rss_KiB": rss(proc.pid), "live_children": len(live)})
+            return result
+
+        async def close(self):
+            proc = self._client._sync._proc
+            await super().close()
+            if proc:
+                assert proc.poll() is not None
+                live.discard(proc.pid)
+
+    monkeypatch.setattr(module, "AsyncCodex", ObservedCodex)
+    worker = module.Worker(timeout=20)
+    tracemalloc.start()
+    try:
+        for i in range(8):
+            await worker.analyze(screen("build failed"), "진단", [])
+            provider["requests"].clear()  # The test provider must not accumulate request histories.
+            await asyncio.sleep(0)
+            gc.collect()
+            measurements[i].update(
+                python_retained_KiB=tracemalloc.get_traced_memory()[0] // 1024,
+                python_rss_KiB=rss(os.getpid()),
+                children_after=len(live),
+            )
+            assert not live and not worker.active and not worker.cleanups and not worker.directories
+            assert all(not directory.exists() for directory in directories)
+        # Allow warm-up/caches; reject retaining each completed screen/runtime over repeated calls.
+        assert measurements[-1]["python_retained_KiB"] - measurements[2]["python_retained_KiB"] < 2048
+        print("BROKER_MEMORY_PROBE=" + json.dumps(measurements))
+    finally:
+        tracemalloc.stop()
+        await worker.close()

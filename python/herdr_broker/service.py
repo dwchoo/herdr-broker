@@ -25,6 +25,28 @@ def now() -> str:
     return datetime.now(UTC).isoformat()
 
 
+def compact_receipt(result: dict[str, Any]) -> dict[str, Any]:
+    fields = {
+        "request_id", "operation", "pane_id", "terminal_id", "submission", "completion",
+        "error", "changed", "reason", "focused_pane_id", "target_pane_id", "closed_pane_id",
+        "temporary_tab_id", "tab_id", "direction",
+    }
+    receipt = {key: value for key, value in result.items() if key in fields}
+    if "native_error" in result:
+        receipt["native_error"] = bounded(str(result["native_error"]), 256)
+    if "steps" in result:
+        receipt["steps"] = list(result["steps"])
+    identity_fields = {"pane_id", "terminal_id", "workspace_id", "tab_id"}
+    if "pane" in result:
+        receipt["pane"] = {key: value for key, value in result["pane"].items() if key in identity_fields}
+    if "participants" in result:
+        receipt["participants"] = [
+            {key: value for key, value in pane.items() if key in identity_fields}
+            for pane in result["participants"]
+        ]
+    return {**receipt, "details_retained": False}
+
+
 class Broker:
     def __init__(self, context: Context, worker: Worker):
         self.context = context
@@ -117,9 +139,7 @@ class Broker:
             "next_offset": next_offset if next_offset < len(panes) else None,
         }
 
-    async def pane_read(
-        self, pane_id: str, terminal_id: str, objective: str, raw: bool, offset: int
-    ) -> dict[str, Any]:
+    async def capture(self, pane_id: str, terminal_id: str) -> tuple[str, dict[str, Any]]:
         pane = await self.target(pane_id, terminal_id)
         result = await self.herdr.request(
             "pane.read",
@@ -155,7 +175,13 @@ class Broker:
             "truncated": bool(capture.get("truncated")) or cropped != text,
             "history_complete": False,
         }
+        return cropped, metadata
+
+    async def pane_read(
+        self, pane_id: str, terminal_id: str, objective: str, raw: bool, offset: int
+    ) -> dict[str, Any]:
         if raw:
+            cropped, metadata = await self.capture(pane_id, terminal_id)
             excerpt = bounded(cropped[offset:], 8192)
             next_offset = offset + len(excerpt)
             return {
@@ -167,12 +193,31 @@ class Broker:
             }
         if offset:
             raise BrokerError("offset_requires_raw")
-        report = await self.worker.analyze(cropped, objective, self.context.patterns)
+        metadata = {}
+
+        async def capture() -> str:
+            text, observed = await self.capture(pane_id, terminal_id)
+            metadata.update(observed)
+            return text
+
+        report = await self.worker.analyze(capture, objective, self.context.patterns)
         await self.target(pane_id, terminal_id)
         return {**metadata, "kind": "analysis", **report}
 
     async def pane_send(
         self, pane_id: str, terminal_id: str, request_id: str, text: str, keys: list[str]
+    ) -> dict[str, Any]:
+        return await self.submit_input("pane_send", pane_id, terminal_id, request_id, text, keys)
+
+    async def pane_execute(
+        self, pane_id: str, terminal_id: str, request_id: str, command: str
+    ) -> dict[str, Any]:
+        if not command.strip():
+            raise BrokerError("empty_command")
+        return await self.submit_input("pane_execute", pane_id, terminal_id, request_id, command, ["Enter"])
+
+    async def submit_input(
+        self, operation: str, pane_id: str, terminal_id: str, request_id: str, text: str, keys: list[str]
     ) -> dict[str, Any]:
         payload = {"pane_id": pane_id, "terminal_id": terminal_id, "text": text, "keys": keys}
         if not text and not keys:
@@ -189,7 +234,7 @@ class Broker:
                 raise BrokerError("herdr_invalid_response")
             return {}
 
-        return await self.mutate("pane_send", request_id, payload, send)
+        return await self.mutate(operation, request_id, payload, send)
 
     async def mutate(
         self,
@@ -205,7 +250,7 @@ class Broker:
             record = self.submissions[request_id]
             if record["digest"] != digest:
                 raise BrokerError("request_payload_changed")
-            return dict(record["result"], duplicate=True)
+            return dict(compact_receipt(record["result"]), duplicate=True)
         if len(self.submissions) >= 10000:
             raise BrokerError("request_capacity_reached")
         result = {
@@ -253,6 +298,8 @@ class Broker:
             result["error"] = exc.code
             if exc.native_code:
                 result["native_error"] = exc.native_code
+        finally:
+            self.submissions[request_id]["result"] = compact_receipt(result)
         return dict(result)
 
     async def pane_rename(self, pane_id: str, terminal_id: str, name: str, numbered: bool) -> dict[str, Any]:

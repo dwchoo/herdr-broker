@@ -33,7 +33,7 @@ class StubWorker(Worker):
         self.calls = []
         self.error = None
 
-    async def analyze(self, text, objective, patterns):
+    async def _analyze(self, text, objective, patterns):
         self.calls.append((text, objective))
         if self.error:
             raise BrokerError(self.error)

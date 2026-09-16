@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+from collections.abc import Awaitable, Callable
 from tempfile import TemporaryDirectory
 from typing import Any, Literal
 
@@ -46,6 +47,10 @@ INSTRUCTIONS = (
     "with summary, findings, next_checks and uncertainties, under 4096 UTF-8 bytes. "
     "For evidence_ids use exact screen keys such as L0001, one key per element; no ranges or invented keys. "
     "Distinguish observed output from guesses and suggestions. Do not claim completion without screen evidence."
+    " Echoed commands, heredoc bodies and markers inside source text are input, not execution results. "
+    "Identify actual output/errors and a returned prompt separately; report uncertainty if completion is unclear."
+    " An input ACK is not completion. Missing expected output calls for fresh observation of the current "
+    "program, not replaying a command merely because its marker is absent."
 )
 
 
@@ -82,109 +87,164 @@ def worker_config(directory: str) -> CodexConfig:
 
 
 class Worker:
-    def __init__(self, timeout: float = 60):
+    def __init__(self, timeout: float = 60, cleanup_timeout: float = 5):
         self.timeout = timeout
+        self.cleanup_timeout = cleanup_timeout
         self.active: set[AsyncCodex] = set()
+        self.directories: dict[AsyncCodex, TemporaryDirectory[str]] = {}
+        self.cleanups: dict[AsyncCodex, asyncio.Task[None]] = {}
+        self.running = 0
+        self.unhealthy = False
+        self.closing = False
+
+    async def cleanup(self, client: AsyncCodex, *, retry: bool = False) -> None:
+        if client not in self.active:
+            return
+        task = self.cleanups.get(client)
+        if task is None or (retry and task.done()):
+            async def shutdown() -> None:
+                await client.close()
+                if directory := self.directories.get(client):
+                    directory.cleanup()
+                    del self.directories[client]
+                self.active.discard(client)
+
+            task = asyncio.create_task(shutdown())
+            self.cleanups[client] = task
+
+            def finished(done: asyncio.Task[None]) -> None:
+                if done.cancelled() or done.exception() is not None:
+                    self.unhealthy = True
+                elif self.cleanups.get(client) is done:
+                    del self.cleanups[client]
+
+            task.add_done_callback(finished)
+        try:
+            # Keep the SDK close task alive if our wait times out or a caller cancels twice.
+            with anyio.CancelScope(shield=True):
+                done, _ = await asyncio.wait({task}, timeout=self.cleanup_timeout)
+                if not done:
+                    raise TimeoutError("SDK cleanup did not finish")
+                task.result()
+        except asyncio.CancelledError:
+            self.unhealthy = True
+            raise
+        except Exception as exc:
+            self.unhealthy = True
+            raise BrokerError("worker_cleanup_failed") from exc
 
     async def close(self) -> None:
+        self.closing = True
         with anyio.CancelScope(shield=True):
             clients = tuple(self.active)
             results = await asyncio.gather(
-                *(client.close() for client in clients), return_exceptions=True
+                *(self.cleanup(client, retry=True) for client in clients), return_exceptions=True
             )
-            for client, result in zip(clients, results, strict=True):
-                if not isinstance(result, BaseException):
-                    self.active.discard(client)
             if any(isinstance(result, BaseException) for result in results):
                 raise BrokerError("worker_cleanup_failed")
 
-    async def analyze(self, text: str, objective: str, patterns: list[str]) -> dict[str, Any]:
+    async def analyze(
+        self, capture: Callable[[], Awaitable[str]], objective: str, patterns: list[str]
+    ) -> dict[str, Any]:
+        if self.unhealthy:
+            raise BrokerError("worker_cleanup_failed")
+        if self.closing:
+            raise BrokerError("worker_closed")
+        if self.running >= 2:
+            raise BrokerError("worker_busy")
+        self.running += 1
+        try:
+            text = await capture()
+            if self.unhealthy or self.closing:
+                raise BrokerError("worker_cleanup_failed" if self.unhealthy else "worker_closed")
+            return await self._analyze(text, objective, patterns)
+        finally:
+            self.running -= 1
+
+    async def _analyze(self, text: str, objective: str, patterns: list[str]) -> dict[str, Any]:
         rows = {f"L{i + 1:04}": row for i, row in enumerate(text.split("\n"))}
         prompt = json.dumps({"objective": clean(objective, patterns), "screen": rows}, ensure_ascii=False)
         schema = Report.model_json_schema()
         schema["$defs"]["Finding"]["properties"]["evidence_ids"]["items"]["enum"] = list(rows)
-        with TemporaryDirectory(prefix="herdr-worker-") as directory:
-            codex: AsyncCodex | None = None
-            try:
-                codex = AsyncCodex(worker_config(directory))
-                self.active.add(codex)
-                async with asyncio.timeout(self.timeout):
-                    # No Parent approval policy is changed. This analysis-only child has no tools.
-                    thread = await codex.thread_start(
-                        model=MODEL,
-                        approval_mode=ApprovalMode.deny_all,
-                        sandbox=Sandbox.read_only,
-                        ephemeral=True,
-                        cwd=directory,
-                        base_instructions=INSTRUCTIONS,
+        directory = TemporaryDirectory(prefix="herdr-worker-")
+        codex: AsyncCodex | None = None
+        try:
+            codex = AsyncCodex(worker_config(directory.name))
+            self.active.add(codex)
+            self.directories[codex] = directory
+            async with asyncio.timeout(self.timeout):
+                # No Parent approval policy is changed. This analysis-only child has no tools.
+                thread = await codex.thread_start(
+                    model=MODEL,
+                    approval_mode=ApprovalMode.deny_all,
+                    sandbox=Sandbox.read_only,
+                    ephemeral=True,
+                    cwd=directory.name,
+                    base_instructions=INSTRUCTIONS,
+                )
+                turn = await thread.turn(
+                    prompt, effort=ReasoningEffort.high, output_schema=schema
+                )
+                final = ""
+                completed = False
+                usage: Any = None
+                total = 0
+                async for event in turn.stream():
+                    payload: dict[str, Any] = (
+                        event.payload.model_dump(mode="json", by_alias=True)
+                        if isinstance(event.payload, BaseModel)
+                        else event.payload.params
                     )
-                    turn = await thread.turn(
-                        prompt, effort=ReasoningEffort.high, output_schema=schema
-                    )
-                    final = ""
-                    completed = False
-                    usage: Any = None
-                    total = 0
-                    async for event in turn.stream():
-                        payload: dict[str, Any] = (
-                            event.payload.model_dump(mode="json", by_alias=True)
-                            if isinstance(event.payload, BaseModel)
-                            else event.payload.params
-                        )
-                        total += len(json.dumps(payload).encode())
-                        if total > 1024 * 1024:
-                            raise BrokerError("worker_output_limit")
-                        if event.method in {"item/started", "item/completed"}:
-                            item = payload.get("item", {})
-                            if item.get("type") not in {"userMessage", "agentMessage", "reasoning"}:
-                                raise BrokerError("worker_tool_forbidden")
-                            if event.method == "item/completed" and item.get("type") == "agentMessage":
-                                final = item.get("text", "")
-                        elif event.method == "thread/tokenUsage/updated":
-                            usage = payload.get("tokenUsage")
-                        elif event.method == "turn/completed":
-                            if payload.get("turn", {}).get("status") != "completed":
-                                raise BrokerError("worker_failed")
-                            completed = True
-                    if not completed:
-                        raise BrokerError("worker_failed")
-                    report = Report.model_validate_json(final)
-                    if len(report.model_dump_json().encode()) > 4096 or any(
-                        len(s) > 600 for s in report.next_checks + report.uncertainties
-                    ):
-                        raise BrokerError("worker_report_too_large")
-                    ids = list(
-                        dict.fromkeys(eid for finding in report.findings for eid in finding.evidence_ids)
-                    )
-                    if any(eid not in rows for eid in ids):
-                        raise BrokerError("worker_invalid_evidence")
-                    safe_report = report.model_dump()
-                    safe_report["summary"] = clean(report.summary, patterns)
-                    safe_report["next_checks"] = [clean(s, patterns) for s in report.next_checks]
-                    safe_report["uncertainties"] = [clean(s, patterns) for s in report.uncertainties]
-                    for finding in safe_report["findings"]:
-                        finding["claim"] = clean(finding["claim"], patterns)
-                    return {
-                        "report": safe_report,
-                        "evidence": [{"id": eid, "text": bounded(rows[eid], 512)} for eid in ids],
-                        "model_requested": MODEL,
-                        "effort": "high",
-                        "usage": usage,
-                    }
-            except TimeoutError as exc:
-                raise BrokerError("worker_timeout") from exc
-            except ValidationError as exc:
-                raise BrokerError("worker_invalid_report") from exc
-            except BrokerError:
-                raise
-            except Exception as exc:
-                raise BrokerError("worker_failed") from exc
-            finally:
-                if codex:
-                    try:
-                        with anyio.CancelScope(shield=True):
-                            await codex.close()
-                    except Exception as exc:
-                        raise BrokerError("worker_cleanup_failed") from exc
-                    else:
-                        self.active.discard(codex)
+                    total += len(json.dumps(payload).encode())
+                    if total > 1024 * 1024:
+                        raise BrokerError("worker_output_limit")
+                    if event.method in {"item/started", "item/completed"}:
+                        item = payload.get("item", {})
+                        if item.get("type") not in {"userMessage", "agentMessage", "reasoning"}:
+                            raise BrokerError("worker_tool_forbidden")
+                        if event.method == "item/completed" and item.get("type") == "agentMessage":
+                            final = item.get("text", "")
+                    elif event.method == "thread/tokenUsage/updated":
+                        usage = payload.get("tokenUsage")
+                    elif event.method == "turn/completed":
+                        if payload.get("turn", {}).get("status") != "completed":
+                            raise BrokerError("worker_failed")
+                        completed = True
+                if not completed:
+                    raise BrokerError("worker_failed")
+                report = Report.model_validate_json(final)
+                if len(report.model_dump_json().encode()) > 4096 or any(
+                    len(s) > 600 for s in report.next_checks + report.uncertainties
+                ):
+                    raise BrokerError("worker_report_too_large")
+                ids = list(
+                    dict.fromkeys(eid for finding in report.findings for eid in finding.evidence_ids)
+                )
+                if any(eid not in rows for eid in ids):
+                    raise BrokerError("worker_invalid_evidence")
+                safe_report = report.model_dump()
+                safe_report["summary"] = clean(report.summary, patterns)
+                safe_report["next_checks"] = [clean(s, patterns) for s in report.next_checks]
+                safe_report["uncertainties"] = [clean(s, patterns) for s in report.uncertainties]
+                for finding in safe_report["findings"]:
+                    finding["claim"] = clean(finding["claim"], patterns)
+                return {
+                    "report": safe_report,
+                    "evidence": [{"id": eid, "text": bounded(rows[eid], 512)} for eid in ids],
+                    "model_requested": MODEL,
+                    "effort": "high",
+                    "usage": usage,
+                }
+        except TimeoutError as exc:
+            raise BrokerError("worker_timeout") from exc
+        except ValidationError as exc:
+            raise BrokerError("worker_invalid_report") from exc
+        except BrokerError:
+            raise
+        except Exception as exc:
+            raise BrokerError("worker_failed") from exc
+        finally:
+            if codex:
+                await self.cleanup(codex)
+            else:
+                directory.cleanup()
