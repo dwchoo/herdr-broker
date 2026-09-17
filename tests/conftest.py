@@ -10,6 +10,7 @@ from unittest.mock import AsyncMock
 from uuid import uuid4
 
 import pytest
+
 from herdr_broker.context import Context
 from herdr_broker.herdr import BrokerError, Herdr
 from herdr_broker.reports import build_report
@@ -346,9 +347,7 @@ def socket_path():
 async def harness(tmp_path, socket_path):
     async with peer_server(socket_path) as peer:
         herdr = Herdr(socket_path, timeout=0.3)
-        context = Context(herdr, tmp_path, "w1", "w1:p1", "term_1", os.getpid(), ["synthetic-secret"])
-        # Context project check stays real; the peer is a test-only protocol server.
-        context.project = Path.cwd()
+        context = Context(herdr, "w1", "w1:p1", "term_1", os.getpid(), ["synthetic-secret"])
         worker = StubWorker()
         broker = Broker(context, worker)
         try:

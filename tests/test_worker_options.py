@@ -1,7 +1,6 @@
 import json
 import subprocess
 import sys
-import tomllib
 from pathlib import Path
 from typing import get_args
 from unittest.mock import AsyncMock
@@ -12,7 +11,7 @@ from openai_codex.types import ReasoningEffort
 from test_mcp import call
 from test_report_contract import candidate
 
-from herdr_broker.cli import argument_parser, setup
+from herdr_broker.cli import argument_parser
 from herdr_broker.herdr import BrokerError
 from herdr_broker.options import Effort, WorkerOptions, export_templates, load_templates
 from herdr_broker.reports import BUDGETS, analysis_contract, build_report
@@ -21,7 +20,7 @@ from herdr_broker.sdk_runtime import analysis_profile, validate_model
 
 def test_cli_defaults_choices_and_sdk_enum():
     parser = argument_parser()
-    args = parser.parse_args(['mcp', '--project', '/tmp'])
+    args = parser.parse_args(['mcp'])
     assert args.analysis_model == args.status_model == 'gpt-5.6-luna'
     assert (args.analysis_effort, args.status_effort, args.fast_mode, args.response_length_mode) == (
         'medium', 'low', 'off', 'medium')
@@ -32,52 +31,12 @@ def test_cli_defaults_choices_and_sdk_enum():
     assert parser.parse_args(['templates', '--output-dir', '/tmp']).command == 'templates'
 
 
-def test_setup_source_options_preserves_config_and_is_repeatable(tmp_path, monkeypatch):
-    monkeypatch.chdir(tmp_path)
-    directory = tmp_path / '.codex'
-    directory.mkdir()
-    path = directory / 'config.toml'
-    prefix = 'approval_policy="never"\n[mcp_servers.other]\ncommand="other"\n'
-    path.write_text(prefix)
-    options = WorkerOptions(status_model='status-model', analysis_effort='high', fast_mode='analysis',
-                            response_length_mode='auto', template_dir=tmp_path / 'templates')
-    source = 'git+https://github.com/dwchoo/herdr-broker.git@main'
-    setup(tmp_path, source, options)
-    first = path.read_text()
-    setup(tmp_path, source, options)
-    assert path.read_text() == first and first.startswith(prefix)
-    config = tomllib.loads(first)['mcp_servers']['herdr_broker']
-    assert config['command'].endswith('uvx')
-    assert config['args'] == ['--from', source, 'herdr-broker', 'mcp', '--project', str(tmp_path), *options.arguments()]
-    assert '--refresh' not in config['args']
-
-
-def test_installed_setup_keeps_git_branch(tmp_path, monkeypatch):
-    from types import SimpleNamespace
-
-    import herdr_broker.cli as cli
-    monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr(cli, 'distribution', lambda _: SimpleNamespace(version='0.2.0', read_text=lambda _: json.dumps({
-        'url': 'https://example.test/project.git', 'vcs_info': {'requested_revision': 'main', 'commit_id': 'abcdef'}
-    })))
-    setup(tmp_path)
-    args = tomllib.loads((tmp_path / '.codex/config.toml').read_text())['mcp_servers']['herdr_broker']['args']
-    assert args[1] == 'git+https://example.test/project.git@main'
-
-
 def test_cli_templates_without_context_and_relative_template_dir(tmp_path):
     target = tmp_path / 'templates'
     result = subprocess.run([sys.executable, '-m', 'herdr_broker', 'templates', '--output-dir', str(target)],
                             capture_output=True, text=True, cwd=tmp_path)
     assert result.returncode == 0, result.stderr
     assert len(json.loads(result.stdout)['templates']) == 2
-    result = subprocess.run([sys.executable, '-m', 'herdr_broker', 'setup', '--project', str(tmp_path),
-                             '--source', 'git+https://example.test/repo.git@main', '--template-dir', 'templates'],
-                            capture_output=True, text=True, cwd=tmp_path)
-    assert result.returncode == 0, result.stderr
-    args = tomllib.loads((tmp_path / '.codex/config.toml').read_text())['mcp_servers']['herdr_broker']['args']
-    assert args[-2:] == ['--template-dir', str(target)]
-
 
 def test_templates_export_and_validation(tmp_path):
     exported = export_templates(tmp_path)
@@ -204,27 +163,3 @@ async def test_unsupported_call_override_does_not_capture_or_poison_worker():
         assert (await worker.analyze(capture, '', []))['effort'] == 'medium'
     finally:
         await worker.close()
-
-
-def test_src_checkout_setup_uses_locked_development_command(tmp_path, monkeypatch):
-    import herdr_broker.cli as cli
-
-    module = tmp_path / 'src/herdr_broker/cli.py'
-    module.parent.mkdir(parents=True)
-    module.write_text('')
-    monkeypatch.setattr(cli, '__file__', str(module))
-    monkeypatch.chdir(tmp_path)
-    config_dir = tmp_path / '.codex'
-    config_dir.mkdir()
-    config_path = config_dir / 'config.toml'
-    original = 'approval_policy="on-request"\n[mcp_servers.other]\ncommand="other"\n'
-    config_path.write_text(original)
-    options = WorkerOptions(fast_mode='analysis', response_length_mode='short')
-    setup(tmp_path, options=options)
-    first = config_path.read_text()
-    setup(tmp_path, options=options)
-    assert config_path.read_text() == first and first.startswith(original)
-    config = tomllib.loads(first)['mcp_servers']['herdr_broker']
-    assert config['command'].endswith('uv')
-    assert config['args'] == ['run', '--locked', '--project', str(tmp_path), 'herdr-broker',
-                              'mcp', '--project', str(tmp_path), *options.arguments()]

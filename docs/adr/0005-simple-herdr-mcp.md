@@ -38,3 +38,7 @@ analysis는 Luna/medium, status는 Luna/low·8줄·1 KiB, Fast는 기본 off다.
 모델·effort·Fast는 purpose별 시작 설정을 사용한다. 기본값은 기존 Luna/medium·Luna/low·Fast off이며, 사용자 요청 시 Parent가 해당 호출의 effort·tier를 명시할 수 있다. 생략/null은 시작 설정을 상속하고 명시적인 default tier는 Fast를 끈다. 승인 정책은 추가하지 않는다.
 
 응답 길이는 short/medium/long/auto로 정하며 medium 계약을 유지한다. auto는 단일 turn에서 medium/long을 선택해 해당 한도를 검증한다. 응답 지침은 편집 가능한 Markdown template로 분리하지만 schema·근거 추출·길이 제한·도구 차단은 코드가 관리한다. 설정과 template 변경은 다음 MCP 시작부터 적용한다. GitHub uvx 설치와 세부 기준은 [Worker 설정](../implementation/worker-options.md)을 따른다.
+
+## config.toml 실행과 선택적 Skill
+
+프로젝트 경로와 cwd 경계 검사를 제거한다. 로컬 socket과 내부 caller 프로세스·terminal identity 검증은 유지한다. 기본 사용은 config.toml의 uvx 실행 설정만으로 가능하고 Parent 지침은 MCP가 제공한다. setup은 config 작성 대신 선택적 짧은 Skill을 설치한다. 기존 runtime --project는 상대 template 경로 호환에만 사용한다. [변경 계획](../plans/config-only-startup.md)을 따른다.

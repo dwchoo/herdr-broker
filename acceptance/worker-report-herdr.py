@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 async def run(args):
     proof = {'complete': False, 'ssh_tested': False, 'calls': []}
     params = StdioServerParameters(command=sys.executable,
-        args=['-m', 'herdr_broker', 'mcp', '--project', str(ROOT)], cwd=ROOT, env=dict(os.environ))
+        args=['-m', 'herdr_broker', 'mcp'], cwd=ROOT, env=dict(os.environ))
     async with stdio_client(params) as streams:
         async with ClientSession(*streams) as client:
             await client.initialize()

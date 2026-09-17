@@ -24,7 +24,7 @@ def verify_output(result, expected, marker):
 async def main(target_code, output):
     params = StdioServerParameters(
         command=sys.executable,
-        args=["-m", "herdr_broker", "mcp", "--project", str(ROOT)],
+        args=["-m", "herdr_broker", "mcp"],
         cwd=ROOT,
         env=dict(os.environ),
     )

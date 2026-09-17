@@ -18,19 +18,18 @@
 
 ## GitHub와 설정 생성
 
-`setup --source git+https://github.com/dwchoo/herdr-broker.git@main --project <project>`는 uvx와 Worker 인자를 project config에 기록한다. 다른 MCP·승인 설정은 보존한다. source를 생략한 checkout 개발 설정은 uv run을 유지한다. 설치된 Git source의 branch 참조는 가능한 경우 보존한다. uvx 환경은 직접 편집하지 않고 갱신할 때만 --refresh를 사용한다.
+Worker 인자는 config.toml의 mcp 실행 인자로 직접 지정한다. setup은 선택적 Skill 설치만 수행한다. uvx cache는 업데이트할 때 --refresh로 재검증한다.
 
 ```toml
 [mcp_servers.herdr_broker]
 command = "uvx"
 args = [
   "--from", "git+https://github.com/dwchoo/herdr-broker.git@main",
-  "herdr-broker", "mcp", "--project", "/absolute/path/to/project",
+  "herdr-broker", "mcp",
   "--analysis-model", "gpt-5.6-luna", "--analysis-effort", "medium",
   "--status-model", "gpt-5.6-luna", "--status-effort", "low",
   "--response-length-mode", "medium", "--fast-mode", "off"
 ]
-cwd = "/absolute/path/to/project"
 env_vars = ["HERDR_ENV", "HERDR_PANE_ID", "HERDR_WORKSPACE_ID", "HERDR_TAB_ID", "HERDR_SOCKET_PATH"]
 ```
 
@@ -40,7 +39,7 @@ env_vars = ["HERDR_ENV", "HERDR_PANE_ID", "HERDR_WORKSPACE_ID", "HERDR_TAB_ID", 
 
 analysis의 서술/근거 상한은 short 500/1500자, medium 1000/3000자, long 2000/6000자다. 항목 이름을 서술에 포함하며 Unicode 문자 수와 tokens·bytes를 구분한다. 개수 제한은 유지하고 필드별 문자열 상한은 medium의 절반/두 배로 한다. auto는 한 번의 모델 호출에서 medium 또는 long을 선택하고 해당 한도를 검증한다. 재분석·자동 재시도·서술 잘라내기는 하지 않는다. status 계약·수집 범위·pane_excerpt 한도는 바꾸지 않는다.
 
-`herdr-broker templates --output-dir <directory>`로 analysis.md와 status.md를 내보낸다. 인증·Herdr·project가 필요 없고 기존 파일을 덮어쓰지 않는다. --template-dir 상대 경로는 --project 기준이다. 파일당 UTF-8 8 KiB 이내의 비어 있지 않은 Markdown을 시작 때 한 번 읽는다. 수정은 다음 MCP 시작부터 적용한다. 내용 우선순위·말투·예시만 편집하며 schema·길이 상한·도구 제한은 코드가 유지한다. 해당 purpose의 파일만 전달하며 AGENTS·Skill·Parent 대화·링크 문서를 자동 로드하지 않는다.
+`herdr-broker templates --output-dir <directory>`로 analysis.md와 status.md를 내보낸다. 인증·Herdr·project가 필요 없고 기존 파일을 덮어쓰지 않는다. --template-dir 상대 경로는 시작 cwd 기준이며 deprecated runtime --project를 명시한 기존 호출만 이전 기준을 유지한다. 파일당 UTF-8 8 KiB 이내의 비어 있지 않은 Markdown을 시작 때 한 번 읽는다. 수정은 다음 MCP 시작부터 적용한다. 내용 우선순위·말투·예시만 편집하며 schema·길이 상한·도구 제한은 코드가 유지한다. 해당 purpose의 파일만 전달하며 AGENTS·Skill·Parent 대화·링크 문서를 자동 로드하지 않는다.
 
 ## 검증과 완료
 

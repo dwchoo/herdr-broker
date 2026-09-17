@@ -2,22 +2,19 @@
 
 Python MCP는 현재 Herdr workspace의 pane을 조회하고 읽고 입력하며 이름과 배치를 바꾼다. 사용자와 Codex는 같은 terminal에서 작업한다. Console 시작·접속·등록·Mode 설정은 필요 없다. 승인 판단은 Parent Codex의 기존 정책을 따른다.
 
-## 프로젝트 설정
+## 실행 설정과 선택적 Skill
 
-Python 3.12 이상과 uv, 실행 중인 Herdr 0.9.0/protocol 22가 필요하다. Worker는 공식 `openai-codex` SDK와 함께 설치되는 Codex runtime, 기존 로컬 Codex 인증을 사용한다. Docker는 사용하지 않는다.
+Python 3.12 이상 3.15 미만, uv/uvx, 로컬 Herdr와 Worker용 Codex 인증이 필요하다. Codex config.toml에 `command = "uvx"`, `args = ["--from", "git+https://github.com/dwchoo/herdr-broker.git@main", "herdr-broker", "mcp"]`를 등록한다. clone·setup·Skill 설치와 project/cwd 지정은 필요 없다. 전체 예시는 [README](../README.md)를 따른다.
 
-```sh
-uv sync --locked
-uv run herdr-broker setup --project .
-```
+checkout 개발은 `uv sync --locked` 후 `uv run herdr-broker mcp`를 사용한다. 다른 위치에서 checkout을 실행할 때 uv 자체의 `--project`는 사용할 수 있다. Broker의 `mcp/check --project`는 deprecated 호환 인자이며 프로젝트 경계를 검사하지 않는다. 상대 template 경로만 이전 기준을 유지한다. 새 상대 template 경로는 시작 cwd 기준이다.
 
-setup은 `.codex/config.toml`의 Broker MCP 블록만 갱신하고 승인 설정은 바꾸지 않는다. 이 프로젝트에서 새 Codex를 시작한 뒤 `$broker`를 호출한다. Herdr shell과 같은 Mac의 Codex CLI·Desktop을 지원한다. 개발 checkout은 `uv run --project <경로> herdr-broker mcp --project <경로>`로 실행한다. 패키지는 `uvx --from <wheel 경로 또는 Git URL> herdr-broker mcp --project <프로젝트 경로>`로도 실행할 수 있다. 아직 공개 registry에 배포했다고 가정하지 않는다.
+`herdr-broker setup`은 현재 폴더의 `.agents/skills/broker/SKILL.md`에 선택적 호출 안내를 설치한다. 다른 대상은 `--directory`로 지정한다. Herdr·인증 없이 실행되며 config.toml을 수정하지 않는다. 동일 내용은 변경 없이 성공하고, 다른 내용과 symlink는 보존하며 충돌을 알린다. 예전 setup의 --project/--source/Worker 옵션은 이행 안내와 함께 거부한다. MCP는 Skill 존재를 검사하거나 자동 설치하지 않는다.
 
-같은 Mac·OS 사용자의 Codex CLI·Desktop에서도 사용할 수 있다. Herdr 밖에서는 `workspace_list`로 workspace를 고르고 `workspace_id`를 지정해 tab·pane을 조회한다. Herdr 안에서는 주입된 workspace·tab·pane·socket과 실제 shell의 프로세스 조상 관계를 확인하며 caller workspace가 기본값이다. 불완전하거나 잘못된 Herdr 환경값을 외부 모드로 우회하지 않는다. MCP는 설정의 project 경로 아래에서 실행하며, 사용자 소유 `~/.config/herdr-broker/config.json`의 `herdr_socket`·`redaction_patterns` 설정을 사용할 수 있다. 원격 컴퓨터·cloud ChatGPT 연결은 이번 로컬 연결에 포함하지 않는다. legacy `codex_binary`는 새 SDK runtime 선택에 사용하지 않는다.
+Herdr shell과 같은 Mac·OS 사용자의 외부 Codex CLI/Desktop을 지원한다. 외부에서는 workspace_list로 workspace를 선택한다. 내부 caller 자동 식별은 선택적인 HERDR env_vars 전달로 활성화하며 실제 프로세스 조상·socket·terminal identity를 검증한다. 환경값이 없으면 외부 연결, 일부만 있거나 불일치하면 오류다. 사용자 소유 `~/.config/herdr-broker/config.json`의 herdr_socket·redaction_patterns를 사용할 수 있다. 원격/cloud 연결은 포함하지 않는다.
 
 ## 사용 흐름
 
-1. `$broker 현재 pane이 뭐야?` — workspace 전체의 tab·pane 이름과 실제 ID를 읽는다. 목록 조회는 화면 수집·분석·입력·이름 변경을 하지 않는다.
+1. `Herdr 현재 pane이 뭐야?` — workspace 전체의 tab·pane 이름과 실제 ID를 읽는다. 목록 조회는 화면 수집·분석·입력·이름 변경을 하지 않는다.
 2. `1008 · 서버에서 상태 확인해줘` — Parent가 최신 목록과 대화 맥락에서 대상을 선택하고 사용자에게 알린다. 번호·이름이 불명확하면 후보와 위치를 확인한다.
 3. `pane_read` — 출력 길이와 관계없이 설정된 Worker 모델(기본 `gpt-5.6-luna`)이 화면만 분석한다. 기본 `purpose="analysis"`는 Luna/medium, `purpose="status"`는 prompt 복귀·미완성 입력·실행 중 여부를 Luna/low로 확인한다. status는 최근 8줄·1 KiB, analysis는 80줄·64 KiB를 기본으로 읽는다. 문맥이 부족하면 `max_lines`를 명시해 최대 1,000줄·64 KiB로 넓힌다. 명시적 effort 지정은 유지한다. 이번 관찰로 결정할 일을 기준으로 purpose를 명시한다. 새 명령 입력 전에는 현재 프로그램·prompt·미제출 입력 확인만 status로 요청한다. 사용자에게 답할 내용이나 실행 결과를 해석할 때 analysis를 사용한다. 기존 출력에서 답을 찾는 작업은 analysis로 수행하며, 이미 필요한 분석에서 현재 입력 상태도 확인됐다면 status를 추가로 반복하지 않는다. Worker는 파일·shell·MCP 도구를 사용하지 않는다. 사용자가 원문을 요청했을 때만 raw 읽기를 사용한다.
 4. `pane_execute` — 실행할 명령과 Enter 하나를 같은 요청으로 보낸다. 입력만 하거나 TUI의 특정 키를 누를 때는 기존 `pane_send`를 사용한다. SSH 여부에 따라 별도 준비 절차를 두지 않는다.
@@ -94,4 +91,4 @@ analysis는 Luna/medium, status는 Luna/low·8줄·1 KiB, Fast는 기본 off다.
 
 `src/herdr_broker`가 설치되는 package이며 `tests/`와 `acceptance/*.py`가 Python 검증을 담당한다. `pyproject.toml`·`uv.lock`으로 의존성을 관리하고 `uv sync --locked` 후 개발한다. wheel·sdist는 Python 코드와 Markdown template을 포함하며 legacy·npm 파일·로컬 MCP 설정은 배포하지 않는다. `uvx` 실행에는 Node/npm 설치가 필요 없다. 실제 Herdr와 Codex file 인증·model cache 조건은 그대로 적용한다.
 
-구조 변경 후에도 checkout의 `setup`은 `uv run --locked --project ...`를 생성한다. GitHub 실행은 `setup --source git+https://github.com/dwchoo/herdr-broker.git@main --project ...`로 명시한다. [구조 변경 검증](implementation/python-src-layout.md)에 로컬 Git 설치 결과와 공개 main 검증의 구분을 기록한다.
+setup은 선택적 Skill만 설치한다. GitHub 실행은 README의 config.toml 예시로 등록한다. [구조 변경 검증](implementation/python-src-layout.md)에 로컬 Git 설치 결과와 공개 main 검증의 구분을 기록한다.

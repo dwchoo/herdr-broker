@@ -6,6 +6,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from conftest import StubWorker, peer_server
+
 from herdr_broker.context import Context
 from herdr_broker.herdr import Herdr
 from herdr_broker.server import create_server
@@ -16,7 +17,7 @@ async def main():
     with TemporaryDirectory(dir="/tmp", prefix="hb-stdio-") as directory:
         path = Path(directory) / "h.sock"
         async with peer_server(path):
-            context = Context(Herdr(path), Path.cwd(), "w1", "w1:p1", "term_1", os.getpid(), [])
+            context = Context(Herdr(path), "w1", "w1:p1", "term_1", os.getpid(), [])
             worker = StubWorker()
             try:
                 await create_server(Broker(context, worker)).run_stdio_async()

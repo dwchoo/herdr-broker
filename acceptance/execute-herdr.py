@@ -25,7 +25,7 @@ async def run(workspace, anchor_id, local_prompt, ssh_id, ssh_prompt, output):
     proof = {"complete": False, "calls": [], "ssh_tested": False}
     params = StdioServerParameters(
         command=sys.executable,
-        args=["-m", "herdr_broker", "mcp", "--project", str(ROOT)],
+        args=["-m", "herdr_broker", "mcp"],
         cwd=ROOT,
         env=dict(os.environ),
     )

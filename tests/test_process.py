@@ -2,15 +2,14 @@ import asyncio
 import json
 import os
 import sys
-import tomllib
 from pathlib import Path
 
 import pytest
-from herdr_broker.cli import END, START, setup
-from herdr_broker.context import CONTEXT_KEYS, Context, is_descendant
-from herdr_broker.herdr import BrokerError
 from mcp.client import ClientSession
 from mcp.client.stdio import StdioServerParameters, stdio_client
+
+from herdr_broker.context import CONTEXT_KEYS, Context, is_descendant
+from herdr_broker.herdr import BrokerError
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -48,8 +47,6 @@ async def test_production_partial_herdr_context_rejected():
         "-m",
         "herdr_broker",
         "mcp",
-        "--project",
-        str(ROOT),
         env=env,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
@@ -67,57 +64,11 @@ def test_process_ancestry_rejects_copied_env_and_other_user():
     assert not is_descendant("100 90 501\n90 100 501", 100, 50, 501)
 
 
-async def test_project_boundary_and_missing_context(tmp_path, monkeypatch):
-    with pytest.raises(BrokerError, match="project_context_required"):
-        await Context.load(tmp_path)
+async def test_missing_context_without_project(monkeypatch):
     monkeypatch.setenv("HERDR_ENV", "1")
     monkeypatch.delenv("HERDR_PANE_ID", raising=False)
     with pytest.raises(BrokerError, match="herdr_context_required"):
-        await Context.load(ROOT)
-
-
-def test_setup_preserves_approval_and_other_settings(tmp_path, monkeypatch):
-    monkeypatch.chdir(tmp_path)
-    folder = tmp_path / ".codex"
-    folder.mkdir()
-    path = folder / "config.toml"
-    original = (
-        'approval_policy = "never"\nmodel = "gpt-5.6-luna"\n\n'
-        + START
-        + '\n[mcp_servers.herdr_broker]\ncommand="node"\n'
-        + END
-        + '\n\n[mcp_servers.other]\ncommand="existing"\n'
-    )
-    path.write_text(original)
-    setup(tmp_path)
-    first = path.read_text()
-    result = tomllib.loads(first)
-    assert result["approval_policy"] == "never"
-    assert result["mcp_servers"]["other"]["command"] == "existing"
-    assert result["mcp_servers"]["herdr_broker"]["command"].endswith("uvx")
-    setup(tmp_path)
-    assert path.read_text() == first
-
-
-def test_setup_no_approval_added_and_rejects_unmanaged(tmp_path, monkeypatch):
-    monkeypatch.chdir(tmp_path)
-    setup(tmp_path)
-    path = tmp_path / ".codex/config.toml"
-    assert "approval_policy" not in path.read_text()
-    path.write_text('[mcp_servers.herdr_broker]\ncommand="custom"\n')
-    with pytest.raises(BrokerError, match="project_mcp_already_configured"):
-        setup(tmp_path)
-    assert "custom" in path.read_text()
-
-
-def test_setup_rejects_symlink(tmp_path, monkeypatch):
-    monkeypatch.chdir(tmp_path)
-    actual = tmp_path / "actual"
-    actual.mkdir()
-    (tmp_path / ".codex").symlink_to(actual, target_is_directory=True)
-    with pytest.raises(BrokerError, match="project_config_invalid"):
-        setup(tmp_path)
-    assert list(actual.iterdir()) == []
+        await Context.load()
 
 
 @pytest.mark.parametrize("termination", ["eof", "term", "int", "kill", "early_term", "term_eof"])

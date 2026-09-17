@@ -6,6 +6,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from conftest import peer_server
+
 from herdr_broker.cli import run_stdio
 from herdr_broker.context import Context
 from herdr_broker.herdr import Herdr
@@ -17,7 +18,7 @@ from herdr_broker.worker import Worker
 async def main():
     with TemporaryDirectory(dir="/tmp", prefix="hb-sdk-stdio-") as directory:
         async with peer_server(Path(directory) / "h.sock"):
-            context = Context(Herdr(Path(directory) / "h.sock"), Path.cwd(),
+            context = Context(Herdr(Path(directory) / "h.sock"),
                               "w1", "w1:p1", "term_1", os.getpid(), [])
             worker = Worker()
             worker.warmup()

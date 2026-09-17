@@ -1,14 +1,14 @@
 import asyncio
 import copy
 import os
-from pathlib import Path
 
 import pytest
 from conftest import StubWorker
+from test_mcp import call
+
 from herdr_broker.context import CONTEXT_KEYS, Context
 from herdr_broker.server import create_server
 from herdr_broker.service import Broker
-from test_mcp import call
 
 IDENTITY = {"pane_id": "w1:p2", "terminal_id": "term_2"}
 
@@ -20,7 +20,7 @@ async def test_local_context_discovers_workspaces_without_fake_caller(harness, m
     monkeypatch.setattr(
         "herdr_broker.context.local_settings", lambda: {"herdr_socket": str(broker.herdr.endpoint)}
     )
-    context = await Context.load(Path.cwd())
+    context = await Context.load()
     assert context.caller is context.workspace is context.terminal is None
     server = create_server(Broker(context, StubWorker()))
     result = await call(server, "workspace_list")
@@ -36,7 +36,7 @@ async def test_local_context_discovers_workspaces_without_fake_caller(harness, m
     # An invalid inherited Herdr context never silently downgrades to local mode.
     monkeypatch.setenv("HERDR_ENV", "1")
     with pytest.raises(Exception, match="herdr_context_required"):
-        await Context.load(Path.cwd())
+        await Context.load()
 
 
 async def test_workspace_selection_metadata_only(harness):
@@ -65,7 +65,7 @@ async def test_herdr_context_uses_live_tab_after_pane_move(harness, monkeypatch)
         "HERDR_SOCKET_PATH": str(broker.herdr.endpoint),
     }.items():
         monkeypatch.setenv(key, value)
-    context = await Context.load(Path.cwd())
+    context = await Context.load()
     assert context.caller == "w1:p1" and context.shell_pid == os.getpid()
 
 
@@ -260,7 +260,7 @@ async def test_empty_inherited_context_is_not_local_fallback(harness, monkeypatc
     )
     monkeypatch.setenv("HERDR_PANE_ID", "")
     with pytest.raises(Exception, match="herdr_context_required"):
-        await Context.load(Path.cwd())
+        await Context.load()
 
 
 async def test_duplicate_inventory_and_invalid_focus_are_errors(harness, monkeypatch):

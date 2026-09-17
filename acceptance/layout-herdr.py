@@ -18,11 +18,11 @@ ROOT = Path(__file__).resolve().parents[1]
 async def run(workspace_id, anchor_id, output):
     params = StdioServerParameters(
         command=sys.executable,
-        args=["-m", "herdr_broker", "mcp", "--project", str(ROOT)],
+        args=["-m", "herdr_broker", "mcp"],
         cwd=ROOT,
         env=dict(os.environ),
     )
-    context = await Context.load(ROOT)
+    context = await Context.load()
     evidence = {"calls": [], "complete": False}
     created = []
     async with stdio_client(params) as streams:

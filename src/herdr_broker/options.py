@@ -36,14 +36,6 @@ class WorkerOptions:
     def tier(self, purpose: Purpose) -> ServiceTier:
         return "fast" if self.fast_mode in ("all", purpose) else "default"
 
-    def arguments(self) -> list[str]:
-        result = ["--analysis-model", self.analysis_model, "--analysis-effort", self.analysis_effort,
-                  "--status-model", self.status_model, "--status-effort", self.status_effort,
-                  "--response-length-mode", self.response_length_mode, "--fast-mode", self.fast_mode]
-        if self.template_dir is not None:
-            result += ["--template-dir", str(self.template_dir)]
-        return result
-
     def description(self) -> str:
         return "Worker startup defaults: " + "; ".join(
             f"{purpose} model={self.model(purpose)}, effort={self.effort(purpose)}, tier={self.tier(purpose)}"

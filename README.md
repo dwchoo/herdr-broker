@@ -30,54 +30,22 @@ Worker는 Codex SDK에 포함된 runtime과 기존 file 인증을 사용합니�
 
 ## 빠른 시작: GitHub + uvx
 
-### 1. 사용할 프로젝트에 MCP 설정 만들기
+Codex의 `~/.codex/config.toml` 또는 프로젝트의 `.codex/config.toml`에 다음 설정을 추가하세요. 별도 clone·setup·Skill 설치는 필요 없습니다. Codex가 MCP를 시작하면 uvx가 패키지와 의존성을 준비하고 cache를 재사용합니다.
 
-**Codex로 작업할 프로젝트 디렉터리에서** 실행하세요. 아래 경로는 실제 경로로 바꿉니다.
-
-```sh
-cd /absolute/path/to/project
-
-uvx --from git+https://github.com/dwchoo/herdr-broker.git@main \
-  herdr-broker setup \
-  --project "$PWD" \
-  --source git+https://github.com/dwchoo/herdr-broker.git@main
+```toml
+[mcp_servers.herdr_broker]
+command = "uvx"
+args = [
+  "--from", "git+https://github.com/dwchoo/herdr-broker.git@main",
+  "herdr-broker", "mcp"
+]
 ```
 
-이 명령은 해당 프로젝트의 `.codex/config.toml`에 Broker MCP 설정을 생성합니다. 기존 승인 정책과 다른 MCP 설정은 유지합니다. 이미 직접 작성한 `herdr_broker` 블록이 있다면 덮어쓰지 않고 오류를 반환하므로, 기존 블록을 확인하고 아래 수동 설정 예시와 비교하세요.
+설정을 읽는 새 Codex에서 “Herdr 현재 workspace와 pane을 보여줘”라고 요청하세요. 도구 사용 지침은 실행 중인 MCP가 제공합니다. Herdr 밖에서는 workspace를 먼저 선택합니다. 별도 Console은 필요 없습니다.
 
-Worker 인자도 `setup` 뒤에 함께 전달할 수 있습니다. 예를 들어 분석만 Fast로 요청하려면 `--fast-mode analysis`를 추가합니다.
+## Worker 인자를 포함한 설정
 
-### 2. `$broker` Skill 준비하기
-
-`setup`은 **MCP 설정만 생성**합니다. `$broker`는 별도의 project Skill입니다.
-
-- 이 저장소에서 작업한다면 `.agents/skills/broker`가 이미 포함되어 있습니다.
-- 다른 프로젝트에서는 이 저장소를 원하는 위치에 clone하고, 해당 Skill을 프로젝트에 연결할 수 있습니다. 아래 두 경로를 실제 경로로 바꾸세요. 이미 `.agents/skills/broker`가 있으면 기존 Skill을 확인하고 링크 생성 단계는 건너뜁니다.
-
-```sh
-git clone --depth 1 https://github.com/dwchoo/herdr-broker.git \
-  /absolute/path/to/herdr-broker
-
-cd /absolute/path/to/project
-mkdir -p .agents/skills
-ln -s /absolute/path/to/herdr-broker/.agents/skills/broker .agents/skills/broker
-```
-
-이 clone은 Skill과 참조 문서용이며 MCP 본체는 계속 GitHub `uvx` 설정으로 실행됩니다. 링크 대상 디렉터리를 유지하세요. Codex는 project Skill과 symlink를 지원합니다. [OpenAI Skill 안내](https://learn.chatgpt.com/ko-KR/docs/build-skills)
-
-### 3. 새 Codex에서 사용하기
-
-설정한 프로젝트에서 새 Codex를 시작하고 다음과 같이 요청합니다.
-
-```text
-$broker 현재 workspace와 pane을 보여줘.
-```
-
-Herdr 내부에서는 현재 caller workspace를 기본으로 사용합니다. Herdr 밖의 Codex에서는 workspace 목록을 먼저 확인하고 작업할 workspace를 지정합니다. MCP는 Codex가 시작하므로 별도 console을 계속 띄워 둘 필요가 없습니다.
-
-## 수동 config.toml 설정
-
-자동 생성 대신 프로젝트의 `.codex/config.toml`에 다음 블록을 넣을 수도 있습니다. `--project`와 `cwd`를 실제 프로젝트의 **같은 절대 경로**로 바꾸세요. 동일 이름의 MCP 블록을 중복 추가하지 마세요.
+필요한 인자를 추가할 수 있습니다. 아래는 기본값을 명시한 예시입니다. 위 최소 설정과 **둘 중 하나만** 사용하세요.
 
 ```toml
 [mcp_servers.herdr_broker]
@@ -85,36 +53,39 @@ command = "uvx"
 args = [
   "--from", "git+https://github.com/dwchoo/herdr-broker.git@main",
   "herdr-broker", "mcp",
-  "--project", "/absolute/path/to/project",
-  "--analysis-model", "gpt-5.6-luna",
-  "--analysis-effort", "medium",
-  "--status-model", "gpt-5.6-luna",
-  "--status-effort", "low",
-  "--response-length-mode", "medium",
-  "--fast-mode", "off"
+  "--analysis-model", "gpt-5.6-luna", # 내용 분석 모델: 로컬 Codex catalog에 있는 모델 ID
+  "--analysis-effort", "medium", # 예: low, medium, high, xhigh (선택한 모델이 지원하는 값만)
+  "--status-model", "gpt-5.6-luna", # 상태 확인 모델: 로컬 Codex catalog에 있는 모델 ID
+  "--status-effort", "low", # 예: low, medium, high, xhigh (선택한 모델이 지원하는 값만)
+  "--response-length-mode", "medium", # short, medium, long, auto (필요에 따라 medium 또는 long)
+  "--fast-mode", "off" # off: 끔, analysis: 분석만, status: 상태 확인만, all: 둘 다 Fast 요청
 ]
-cwd = "/absolute/path/to/project"
 enabled = true
+```
+
+Herdr 내부에서 현재 caller pane과 workspace를 자동 식별하려면 같은 MCP 블록에 다음 선택 설정을 추가합니다.
+
+```toml
 env_vars = [
   "HERDR_ENV", "HERDR_PANE_ID", "HERDR_WORKSPACE_ID",
   "HERDR_TAB_ID", "HERDR_SOCKET_PATH"
 ]
 ```
 
-`env_vars`는 Herdr가 주입한 값을 전달하기 위한 목록입니다. Herdr 밖에서 사용할 때 값을 임의로 채우거나 다른 pane의 환경값을 복사하지 않습니다. Desktop에서 `uvx`를 찾지 못하면 `command -v uvx`의 결과를 `command`에 절대 경로로 지정하세요. [OpenAI MCP 설정 안내](https://learn.chatgpt.com/ko-KR/docs/extend/mcp)
+주입된 환경값이 없으면 로컬 외부 연결 방식으로 workspace를 선택합니다. 일부 값만 있거나 실제 caller와 불일치하면 오류로 처리합니다. 다른 pane의 환경값을 복사하지 마세요. Desktop에서 uvx를 찾지 못하면 `command -v uvx` 결과를 `command`에 지정하세요. [OpenAI MCP 설정 안내](https://learn.chatgpt.com/ko-KR/docs/extend/mcp)
 
 ## 사용 예시
 
 다음은 **Codex 대화창에 입력할 요청**입니다. 번호는 실제 조회된 pane 번호로 바꿉니다.
 
 ```text
-$broker 현재 pane이 뭐야?
-$broker 내 오른쪽에 terminal 하나 만들어줘.
-$broker 1008 pane 이름을 서버로 바꿔줘.
-$broker 1008에서 OS, CPU, RAM 정보를 확인해줘.
-$broker 빌드 pane의 오류를 분석해줘.
-$broker 1008과 1234의 위치를 서로 바꿔줘.
-$broker 이 두 pane을 좌우 대신 위아래로 배치해줘.
+Herdr 현재 pane이 뭐야?
+Herdr 내 오른쪽에 terminal 하나 만들어줘.
+Herdr 1008 pane 이름을 서버로 바꿔줘.
+Herdr 1008에서 OS, CPU, RAM 정보를 확인해줘.
+Herdr 빌드 pane의 오류를 분석해줘.
+Herdr 1008과 1234의 위치를 서로 바꿔줘.
+Herdr 이 두 pane을 좌우 대신 위아래로 배치해줘.
 ```
 
 `1008 · 서버` 같은 번호는 Herdr의 이름에 붙이는 별명입니다. Codex는 현재 목록과 대화 맥락으로 대상을 해석하고, 실제 작업에는 정확한 pane·terminal ID를 사용합니다. 닫히거나 교체된 pane을 다른 대상으로 조용히 대체하지 않습니다.
@@ -137,9 +108,28 @@ $broker 이 두 pane을 좌우 대신 위아래로 배치해줘.
 
 방향 전환은 분할 하나를 공유하는 두 leaf pane을 대상으로 합니다. 자세한 대상 검증·중복 제출·오류 처리 계약은 [MCP 문서](docs/mcp.md)를 참고하세요.
 
+## 선택 사항: `$broker` Skill 설치
+
+`$broker`라는 이름으로 요청하려면 **설치할 프로젝트 폴더에서** 다음 명령을 실행하세요. MCP만으로 사용한다면 생략합니다.
+
+```sh
+uvx --from git+https://github.com/dwchoo/herdr-broker.git@main \
+  herdr-broker setup
+```
+
+현재 폴더의 `.agents/skills/broker/SKILL.md`에 짧은 호출 안내를 복사합니다. 다른 위치는 `setup --directory <프로젝트 경로>`로 지정합니다. Herdr·인증 없이 설치할 수 있으며 config.toml은 수정하지 않습니다. 기존 파일과 같으면 그대로 두고, 내용이 다르거나 symlink이면 덮어쓰지 않고 위치와 충돌을 알립니다. 설치 후 Skill이 보이지 않으면 새 Codex 세션을 시작하세요.
+
+Skill은 상세 도구 규칙이나 모델 기본값을 복제하지 않습니다. 실제 지침은 실행 중인 MCP가 제공하며 Worker에 Skill을 전달하지 않습니다.
+
+### 이전 설정에서 전환
+
+기존 MCP 설정의 `--project`와 `cwd`는 제거할 수 있습니다. 상대 `--template-dir`를 쓰고 있다면 먼저 절대 경로로 바꾸세요. 새 상대 경로 기준은 MCP 시작 작업 디렉터리입니다. 기존 runtime의 `--project`는 당분간 호환 인자로 받아 상대 template 경로 기준만 유지하고 stderr에 안내합니다. 프로젝트 접근 경계는 설정하지 않습니다.
+
+이전 `setup --source ... --project ...`와 Worker 인자는 더 이상 config를 생성하지 않으며 이행 안내와 함께 거부합니다. MCP 설정은 위 예시로 직접 작성하고, 선택적 Skill 대상은 `--directory`로 지정하세요.
+
 ## Worker 설정
 
-시작 인자는 `mcp` 또는 `setup` 명령에 전달합니다.
+Worker 시작 인자는 `mcp` 명령에 전달합니다.
 
 | 인자 | 기본값 | 설명 |
 | --- | --- | --- |
@@ -184,7 +174,7 @@ uvx --from git+https://github.com/dwchoo/herdr-broker.git@main \
 "--template-dir", "worker-templates"
 ```
 
-상대 경로는 `--project` 기준입니다. 각 파일은 비어 있지 않은 UTF-8 Markdown이며 최대 8 KiB입니다. 기존 파일은 내보내기로 덮어쓰지 않습니다. 수정 내용은 다음 MCP 시작부터 적용됩니다. JSON 구조·길이 상한·근거 검증·도구 제한은 코드가 관리합니다. 내장 파일은 [analysis.md](src/herdr_broker/resources/analysis.md), [status.md](src/herdr_broker/resources/status.md)에서 확인할 수 있습니다.
+상대 경로는 MCP 시작 작업 디렉터리 기준입니다. 전역 설정에서는 절대 경로를 권장합니다. 각 파일은 비어 있지 않은 UTF-8 Markdown이며 최대 8 KiB입니다. 기존 파일은 내보내기로 덮어쓰지 않습니다. 수정 내용은 다음 MCP 시작부터 적용됩니다. JSON 구조·길이 상한·근거 검증·도구 제한은 코드가 관리합니다. 내장 파일은 [analysis.md](src/herdr_broker/resources/analysis.md), [status.md](src/herdr_broker/resources/status.md)에서 확인할 수 있습니다.
 
 Worker는 매번 독립 thread에서 전달받은 화면만 분석합니다. SDK 프로세스는 재사용하지만 이전 분석 대화와 사용자 AGENTS·Skill 목록·도구 정의를 Worker 입력에 넣지 않습니다.
 
@@ -197,20 +187,19 @@ uvx --refresh --from git+https://github.com/dwchoo/herdr-broker.git@main \
   herdr-broker --help
 ```
 
-Skill을 별도 clone에 연결했다면 그 clone도 업데이트해야 합니다. 기존 MCP는 자동으로 재시작되지 않습니다.
+MCP와 사용 지침은 같은 패키지 버전으로 갱신됩니다. uvx는 매 실행마다 최신 main을 확인한다고 보장하지 않습니다. 기존 MCP는 자동으로 재시작되지 않습니다.
 
-연결 확인은 설정한 프로젝트 디렉터리에서 실행합니다. `check`는 Herdr·프로젝트 문맥을 확인하며, Worker 모델 호출까지 검사하지는 않습니다.
+연결 확인은 아래 명령을 실행합니다. `check`는 로컬 Herdr 연결과 주입된 caller 문맥을 확인하며, Worker 모델 호출까지 검사하지는 않습니다.
 
 ```sh
 uvx --from git+https://github.com/dwchoo/herdr-broker.git@main \
-  herdr-broker check --project "$PWD"
+  herdr-broker check
 ```
 
 | 증상 | 확인할 내용 |
 | --- | --- |
-| `$broker`가 보이지 않음 | project Skill 경로·symlink 대상을 확인하고 새 Codex 시작 |
+| `$broker`가 보이지 않음 | 선택적 setup으로 설치한 Skill 경로를 확인하고 새 Codex 시작 |
 | MCP 도구가 보이지 않음 | 프로젝트 `.codex/config.toml`, `uvx` 실행 경로, MCP 시작 오류 확인 |
-| `project_context_required` | `--project`가 실제 존재하고 실행 cwd가 그 안에 있는지 확인 |
 | `herdr_context_required` / `herdr_context_mismatch` | 실제 Herdr shell에서 시작하거나, 외부 Codex에서는 복사한 Herdr 환경값을 사용하지 않는지 확인 |
 | `worker_auth_unavailable` / `worker_model_catalog_unavailable` | Codex file 인증·model cache와 선택 모델을 확인한 뒤 새 MCP 시작 |
 | `worker_effort_unsupported` / `worker_fast_unsupported` | 선택 모델이 지원하는 effort·tier로 시작 설정 또는 사용자 요청 조정 |
@@ -224,7 +213,7 @@ MCP는 terminal을 소유하거나 이전 입력을 자동 재전송하지 않�
 git clone https://github.com/dwchoo/herdr-broker.git
 cd herdr-broker
 uv sync --locked
-uv run herdr-broker setup --project .
+uv run herdr-broker check
 
 uv run pytest
 uv run ruff check src tests
@@ -232,7 +221,7 @@ uv run mypy src
 uv build
 ```
 
-checkout에서 source를 생략한 `setup`은 해당 checkout을 사용하는 `uv run --locked` 설정을 만듭니다. GitHub 설치와 달리 로컬 코드 변경을 사용하는 개발 방식입니다.
+checkout 개발에서는 `uv run herdr-broker mcp`로 로컬 코드를 실행합니다. config.toml에 개발 경로를 연결하려면 uv 자체의 `--project <checkout 경로>`를 사용할 수 있습니다. Broker의 프로젝트 경계 설정과는 별개입니다.
 
 ```text
 src/herdr_broker/       Python MCP와 Worker, 내장 template

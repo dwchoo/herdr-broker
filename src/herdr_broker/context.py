@@ -14,13 +14,6 @@ from .herdr import BrokerError, Herdr
 CONTEXT_KEYS = ("HERDR_ENV", "HERDR_PANE_ID", "HERDR_WORKSPACE_ID", "HERDR_TAB_ID", "HERDR_SOCKET_PATH")
 
 
-def project_path(project: Path) -> Path:
-    root = project.resolve(strict=True)
-    if not root.is_dir() or not Path.cwd().resolve().is_relative_to(root):
-        raise BrokerError("project_context_required")
-    return root
-
-
 def local_settings() -> dict[str, Any]:
     path = Path(pwd.getpwuid(os.getuid()).pw_dir) / ".config/herdr-broker/config.json"
     try:
@@ -76,7 +69,6 @@ def is_descendant(processes: str, pid: int, shell: int, uid: int) -> bool:
 @dataclass
 class Context:
     herdr: Herdr
-    project: Path
     workspace: str | None
     caller: str | None
     terminal: str | None
@@ -84,8 +76,7 @@ class Context:
     patterns: list[str]
 
     @classmethod
-    async def load(cls, project: Path) -> Context:
-        root = project_path(project)
+    async def load(cls) -> Context:
         inside = any(k in os.environ for k in CONTEXT_KEYS)
         if inside and (os.environ.get("HERDR_ENV") != "1" or any(not os.environ.get(k) for k in CONTEXT_KEYS)):
             raise BrokerError("herdr_context_required")
@@ -98,7 +89,7 @@ class Context:
             herdr = Herdr(endpoint)
             await herdr.check()
             if not inside:
-                return cls(herdr, root, None, None, None, None, config.get("redaction_patterns", []))
+                return cls(herdr, None, None, None, None, config.get("redaction_patterns", []))
             pane = await herdr.pane(os.environ["HERDR_PANE_ID"])
             # A live terminal can move tabs while retaining its inherited environment.
             if pane.workspace_id != os.environ["HERDR_WORKSPACE_ID"]:
@@ -124,7 +115,6 @@ class Context:
                 raise BrokerError("herdr_context_mismatch")
             context = cls(
                 herdr,
-                root,
                 pane.workspace_id,
                 pane.pane_id,
                 pane.terminal_id,
@@ -137,7 +127,6 @@ class Context:
             raise BrokerError("herdr_context_mismatch") from exc
 
     async def verify(self) -> None:
-        project_path(self.project)
         self.herdr.check_socket()
         if self.caller is None:
             return
