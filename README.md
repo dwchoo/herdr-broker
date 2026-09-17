@@ -61,11 +61,8 @@ args = [
   "--fast-mode", "off" # off: 끔, analysis: 분석만, status: 상태 확인만, all: 둘 다 Fast 요청
 ]
 enabled = true
-```
 
-Herdr 내부에서 현재 caller pane과 workspace를 자동 식별하려면 같은 MCP 블록에 다음 선택 설정을 추가합니다.
-
-```toml
+# 선택 설정: Herdr 내부에서 현재 caller pane과 workspace를 자동 식별
 env_vars = [
   "HERDR_ENV", "HERDR_PANE_ID", "HERDR_WORKSPACE_ID",
   "HERDR_TAB_ID", "HERDR_SOCKET_PATH"
