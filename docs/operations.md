@@ -58,9 +58,9 @@ Parent 대화와 완료 Job 이력은 보관하지 않는다. 화면·질문·�
 
 ## 개발과 legacy
 
-`uv run pytest`, `uv run ruff check python tests`, `uv run mypy python`, `uv build`로 새 경로를 검증한다. 기존 TS는 Node 24에서 기존 test/typecheck/build를 유지한다.
+`uv run pytest`, `uv run ruff check src tests`, `uv run mypy src`, `uv build`로 새 경로를 검증한다. 기본 설치·검증은 Python만 사용한다. TS 코드는 `legacy/typescript/`에 참조·복원용으로 보관하며 별도로 유지보수한다.
 
-기존 TS Console·Job·Action·Receipt·DB와 실행 명령은 보존한다. 새 기본 MCP가 이를 시작하거나 기존 core를 자동 종료하지 않는다. legacy 관리 방법은 [기존 운영 문서](operations-legacy.md), 새 결정은 [ADR 0005](adr/0005-simple-herdr-mcp.md)를 따른다. 기존 실행 중 core는 활성 입력을 확인한 뒤 별도로 정상 종료하며 terminal은 닫지 않는다.
+기존 TS Console·Job·Action·Receipt 코드, npm 설정·테스트와 옛 Node Skill 스크립트는 [legacy/typescript](../legacy/typescript/README.md)에 보관한다. 기존 DB·실행 데이터는 이동하거나 변환하지 않는다. 새 기본 MCP가 이를 시작하거나 기존 core를 자동 종료하지 않는다. legacy 관리 방법은 [기존 운영 문서](operations-legacy.md), 새 결정은 [ADR 0005](adr/0005-simple-herdr-mcp.md)를 따른다. 기존 실행 중 core는 활성 입력을 확인한 뒤 별도로 정상 종료하며 terminal은 닫지 않는다.
 
 ## 읽기 지연 확인
 
@@ -89,3 +89,9 @@ analysis는 Luna/medium, status는 Luna/low·8줄·1 KiB, Fast는 기본 off다.
 ## Worker 실행 설정
 
 모델·effort·Fast·응답 길이·Markdown template과 GitHub uvx 실행은 [Worker 설정](implementation/worker-options.md)을 따른다. Luna/medium·Luna/low와 Fast off는 기본값이다. 호출에서 effort·tier를 생략하면 시작 설정을 상속한다. 사용자가 요청한 변경만 Main Agent가 명시한다. 현재 공개 main의 Python 구현 반영과 현재 MCP 전환은 별도 작업이다.
+
+## Python 저장소 구조
+
+`src/herdr_broker`가 설치되는 package이며 `tests/`와 `acceptance/*.py`가 Python 검증을 담당한다. `pyproject.toml`·`uv.lock`으로 의존성을 관리하고 `uv sync --locked` 후 개발한다. wheel·sdist는 Python 코드와 Markdown template을 포함하며 legacy·npm 파일·로컬 MCP 설정은 배포하지 않는다. `uvx` 실행에는 Node/npm 설치가 필요 없다. 실제 Herdr와 Codex file 인증·model cache 조건은 그대로 적용한다.
+
+구조 변경 후에도 checkout의 `setup`은 `uv run --locked --project ...`를 생성한다. GitHub 실행은 `setup --source git+https://github.com/dwchoo/herdr-broker.git@main --project ...`로 명시한다. [구조 변경 검증](implementation/python-src-layout.md)에 로컬 Git 설치 결과와 공개 main 검증의 구분을 기록한다.

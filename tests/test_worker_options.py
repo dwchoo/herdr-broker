@@ -8,14 +8,15 @@ from unittest.mock import AsyncMock
 
 import pytest
 from conftest import StubWorker
+from openai_codex.types import ReasoningEffort
+from test_mcp import call
+from test_report_contract import candidate
+
 from herdr_broker.cli import argument_parser, setup
 from herdr_broker.herdr import BrokerError
 from herdr_broker.options import Effort, WorkerOptions, export_templates, load_templates
 from herdr_broker.reports import BUDGETS, analysis_contract, build_report
 from herdr_broker.sdk_runtime import analysis_profile, validate_model
-from openai_codex.types import ReasoningEffort
-from test_mcp import call
-from test_report_contract import candidate
 
 
 def test_cli_defaults_choices_and_sdk_enum():
@@ -203,3 +204,27 @@ async def test_unsupported_call_override_does_not_capture_or_poison_worker():
         assert (await worker.analyze(capture, '', []))['effort'] == 'medium'
     finally:
         await worker.close()
+
+
+def test_src_checkout_setup_uses_locked_development_command(tmp_path, monkeypatch):
+    import herdr_broker.cli as cli
+
+    module = tmp_path / 'src/herdr_broker/cli.py'
+    module.parent.mkdir(parents=True)
+    module.write_text('')
+    monkeypatch.setattr(cli, '__file__', str(module))
+    monkeypatch.chdir(tmp_path)
+    config_dir = tmp_path / '.codex'
+    config_dir.mkdir()
+    config_path = config_dir / 'config.toml'
+    original = 'approval_policy="on-request"\n[mcp_servers.other]\ncommand="other"\n'
+    config_path.write_text(original)
+    options = WorkerOptions(fast_mode='analysis', response_length_mode='short')
+    setup(tmp_path, options=options)
+    first = config_path.read_text()
+    setup(tmp_path, options=options)
+    assert config_path.read_text() == first and first.startswith(original)
+    config = tomllib.loads(first)['mcp_servers']['herdr_broker']
+    assert config['command'].endswith('uv')
+    assert config['args'] == ['run', '--locked', '--project', str(tmp_path), 'herdr-broker',
+                              'mcp', '--project', str(tmp_path), *options.arguments()]

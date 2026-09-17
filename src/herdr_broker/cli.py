@@ -49,7 +49,7 @@ def setup(project: Path, source: str | None = None, options: WorkerOptions | Non
     if START not in original and "herdr_broker" in parsed.get("mcp_servers", {}):
         raise BrokerError("project_mcp_already_configured")
     # Checkout setup follows uv.lock; installed packages retain their installation source.
-    checkout = (root / "python/herdr_broker/cli.py").resolve() == Path(__file__).resolve()
+    checkout = (root / "src/herdr_broker/cli.py").resolve() == Path(__file__).resolve()
     command = uv
     if checkout and source is None:
         args = ["run", "--locked", "--project", str(root), "herdr-broker"]

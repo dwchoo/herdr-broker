@@ -1,6 +1,6 @@
 # Simple Herdr MCP
 
-The Python stdio server connects a project Codex to the same OS user's local Herdr server, inside or outside a Herdr shell. It has no Console, ownership registration, Job API, SQLite, or separate approval policy. The Parent Codex applies its own approval policy. Tool annotations describe effects; they are not an approval bypass. Legacy TypeScript tools and data remain available through the old entrypoint; see [legacy contract](mcp-legacy.md).
+The Python stdio server connects a project Codex to the same OS user's local Herdr server, inside or outside a Herdr shell. It has no Console, ownership registration, Job API, SQLite, or separate approval policy. The Parent Codex applies its own approval policy. Tool annotations describe effects; they are not an approval bypass. TypeScript sources, tests and old entrypoints are archived under [legacy/typescript](../legacy/typescript/README.md) and excluded from Python installation and default checks. Existing runtime data is preserved. The [legacy contract](mcp-legacy.md) is historical.
 
 ## Tools
 

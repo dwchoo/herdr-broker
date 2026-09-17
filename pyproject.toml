@@ -17,10 +17,10 @@ herdr-broker = "herdr_broker.cli:main"
 dev = ["pytest==9.1.1", "pytest-asyncio==1.4.0", "ruff==0.16.7", "mypy==2.3.1"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["python/herdr_broker"]
+packages = ["src/herdr_broker"]
 
 [tool.hatch.build.targets.sdist]
-include = ["python", "tests", "acceptance/execute-herdr.py", "pyproject.toml", "uv.lock", "docs/operations.md", "docs/mcp.md"]
+only-include = ["src/herdr_broker", "tests", "acceptance", "pyproject.toml", "uv.lock", "docs/operations.md", "docs/mcp.md"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

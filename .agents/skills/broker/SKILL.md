@@ -23,7 +23,7 @@ The Worker summarizes only the supplied screen and cannot operate the target. Fa
 
 A label such as `1234 · 빌드` is stored in Herdr. Use `pane_rename` only when naming is requested; `numbered=true` preserves an existing number or chooses an unused current-workspace number. Keep existing names when adding a number. Plain discovery does not rename panes. Numbers are human aliases; exact IDs select execution targets. No Console attachment, pane registration, Mode or Job is required. Discovered panes, including Codex panes, are usable under the Parent's policy. Use exact identities from the chosen workspace.
 
-If tools are missing, use the project setup described in [operations](../../../docs/operations.md): `uv run herdr-broker setup --project .`, then start a new Codex in this project. Preserve its normal approval configuration. Herdr callers retain verified injected context; outside callers use the local user-owned socket without copying Herdr environment values. Full tool semantics and failure handling are in [MCP contract](../../../docs/mcp.md).
+If tools are missing, use the project setup described in [operations](../../../docs/operations.md): `uv sync --locked` followed by `uv run herdr-broker setup --project .`, then start a new Codex in this project. Preserve its normal approval configuration. Herdr callers retain verified injected context; outside callers use the local user-owned socket without copying Herdr environment values. Full tool semantics and failure handling are in [MCP contract](../../../docs/mcp.md).
 
 ## Create and arrange panes
 
@@ -36,3 +36,8 @@ Use `pane_layout` to inspect the split tree before rearranging. Describe directi
 ## Worker configuration
 
 Use configured profiles reported by MCP initialization, not hard-coded model choices. Startup response length is short/medium/long/auto; auto may select medium or long once per analysis. Check response_length_used and evidence delivery. Model, length and Markdown template startup changes require a new MCP process. User templates customize response guidance/examples, not tools or validation. See [Worker startup usage](../../../docs/implementation/worker-options.md) for GitHub uvx arguments, setup --source and template export.
+
+
+## Python package layout
+
+The active package lives in `src/herdr_broker` and uses the root `pyproject.toml` and `uv.lock`. Use the Python CLI for setup and checks. Node launchers and TS Console/Job code are historical assets in `legacy/typescript`, excluded from the active MCP. For GitHub `uvx` installation, use the source and startup options in [operations](../../../docs/operations.md); public main must contain the Python implementation first.
